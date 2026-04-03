@@ -1,0 +1,25 @@
+export const metadata = {
+  slug: "app-router-migration-notes",
+  title: "App Router 마이그레이션 체크포인트",
+  description: "기존 페이지 라우터 프로젝트를 Next 16 App Router로 옮길 때 점검한 항목",
+  date: "2026-03-18",
+  tags: ["Next.js", "App Router", "SEO"],
+  readingTime: "6분",
+  toc: [
+    { id: "scope", text: "마이그레이션 범위", level: 2 },
+    { id: "metadata", text: "Metadata 전략", level: 2 },
+    { id: "operation", text: "운영 체크리스트", level: 2 },
+  ],
+};
+
+<h2 id="scope">마이그레이션 범위</h2>
+
+처음부터 전체를 바꾸지 않고, 유입이 많은 랜딩/블로그 영역부터 App Router로 전환했습니다. 트래픽이 높은 경로를 우선 전환하면 리스크를 관리하기 쉽습니다.
+
+<h2 id="metadata">Metadata 전략</h2>
+
+정적 페이지는 `metadata` 객체로, 동적 상세 페이지는 `generateMetadata`로 분리했습니다. 이 기준 하나만 통일해도 SEO 설정의 중복과 누락이 크게 줄어듭니다.
+
+<h2 id="operation">운영 체크리스트</h2>
+
+`robots.ts`, `sitemap.ts`, `not-found.tsx`를 같이 구성해 운영 필수 요소를 누락하지 않도록 했습니다. 배포 전에는 라우트 스모크 테스트를 자동으로 돌려 회귀를 빠르게 잡았습니다.
