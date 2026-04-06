@@ -1,0 +1,20 @@
+{
+  "title": "Projects",
+  "description": "Project list with role, outcomes, and key contributions",
+  "listTitle": "Projects",
+  "listDescription": "Collection of projects with thumbnail, role, period, stack, and impact details.",
+  "filterPlaceholder": "Project search/filter area (coming soon)",
+  "filterButton": "Coming soon",
+  "detailLabel": "View details",
+  "backToList": "← Back to projects",
+  "projectNotFound": "Project not found.",
+  "role": "Role",
+  "period": "Period",
+  "techStack": "Tech Stack",
+  "achievements": "Outcomes",
+  "contributions": "Key Contributions",
+  "relatedLinks": "Related Links",
+  "live": "Live",
+  "repository": "Repository",
+  "caseStudy": "Case Study"
+}

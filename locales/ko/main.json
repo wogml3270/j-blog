@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "home": "홈",
+    "about": "소개",
+    "projects": "프로젝트",
+    "blog": "블로그"
+  },
+  "language": {
+    "ariaLabel": "언어 전환",
+    "localeNames": {
+      "ko": "한국어",
+      "en": "English",
+      "ja": "日本語"
+    }
+  },
+  "common": {
+    "skipToContent": "본문으로 건너뛰기"
+  },
+  "home": {
+    "title": "홈",
+    "description": "3년차 프론트엔드 개발자의 포트폴리오와 최신 기술 글",
+    "heroEyebrow": "Portfolio & Tech Blog",
+    "viewProjects": "프로젝트 보기",
+    "viewBlog": "블로그 보기",
+    "techStackTitle": "기술 스택",
+    "techStackDescription": "최근 1~2년 동안 실무에서 주로 사용한 도구와 기술입니다.",
+    "featuredProjectsTitle": "대표 프로젝트",
+    "featuredProjectsDescription": "문제 정의부터 운영까지 깊게 관여했던 프로젝트 3개를 소개합니다.",
+    "allProjects": "전체 프로젝트 보기",
+    "recentPostsTitle": "최근 블로그 글",
+    "recentPostsDescription": "구현 과정에서 배운 점과 기술적 의사결정을 정리한 글입니다.",
+    "allPosts": "전체 글 보기"
+  }
+}

@@ -1,11 +1,13 @@
+export type NavigationKey = "home" | "about" | "projects" | "blog";
+
 export type NavigationItem = {
   href: string;
-  label: string;
+  key: NavigationKey;
 };
 
 export const SITE_NAV_ITEMS: NavigationItem[] = [
-  { href: "/", label: "Home" },
-  { href: "/about", label: "About" },
-  { href: "/projects", label: "Projects" },
-  { href: "/blog", label: "Blog" },
+  { href: "/", key: "home" },
+  { href: "/about", key: "about" },
+  { href: "/projects", key: "projects" },
+  { href: "/blog", key: "blog" },
 ];

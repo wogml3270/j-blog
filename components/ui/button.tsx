@@ -29,7 +29,7 @@ export function buttonStyles({
   className,
 }: ButtonStyleOptions = {}): string {
   return cn(
-    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex items-center justify-center gap-2 rounded-md font-medium cursor-pointer transition-colors focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
     variantStyles[variant],
     sizeStyles[size],
     className,

@@ -1,0 +1,26 @@
+{
+  "title": "ブログ",
+  "description": "MDXベースの技術ブログ一覧",
+  "listTitle": "Blog",
+  "listDescription": "タグ・公開日・目次メタデータを含むMDXベースの記事一覧です。",
+  "tableOfContents": "目次",
+  "backToList": "← ブログ一覧へ",
+  "postNotFound": "記事が見つかりません。",
+  "comments": {
+    "title": "コメント",
+    "description": "ログイン後にコメントを投稿できます。",
+    "signedInAs": "ログイン中:",
+    "signOut": "ログアウト",
+    "signInHint": "Google / GitHub / Kakaoでログインしてコメントを投稿できます。",
+    "emailLabel": "メールアドレス（必須）",
+    "nicknameLabel": "ニックネーム（必須）",
+    "avatarLabel": "プロフィール画像URL（任意）",
+    "contentLabel": "コメント内容",
+    "contentPlaceholder": "コメントを入力してください。",
+    "submit": "コメント投稿",
+    "submitting": "投稿中...",
+    "empty": "最初のコメントを投稿してください。",
+    "success": "コメントを投稿しました。",
+    "loginRequired": "コメント投稿にはログインが必要です。"
+  }
+}

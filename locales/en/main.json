@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "projects": "Projects",
+    "blog": "Blog"
+  },
+  "language": {
+    "ariaLabel": "Change language",
+    "localeNames": {
+      "ko": "Korean",
+      "en": "English",
+      "ja": "Japanese"
+    }
+  },
+  "common": {
+    "skipToContent": "Skip to main content"
+  },
+  "home": {
+    "title": "Home",
+    "description": "Portfolio and latest technical writing by a frontend developer with 3 years of experience",
+    "heroEyebrow": "Portfolio & Tech Blog",
+    "viewProjects": "View projects",
+    "viewBlog": "Read blog",
+    "techStackTitle": "Tech Stack",
+    "techStackDescription": "Tools and technologies I have used most in production over the last 1-2 years.",
+    "featuredProjectsTitle": "Featured Projects",
+    "featuredProjectsDescription": "Three projects where I led deeply from problem framing to operation.",
+    "allProjects": "See all projects",
+    "recentPostsTitle": "Recent Posts",
+    "recentPostsDescription": "Notes on implementation details and technical decision making.",
+    "allPosts": "See all posts"
+  }
+}

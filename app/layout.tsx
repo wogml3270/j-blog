@@ -1,59 +1,73 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Noto_Sans_KR } from "next/font/google";
+import {
+  JetBrains_Mono,
+  Noto_Sans_JP,
+  Noto_Sans_KR,
+  Plus_Jakarta_Sans,
+} from "next/font/google";
 import { ThemeProvider } from "@/components/theme/provider";
+import { defaultLocale, isLocale, localeInfo } from "@/lib/i18n/config";
+import { SITE_CONFIG, getSiteCopy } from "@/lib/site/profile";
 import "./globals.css";
 
-const sans = Noto_Sans_KR({
-  variable: "--font-sans",
+const sansKo = Noto_Sans_KR({
+  variable: "--font-sans-ko",
   subsets: ["latin"],
   weight: ["400", "500", "700"],
+  display: "swap",
+});
+
+const sansEn = Plus_Jakarta_Sans({
+  variable: "--font-sans-en",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const sansJa = Noto_Sans_JP({
+  variable: "--font-sans-ja",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  display: "swap",
 });
 
 const mono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
+const defaultSite = getSiteCopy(defaultLocale);
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://portfolio.example.com"),
+  metadataBase: new URL(SITE_CONFIG.siteUrl),
   title: {
-    default: "김준호 | Frontend Portfolio",
-    template: "%s | 김준호",
+    default: defaultSite.title,
+    template: `%s | ${defaultSite.siteName}`,
   },
-  description: "3년차 프론트엔드 개발자의 포트폴리오와 기술 블로그",
-  openGraph: {
-    title: "김준호 | Frontend Portfolio",
-    description: "3년차 프론트엔드 개발자의 포트폴리오와 기술 블로그",
-    url: "https://portfolio.example.com",
-    siteName: "김준호 Portfolio",
-    locale: "ko_KR",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "김준호 | Frontend Portfolio",
-    description: "3년차 프론트엔드 개발자의 포트폴리오와 기술 블로그",
-  },
+  description: defaultSite.description,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{ lang?: string }>;
 }>) {
+  const langParam = (await params).lang;
+  const htmlLang =
+    langParam && isLocale(langParam)
+      ? localeInfo[langParam].htmlLang
+      : localeInfo[defaultLocale].htmlLang;
+
   return (
     <html
-      lang="ko"
+      lang={htmlLang}
       suppressHydrationWarning
-      className={`${sans.variable} ${mono.variable}`}
+      className={`${sansKo.variable} ${sansEn.variable} ${sansJa.variable} ${mono.variable}`}
     >
-      <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+      <body className="min-h-dvh bg-background text-foreground antialiased">
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           {children}
         </ThemeProvider>
       </body>

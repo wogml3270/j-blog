@@ -1,0 +1,26 @@
+{
+  "title": "Blog",
+  "description": "Technical posts powered by MDX",
+  "listTitle": "Blog",
+  "listDescription": "MDX posts with tags, publish date, and table-of-contents metadata.",
+  "tableOfContents": "Table of Contents",
+  "backToList": "← Back to blog",
+  "postNotFound": "Post not found.",
+  "comments": {
+    "title": "Comments",
+    "description": "You can leave a comment after signing in.",
+    "signedInAs": "Signed in as:",
+    "signOut": "Sign out",
+    "signInHint": "Sign in with Google, GitHub, or Kakao to write a comment.",
+    "emailLabel": "Email (Required)",
+    "nicknameLabel": "Nickname (Required)",
+    "avatarLabel": "Profile Image URL (Optional)",
+    "contentLabel": "Comment",
+    "contentPlaceholder": "Write your comment.",
+    "submit": "Post comment",
+    "submitting": "Posting...",
+    "empty": "Be the first to comment.",
+    "success": "Your comment has been posted.",
+    "loginRequired": "Please sign in first to leave a comment."
+  }
+}

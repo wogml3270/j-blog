@@ -1,11 +1,23 @@
+import Link from "next/link";
 import { Container } from "@/components/layout/container";
-import { SITE_CONFIG } from "@/lib/site/profile";
+import type { Locale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import { SITE_CONFIG, getSiteCopy } from "@/lib/site/profile";
 
-export function Footer() {
+type FooterProps = {
+  locale: Locale;
+  dictionary: Dictionary;
+};
+
+export function Footer({ locale, dictionary }: FooterProps) {
+  const site = getSiteCopy(locale);
+
   return (
     <footer className="border-t border-border/70 bg-surface">
       <Container className="flex flex-col gap-2 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
-        <p>© {new Date().getFullYear()} {SITE_CONFIG.siteName}. All rights reserved.</p>
+        <p>
+          © {new Date().getFullYear()} {site.siteName}. {dictionary.footer.rightsReserved}
+        </p>
         <div className="flex items-center gap-4">
           <a href={SITE_CONFIG.githubUrl} target="_blank" rel="noreferrer">
             GitHub
@@ -13,7 +25,8 @@ export function Footer() {
           <a href={SITE_CONFIG.linkedInUrl} target="_blank" rel="noreferrer">
             LinkedIn
           </a>
-          <a href={`mailto:${SITE_CONFIG.email}`}>Email</a>
+          <a href={`mailto:${SITE_CONFIG.email}`}>{dictionary.footer.emailLabel}</a>
+          <Link href="/admin/login">{dictionary.footer.adminLabel}</Link>
         </div>
       </Container>
     </footer>

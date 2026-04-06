@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# j-blog
 
-## Getting Started
+Next.js(App Router) 기반 포트폴리오/블로그 프로젝트입니다.
 
-First, run the development server:
+## 실행
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Admin CMS + Supabase 설정
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 1) 환경변수
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`.env.example`를 참고해 `.env.local`을 구성합니다.
 
-## Learn More
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ADMIN_ALLOWED_EMAILS` (콤마 구분)
+- `RESEND_API_KEY` (선택)
+- `SITE_CONTACT_TO_EMAIL` (선택)
+- `SITE_CONTACT_FROM_EMAIL` (선택)
 
-To learn more about Next.js, take a look at the following resources:
+### 2) Supabase 스키마 적용
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Supabase SQL Editor에서 아래 파일을 실행합니다.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `supabase/schema.sql`
 
-## Deploy on Vercel
+적용 후 `admin_allowlist`에 기본 슈퍼관리자(`wogml3270@gmail.com`)가 등록됩니다.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 3) 소셜 로그인 Provider 설정
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Supabase Auth > Providers에서 다음을 활성화합니다.
+
+- Google
+- GitHub
+- Kakao
+
+Redirect URL에 다음을 등록합니다.
+
+- `http://localhost:3000/auth/callback`
+- (배포 시) `https://<your-domain>/auth/callback`
+
+### 4) 초기 데이터 시드
+
+```bash
+npm run seed:supabase
+```
+
+- 기존 `content/blog/*.mdx`를 posts/tags로 이관
+- 기본 프로젝트/프로필 데이터 이관
+- allowlist 이메일 upsert
+
+## 주요 라우트
+
+- 공개 사이트: `/{lang}` (`ko`, `en`, `ja`)
+- 관리자 로그인: `/admin/login`
+- 관리자 화면: `/admin`, `/admin/posts`, `/admin/projects`, `/admin/profile`
+- OAuth 콜백: `/auth/callback`
+
+## 품질 체크
+
+```bash
+npm run lint
+npm run build
+```

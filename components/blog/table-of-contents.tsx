@@ -2,16 +2,17 @@ import type { TocItem } from "@/types/content";
 
 type TableOfContentsProps = {
   items: TocItem[];
+  title: string;
 };
 
-export function TableOfContents({ items }: TableOfContentsProps) {
+export function TableOfContents({ items, title }: TableOfContentsProps) {
   if (!items.length) {
     return null;
   }
 
   return (
     <aside className="rounded-xl border border-border bg-surface p-5">
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">Table of Contents</h2>
+      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">{title}</h2>
       <ol className="space-y-2">
         {items.map((item) => (
           <li key={item.id} style={{ paddingLeft: `${(item.level - 2) * 0.75}rem` }}>
