@@ -1,6 +1,6 @@
 import { renderMarkdownToHtml } from "@/lib/blog/markdown";
 
-type MarkdownContentProps = {
+interface MarkdownContentProps {
   markdown: string;
 };
 

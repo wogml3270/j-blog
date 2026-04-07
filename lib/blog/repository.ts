@@ -16,6 +16,7 @@ type PostRow = {
   slug: string;
   title: string;
   description: string;
+  thumbnail: string | null;
   body_markdown: string;
   reading_time: string | null;
   status: PublishStatus;
@@ -28,6 +29,7 @@ export type AdminPostInput = {
   slug: string;
   title: string;
   description: string;
+  thumbnail?: string | null;
   bodyMarkdown: string;
   readingTime?: string;
   status: PublishStatus;
@@ -39,6 +41,9 @@ type RepoResult<T> = {
   data: T | null;
   error: string | null;
 };
+
+const POST_SELECT_FIELDS =
+  "id,slug,title,description,thumbnail,body_markdown,reading_time,status,published_at,updated_at,post_tag_map(post_tags(name))";
 
 function normalizeTags(tags: string[]): string[] {
   return [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
@@ -93,6 +98,7 @@ function rowToSummary(row: PostRow): BlogPostSummary {
     slug: row.slug,
     title: row.title,
     description: row.description,
+    thumbnail: row.thumbnail,
     date,
     tags: relationToTagNames(row.post_tag_map),
     readingTime,
@@ -105,6 +111,7 @@ function rowToAdminPost(row: PostRow): AdminPost {
     slug: row.slug,
     title: row.title,
     description: row.description,
+    thumbnail: row.thumbnail,
     bodyMarkdown: row.body_markdown,
     readingTime: row.reading_time || estimateReadingTime(row.body_markdown, "ko"),
     tags: relationToTagNames(row.post_tag_map),
@@ -176,9 +183,7 @@ async function getAdminPostById(id: string): Promise<AdminPost | null> {
 
   const { data, error } = await service
     .from("posts")
-    .select(
-      "id,slug,title,description,body_markdown,reading_time,status,published_at,updated_at,post_tag_map(post_tags(name))",
-    )
+    .select(POST_SELECT_FIELDS)
     .eq("id", id)
     .maybeSingle<PostRow>();
 
@@ -209,9 +214,7 @@ export async function getAllPublishedPosts(): Promise<BlogPostSummary[]> {
 
   const { data, error } = await service
     .from("posts")
-    .select(
-      "id,slug,title,description,body_markdown,reading_time,status,published_at,updated_at,post_tag_map(post_tags(name))",
-    )
+    .select(POST_SELECT_FIELDS)
     .eq("status", "published")
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("updated_at", { ascending: false });
@@ -243,6 +246,7 @@ export async function getPublishedPostBySlug(slug: string): Promise<BlogPostDeta
       slug: fallback.meta.slug,
       title: fallback.meta.title,
       description: fallback.meta.description,
+      thumbnail: null,
       date: fallback.meta.date,
       tags: fallback.meta.tags,
       readingTime: fallback.meta.readingTime,
@@ -256,9 +260,7 @@ export async function getPublishedPostBySlug(slug: string): Promise<BlogPostDeta
 
   const { data, error } = await service
     .from("posts")
-    .select(
-      "id,slug,title,description,body_markdown,reading_time,status,published_at,updated_at,post_tag_map(post_tags(name))",
-    )
+    .select(POST_SELECT_FIELDS)
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle<PostRow>();
@@ -275,6 +277,7 @@ export async function getPublishedPostBySlug(slug: string): Promise<BlogPostDeta
       slug: fallback.meta.slug,
       title: fallback.meta.title,
       description: fallback.meta.description,
+      thumbnail: null,
       date: fallback.meta.date,
       tags: fallback.meta.tags,
       readingTime: fallback.meta.readingTime,
@@ -314,9 +317,7 @@ export async function getAdminPosts(): Promise<AdminPost[]> {
 
   const { data, error } = await service
     .from("posts")
-    .select(
-      "id,slug,title,description,body_markdown,reading_time,status,published_at,updated_at,post_tag_map(post_tags(name))",
-    )
+    .select(POST_SELECT_FIELDS)
     .order("updated_at", { ascending: false });
 
   if (error || !data) {
@@ -348,6 +349,7 @@ export async function createAdminPost(
       slug: input.slug,
       title: input.title,
       description: input.description,
+      thumbnail: input.thumbnail?.trim() || null,
       body_markdown: input.bodyMarkdown,
       reading_time: readingTime,
       status: normalizedStatus,
@@ -394,6 +396,7 @@ export async function updateAdminPost(
       slug: input.slug,
       title: input.title,
       description: input.description,
+      thumbnail: input.thumbnail?.trim() || null,
       body_markdown: input.bodyMarkdown,
       reading_time: readingTime,
       status: normalizedStatus,

@@ -55,8 +55,6 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
     notFound();
   }
 
-  const currentPath = withLocalePath(lang, `/blog/${slug}`);
-
   return (
     <article className="space-y-8">
       <Link href={withLocalePath(lang, "/blog")} className="inline-flex text-sm text-muted underline">
@@ -91,7 +89,6 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
 
       <CommentsSection
         postSlug={post.slug}
-        nextPath={currentPath}
         labels={dictionary.blog.comments}
         initialComments={comments}
       />

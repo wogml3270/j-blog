@@ -34,11 +34,11 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
   const state = await getAdminState();
 
   if (state.isAdmin) {
-    redirect("/admin");
+    redirect("/admin/dashboard");
   }
 
   const resolvedSearchParams = await searchParams;
-  const nextPath = readSearchParam(resolvedSearchParams.next, "/admin");
+  const nextPath = readSearchParam(resolvedSearchParams.next, "/admin/dashboard");
   const reason = readSearchParam(resolvedSearchParams.reason, state.reason);
 
   return (

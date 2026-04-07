@@ -2,6 +2,7 @@ import type { Locale } from "@/lib/i18n/config";
 import type { NavigationKey } from "@/lib/site/navigation";
 import enAbout from "@/locales/en/about.json";
 import enBlog from "@/locales/en/blog.json";
+import enContact from "@/locales/en/contact.json";
 import enFooter from "@/locales/en/footer.json";
 import enHeader from "@/locales/en/header.json";
 import enMain from "@/locales/en/main.json";
@@ -10,6 +11,7 @@ import enProjects from "@/locales/en/projects.json";
 import enTheme from "@/locales/en/theme.json";
 import jaAbout from "@/locales/ja/about.json";
 import jaBlog from "@/locales/ja/blog.json";
+import jaContact from "@/locales/ja/contact.json";
 import jaFooter from "@/locales/ja/footer.json";
 import jaHeader from "@/locales/ja/header.json";
 import jaMain from "@/locales/ja/main.json";
@@ -18,6 +20,7 @@ import jaProjects from "@/locales/ja/projects.json";
 import jaTheme from "@/locales/ja/theme.json";
 import koAbout from "@/locales/ko/about.json";
 import koBlog from "@/locales/ko/blog.json";
+import koContact from "@/locales/ko/contact.json";
 import koFooter from "@/locales/ko/footer.json";
 import koHeader from "@/locales/ko/header.json";
 import koMain from "@/locales/ko/main.json";
@@ -29,6 +32,7 @@ type MainDictionary = typeof koMain;
 type HeaderDictionary = typeof koHeader;
 type FooterDictionary = typeof koFooter;
 type BlogDictionary = typeof koBlog;
+type ContactDictionary = typeof koContact;
 type AboutDictionary = typeof koAbout;
 type ProjectsDictionary = typeof koProjects;
 type NotFoundDictionary = typeof koNotFound;
@@ -41,6 +45,7 @@ export type Dictionary = {
   theme: ThemeDictionary;
   footer: FooterDictionary;
   common: MainDictionary["common"];
+  contact: ContactDictionary;
   home: MainDictionary["home"];
   about: AboutDictionary;
   blog: BlogDictionary;
@@ -54,6 +59,7 @@ const dictionaries = {
     header: koHeader,
     footer: koFooter,
     blog: koBlog,
+    contact: koContact,
     about: koAbout,
     projects: koProjects,
     notFound: koNotFound,
@@ -64,6 +70,7 @@ const dictionaries = {
     header: enHeader,
     footer: enFooter,
     blog: enBlog,
+    contact: enContact,
     about: enAbout,
     projects: enProjects,
     notFound: enNotFound,
@@ -74,6 +81,7 @@ const dictionaries = {
     header: jaHeader,
     footer: jaFooter,
     blog: jaBlog,
+    contact: jaContact,
     about: jaAbout,
     projects: jaProjects,
     notFound: jaNotFound,
@@ -86,6 +94,7 @@ const dictionaries = {
     header: HeaderDictionary;
     footer: FooterDictionary;
     blog: BlogDictionary;
+    contact: ContactDictionary;
     about: AboutDictionary;
     projects: ProjectsDictionary;
     notFound: NotFoundDictionary;
@@ -103,6 +112,7 @@ export function getDictionary(locale: Locale): Dictionary {
     theme: source.theme,
     footer: source.footer,
     common: source.main.common,
+    contact: source.contact,
     home: source.main.home,
     about: source.about,
     blog: source.blog,

@@ -10,7 +10,6 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 import { getPublishedProfileContent } from "@/lib/profile/repository";
 import { getFeaturedProjects } from "@/lib/projects/repository";
 import { buildPageMetadata } from "@/lib/seo/metadata";
-import { TECH_STACK } from "@/lib/site/profile";
 
 type HomePageProps = {
   params: Promise<{ lang: string }>;
@@ -59,7 +58,7 @@ export default async function HomePage({ params }: HomePageProps) {
         viewBlogLabel={dictionary.home.viewBlog}
       />
       <TechStack
-        items={TECH_STACK}
+        items={profile.techStack}
         title={dictionary.home.techStackTitle}
         description={dictionary.home.techStackDescription}
       />

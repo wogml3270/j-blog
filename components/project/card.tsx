@@ -25,8 +25,11 @@ export function ProjectCard({
 }: ProjectCardProps) {
   return (
     <SlideIn delay={animationDelay} distance={16}>
-      <article className="group overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-foreground/30">
-        <div className="aspect-[16/9] overflow-hidden border-b border-border bg-foreground/5">
+      <Link
+        href={withLocalePath(locale, `/projects/${project.slug}`)}
+        className="group block overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-foreground/30"
+      >
+        <div className="aspect-video overflow-hidden border-b border-border bg-foreground/5">
           <Image
             src={project.thumbnail}
             alt={`${project.title} thumbnail`}
@@ -55,14 +58,11 @@ export function ProjectCard({
               <Tag key={tech}>{tech}</Tag>
             ))}
           </div>
-          <Link
-            href={withLocalePath(locale, `/projects/${project.slug}`)}
-            className="inline-flex items-center text-sm font-medium text-foreground underline"
-          >
+          <span className="inline-flex items-center text-sm font-medium text-foreground underline">
             {detailLabel}
-          </Link>
+          </span>
         </div>
-      </article>
+      </Link>
     </SlideIn>
   );
 }

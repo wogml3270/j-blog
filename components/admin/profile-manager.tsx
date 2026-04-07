@@ -7,11 +7,11 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils/cn";
 import type { ProfileContent, PublishStatus } from "@/types/content";
 
-type ProfileManagerProps = {
+interface ProfileManagerProps {
   initialProfile: ProfileContent;
 };
 
-type ProfileFormState = {
+interface ProfileFormState {
   name: string;
   title: string;
   summary: string;
@@ -43,7 +43,7 @@ function parseStrengths(value: string): string[] {
 function statusBadge(status: PublishStatus): string {
   return status === "published"
     ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-    : "bg-amber-500/15 text-amber-700 dark:text-amber-300";
+    : "bg-slate-500/15 text-slate-700 dark:text-slate-300";
 }
 
 export function ProfileManager({ initialProfile }: ProfileManagerProps) {
@@ -94,7 +94,7 @@ export function ProfileManager({ initialProfile }: ProfileManagerProps) {
 
   return (
     <>
-      <section className="mx-auto w-full max-w-4xl space-y-4">
+      <section className="mx-auto w-full space-y-4">
         <header className="rounded-xl border border-border bg-surface px-4 py-3">
           <p className="text-sm text-muted">프로필은 단일 레코드로 관리됩니다.</p>
           <p className="text-xs text-muted">행을 클릭하면 오른쪽 패널에서 수정할 수 있습니다.</p>
@@ -108,7 +108,7 @@ export function ProfileManager({ initialProfile }: ProfileManagerProps) {
               className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-foreground/5"
             >
               <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", statusBadge(form.status))}>
-                {form.status}
+                {form.status === "published" ? "공개" : "비공개"}
               </span>
               <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                 {form.name} · {form.title}
@@ -175,8 +175,8 @@ export function ProfileManager({ initialProfile }: ProfileManagerProps) {
             value={form.status}
             onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as PublishStatus }))}
           >
-            <option value="published">published</option>
-            <option value="draft">draft</option>
+            <option value="published">공개</option>
+            <option value="draft">비공개</option>
           </select>
 
           <Button type="submit" className="w-full" disabled={isPending}>

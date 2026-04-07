@@ -3,11 +3,15 @@ import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { revalidateProfilePaths } from "@/lib/cache/revalidate";
 import {
   getAdminProfileContent,
-  type AdminProfileInput,
-  upsertAdminProfileContent,
+  type AdminAboutInput,
+  type AdminHomeInput,
+  upsertAdminAboutContent,
+  upsertAdminHomeContent,
 } from "@/lib/profile/repository";
 
-function parseBody(body: unknown): AdminProfileInput | null {
+type LegacyAdminProfileInput = AdminHomeInput & AdminAboutInput;
+
+function parseBody(body: unknown): LegacyAdminProfileInput | null {
   if (!body || typeof body !== "object") {
     return null;
   }
@@ -18,8 +22,10 @@ function parseBody(body: unknown): AdminProfileInput | null {
     typeof source.name !== "string" ||
     typeof source.title !== "string" ||
     typeof source.summary !== "string" ||
+    typeof source.introDescription !== "string" ||
     typeof source.aboutExperience !== "string" ||
-    typeof source.workStyle !== "string"
+    typeof source.workStyle !== "string" ||
+    !Array.isArray(source.techStack)
   ) {
     return null;
   }
@@ -28,6 +34,8 @@ function parseBody(body: unknown): AdminProfileInput | null {
     name: source.name.trim(),
     title: source.title.trim(),
     summary: source.summary.trim(),
+    techStack: source.techStack.map((item) => String(item).trim()).filter(Boolean),
+    introDescription: source.introDescription.trim(),
     aboutExperience: source.aboutExperience.trim(),
     strengths: Array.isArray(source.strengths)
       ? source.strengths.map((item) => String(item).trim()).filter(Boolean)
@@ -61,12 +69,18 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const result = await upsertAdminProfileContent(payload);
+  const homeResult = await upsertAdminHomeContent(payload);
 
-  if (result.error || !result.data) {
-    return NextResponse.json({ error: result.error ?? "Failed to update profile." }, { status: 400 });
+  if (homeResult.error || !homeResult.data) {
+    return NextResponse.json({ error: homeResult.error ?? "Failed to update profile(home)." }, { status: 400 });
+  }
+
+  const aboutResult = await upsertAdminAboutContent(payload);
+
+  if (aboutResult.error || !aboutResult.data) {
+    return NextResponse.json({ error: aboutResult.error ?? "Failed to update profile(about)." }, { status: 400 });
   }
 
   revalidateProfilePaths();
-  return NextResponse.json({ profile: result.data });
+  return NextResponse.json({ profile: aboutResult.data });
 }

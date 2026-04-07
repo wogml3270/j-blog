@@ -4,6 +4,17 @@ import { useTheme } from "@/components/theme/provider";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface ThemeToggleLabels {
+  loadingLabel: string;
+  toLightLabel: string;
+  toDarkLabel: string;
+};
+
+interface ThemeToggleProps {
+  labels: ThemeToggleLabels;
+};
+
+
 function SunIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -67,7 +78,7 @@ export function ThemeToggle({ labels }: ThemeToggleProps) {
       aria-pressed={isDark}
       className="group relative w-10 overflow-hidden px-0"
     >
-      <span className="relative block h-[1.125rem] w-[1.125rem]">
+      <span className="relative block h-4.5 w-4.5">
         <SunIcon
           className={`absolute inset-0 transition-all duration-500 ease-out ${
             isDark ? "rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100"
@@ -82,12 +93,3 @@ export function ThemeToggle({ labels }: ThemeToggleProps) {
     </Button>
   );
 }
-type ThemeToggleLabels = {
-  loadingLabel: string;
-  toLightLabel: string;
-  toDarkLabel: string;
-};
-
-type ThemeToggleProps = {
-  labels: ThemeToggleLabels;
-};

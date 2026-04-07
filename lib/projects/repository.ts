@@ -1,4 +1,10 @@
-import type { AdminProject, Project, ProjectLinks, PublishStatus } from "@/types/content";
+import type {
+  AdminProject,
+  Project,
+  ProjectLinkItem,
+  ProjectLinks,
+  PublishStatus,
+} from "@/types/content";
 import type { Locale } from "@/lib/i18n/config";
 import {
   getAllProjects as getFallbackProjects,
@@ -15,6 +21,8 @@ type ProjectRow = {
   thumbnail: string;
   role: string;
   period: string;
+  start_date: string | null;
+  end_date: string | null;
   tech_stack: unknown;
   achievements: unknown;
   contributions: unknown;
@@ -30,7 +38,9 @@ export type AdminProjectInput = {
   summary: string;
   thumbnail: string;
   role: string;
-  period: string;
+  period?: string;
+  startDate?: string | null;
+  endDate?: string | null;
   techStack: string[];
   achievements: string[];
   contributions: string[];
@@ -44,6 +54,15 @@ type RepoResult<T> = {
   error: string | null;
 };
 
+const PROJECT_SELECT_FIELDS =
+  "id,slug,title,summary,thumbnail,role,period,start_date,end_date,tech_stack,achievements,contributions,links,featured,status,updated_at";
+
+const LEGACY_LINK_LABELS: Record<string, string> = {
+  live: "Live",
+  repo: "Repository",
+  detail: "Case Study",
+};
+
 function toStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -52,21 +71,133 @@ function toStringArray(value: unknown): string[] {
   return value.map((item) => String(item).trim()).filter(Boolean);
 }
 
+function normalizeProjectLinks(items: ProjectLinkItem[]): ProjectLinks {
+  const seen = new Set<string>();
+  const normalized: ProjectLinks = [];
+
+  for (const item of items) {
+    const label = item.label.trim();
+    const url = item.url.trim();
+
+    if (!label || !url) {
+      continue;
+    }
+
+    const key = `${label}::${url}`;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    normalized.push({ label, url });
+  }
+
+  return normalized;
+}
+
 function toLinks(value: unknown): ProjectLinks {
+  if (Array.isArray(value)) {
+    return normalizeProjectLinks(
+      value
+        .filter((item) => item && typeof item === "object")
+        .map((item) => {
+          const raw = item as Record<string, unknown>;
+
+          return {
+            label: typeof raw.label === "string" ? raw.label : "",
+            url: typeof raw.url === "string" ? raw.url : "",
+          };
+        }),
+    );
+  }
+
   if (!value || typeof value !== "object") {
-    return {};
+    return [];
   }
 
   const raw = value as Record<string, unknown>;
+  const legacy: ProjectLinkItem[] = [];
 
-  return {
-    live: typeof raw.live === "string" ? raw.live : undefined,
-    repo: typeof raw.repo === "string" ? raw.repo : undefined,
-    detail: typeof raw.detail === "string" ? raw.detail : undefined,
-  };
+  for (const [key, maybeUrl] of Object.entries(raw)) {
+    if (typeof maybeUrl !== "string") {
+      continue;
+    }
+
+    const url = maybeUrl.trim();
+
+    if (!url) {
+      continue;
+    }
+
+    legacy.push({
+      label: LEGACY_LINK_LABELS[key] ?? key,
+      url,
+    });
+  }
+
+  return normalizeProjectLinks(legacy);
+}
+
+function normalizeDate(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  // HTML date input은 YYYY-MM-DD를 반환하므로 그대로 허용.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  const parsed = new Date(trimmed);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.toISOString().slice(0, 10);
+}
+
+function formatPeriodDate(value: string): string {
+  const [year, month] = value.split("-");
+
+  if (!year || !month) {
+    return value;
+  }
+
+  return `${year}.${month}`;
+}
+
+function syncPeriod(
+  startDate: string | null,
+  endDate: string | null,
+  fallback?: string,
+): string {
+  if (startDate && endDate) {
+    return `${formatPeriodDate(startDate)} - ${formatPeriodDate(endDate)}`;
+  }
+
+  if (startDate && !endDate) {
+    return `${formatPeriodDate(startDate)} - 진행중`;
+  }
+
+  if (!startDate && endDate) {
+    return `~ ${formatPeriodDate(endDate)}`;
+  }
+
+  return fallback?.trim() || "";
 }
 
 function rowToProject(row: ProjectRow): Project {
+  const startDate = normalizeDate(row.start_date);
+  const endDate = normalizeDate(row.end_date);
+
   return {
     id: row.id,
     slug: row.slug,
@@ -74,7 +205,9 @@ function rowToProject(row: ProjectRow): Project {
     summary: row.summary,
     thumbnail: row.thumbnail,
     role: row.role,
-    period: row.period,
+    period: syncPeriod(startDate, endDate, row.period),
+    startDate,
+    endDate,
     techStack: toStringArray(row.tech_stack),
     achievements: toStringArray(row.achievements),
     contributions: toStringArray(row.contributions),
@@ -86,6 +219,9 @@ function rowToProject(row: ProjectRow): Project {
 }
 
 function rowToAdminProject(row: ProjectRow): AdminProject {
+  const startDate = normalizeDate(row.start_date);
+  const endDate = normalizeDate(row.end_date);
+
   return {
     id: row.id,
     slug: row.slug,
@@ -93,7 +229,9 @@ function rowToAdminProject(row: ProjectRow): AdminProject {
     summary: row.summary,
     thumbnail: row.thumbnail,
     role: row.role,
-    period: row.period,
+    period: syncPeriod(startDate, endDate, row.period),
+    startDate,
+    endDate,
     techStack: toStringArray(row.tech_stack),
     achievements: toStringArray(row.achievements),
     contributions: toStringArray(row.contributions),
@@ -126,9 +264,7 @@ export async function getAllPublishedProjects(locale: Locale): Promise<Project[]
 
   const { data, error } = await service
     .from("projects")
-    .select(
-      "id,slug,title,summary,thumbnail,role,period,tech_stack,achievements,contributions,links,featured,status,updated_at",
-    )
+    .select(PROJECT_SELECT_FIELDS)
     .eq("status", "published")
     .order("featured", { ascending: false })
     .order("updated_at", { ascending: false });
@@ -154,9 +290,7 @@ export async function getFeaturedProjects(locale: Locale, limit = 3): Promise<Pr
 
   const { data, error } = await service
     .from("projects")
-    .select(
-      "id,slug,title,summary,thumbnail,role,period,tech_stack,achievements,contributions,links,featured,status,updated_at",
-    )
+    .select(PROJECT_SELECT_FIELDS)
     .eq("status", "published")
     .eq("featured", true)
     .order("updated_at", { ascending: false })
@@ -191,9 +325,7 @@ export async function getPublishedProjectBySlug(slug: string, locale: Locale): P
 
   const { data, error } = await service
     .from("projects")
-    .select(
-      "id,slug,title,summary,thumbnail,role,period,tech_stack,achievements,contributions,links,featured,status,updated_at",
-    )
+    .select(PROJECT_SELECT_FIELDS)
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle<ProjectRow>();
@@ -227,9 +359,7 @@ export async function getAdminProjects(): Promise<AdminProject[]> {
 
   const { data, error } = await service
     .from("projects")
-    .select(
-      "id,slug,title,summary,thumbnail,role,period,tech_stack,achievements,contributions,links,featured,status,updated_at",
-    )
+    .select(PROJECT_SELECT_FIELDS)
     .order("updated_at", { ascending: false });
 
   if (error || !data) {
@@ -248,9 +378,7 @@ async function getAdminProjectById(id: string): Promise<AdminProject | null> {
 
   const { data, error } = await service
     .from("projects")
-    .select(
-      "id,slug,title,summary,thumbnail,role,period,tech_stack,achievements,contributions,links,featured,status,updated_at",
-    )
+    .select(PROJECT_SELECT_FIELDS)
     .eq("id", id)
     .maybeSingle<ProjectRow>();
 
@@ -273,6 +401,10 @@ export async function createAdminProject(
     };
   }
 
+  const startDate = normalizeDate(input.startDate);
+  const endDate = normalizeDate(input.endDate);
+  const period = syncPeriod(startDate, endDate, input.period);
+  const links = normalizeProjectLinks(input.links);
   const { data, error } = await service
     .from("projects")
     .insert({
@@ -281,11 +413,13 @@ export async function createAdminProject(
       summary: input.summary,
       thumbnail: input.thumbnail,
       role: input.role,
-      period: input.period,
+      period,
+      start_date: startDate,
+      end_date: endDate,
       tech_stack: input.techStack,
       achievements: input.achievements,
       contributions: input.contributions,
-      links: input.links,
+      links,
       featured: input.featured,
       status: normalizeStatus(input.status),
     })
@@ -318,6 +452,10 @@ export async function updateAdminProject(
     };
   }
 
+  const startDate = normalizeDate(input.startDate);
+  const endDate = normalizeDate(input.endDate);
+  const period = syncPeriod(startDate, endDate, input.period);
+  const links = normalizeProjectLinks(input.links);
   const { error } = await service
     .from("projects")
     .update({
@@ -326,11 +464,13 @@ export async function updateAdminProject(
       summary: input.summary,
       thumbnail: input.thumbnail,
       role: input.role,
-      period: input.period,
+      period,
+      start_date: startDate,
+      end_date: endDate,
       tech_stack: input.techStack,
       achievements: input.achievements,
       contributions: input.contributions,
-      links: input.links,
+      links,
       featured: input.featured,
       status: normalizeStatus(input.status),
     })

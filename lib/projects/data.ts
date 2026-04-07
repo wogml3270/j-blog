@@ -1,5 +1,5 @@
 import type { Locale } from "@/lib/i18n/config";
-import type { Project } from "@/types/content";
+import type { Project, ProjectLinks } from "@/types/content";
 
 type LocalizedText = Record<Locale, string>;
 type LocalizedList = Record<Locale, string[]>;
@@ -21,6 +21,24 @@ type ProjectSeed = {
   };
   featured: boolean;
 };
+
+function toProjectLinks(value: ProjectSeed["links"]): ProjectLinks {
+  const links: ProjectLinks = [];
+
+  if (value.live) {
+    links.push({ label: "Live", url: value.live });
+  }
+
+  if (value.repo) {
+    links.push({ label: "Repository", url: value.repo });
+  }
+
+  if (value.detail) {
+    links.push({ label: "Case Study", url: value.detail });
+  }
+
+  return links;
+}
 
 const projectSeeds: ProjectSeed[] = [
   {
@@ -258,7 +276,7 @@ function toLocalizedProject(seed: ProjectSeed, locale: Locale): Project {
     techStack: seed.techStack,
     achievements: seed.achievements[locale],
     contributions: seed.contributions[locale],
-    links: seed.links,
+    links: toProjectLinks(seed.links),
     featured: seed.featured,
   };
 }

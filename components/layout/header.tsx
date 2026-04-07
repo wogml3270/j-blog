@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SocialLoginButtons } from "@/components/auth/social-login-buttons";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { Container } from "@/components/layout/container";
 import { ThemeToggle } from "@/components/theme/toggle";
 import { Button } from "@/components/ui/button";
@@ -12,6 +15,8 @@ import {
   type Locale,
   withLocalePath,
 } from "@/lib/i18n/config";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { hasSupabasePublicEnv } from "@/lib/supabase/env";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { SITE_NAV_ITEMS } from "@/lib/site/navigation";
 import { cn } from "@/lib/utils/cn";
@@ -20,6 +25,50 @@ type HeaderProps = {
   locale: Locale;
   dictionary: Dictionary;
 };
+
+function getNicknameFromUser(user: User | null): string {
+  if (!user) {
+    return "";
+  }
+
+  const metadata = user.user_metadata ?? {};
+  const candidates = [
+    metadata.full_name,
+    metadata.name,
+    metadata.user_name,
+    metadata.preferred_username,
+    metadata.nickname,
+  ];
+
+  for (const item of candidates) {
+    if (typeof item === "string" && item.trim()) {
+      return item.trim();
+    }
+  }
+
+  if (user.email) {
+    return user.email.split("@")[0] ?? "";
+  }
+
+  return "";
+}
+
+function getAvatarFromUser(user: User | null): string {
+  if (!user) {
+    return "";
+  }
+
+  const metadata = user.user_metadata ?? {};
+  const candidates = [metadata.avatar_url, metadata.picture];
+
+  for (const item of candidates) {
+    if (typeof item === "string" && item.trim()) {
+      return item.trim();
+    }
+  }
+
+  return "";
+}
 
 function LanguageSwitcher({
   locale,
@@ -62,52 +111,73 @@ function LanguageSwitcher({
   );
 }
 
-function BrandLogo({
-  locale,
-  title,
-  subtitle,
-}: {
-  locale: Locale;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <Link
-      href={withLocalePath(locale, "/")}
-      className="group inline-flex items-center gap-2.5 rounded-xl border border-border/80 bg-linear-to-br from-surface to-surface/70 px-2.5 py-1.5 text-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
-    >
-      <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background font-mono text-[10px] font-bold">
-        {"</>"}
-        <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-accent">
-          <span className="absolute inset-0 rounded-full bg-accent/70 animate-ping" />
-        </span>
-      </span>
-      <span className="flex flex-col leading-none">
-        <span className="bg-linear-to-r from-foreground to-foreground/65 bg-clip-text text-sm font-semibold tracking-tight text-transparent">
-          {title}
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent/90">
-          {subtitle}
-        </span>
-      </span>
-    </Link>
-  );
-}
-
 export function Header({ locale, dictionary }: HeaderProps) {
   const pathname = usePathname();
   const currentPath = getPathWithoutLocale(pathname);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAuthAvailable] = useState<boolean>(() => hasSupabasePublicEnv());
+  const [user, setUser] = useState<User | null>(null);
+
+  const nickname = useMemo(() => getNicknameFromUser(user), [user]);
+  const avatarUrl = useMemo(() => getAvatarFromUser(user), [user]);
 
   useEffect(() => {
-    if (!isMobileMenuOpen) {
+    if (!isAuthAvailable) {
+      return;
+    }
+
+    let supabase: ReturnType<typeof getSupabaseBrowserClient> | null = null;
+    let isMounted = true;
+
+    try {
+      supabase = getSupabaseBrowserClient();
+    } catch {
+      return;
+    }
+
+    const bootstrap = async () => {
+      if (!supabase) {
+        return;
+      }
+
+      const { data } = await supabase.auth.getUser();
+
+      if (!isMounted) {
+        return;
+      }
+
+      setUser(data.user ?? null);
+    };
+
+    bootstrap();
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      isMounted = false;
+      data.subscription.unsubscribe();
+    };
+  }, [isAuthAvailable]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen && !isAuthModalOpen) {
       return;
     }
 
     const onKeydown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsMobileMenuOpen(false);
+      if (event.key !== "Escape") {
+        return;
       }
+
+      if (isAuthModalOpen) {
+        setIsAuthModalOpen(false);
+        return;
+      }
+
+      setIsMobileMenuOpen(false);
     };
 
     const originalOverflow = document.body.style.overflow;
@@ -118,18 +188,26 @@ export function Header({ locale, dictionary }: HeaderProps) {
       document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", onKeydown);
     };
-  }, [isMobileMenuOpen]);
+  }, [isAuthModalOpen, isMobileMenuOpen]);
+
+  const onSignOut = async () => {
+    const supabase = getSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    setIsAuthModalOpen(false);
+  };
+
+  const authNextPath = pathname || withLocalePath(locale, "/");
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 shadow-[0_2px_20px_rgba(15,118,110,0.05)] backdrop-blur-md">
-      <Container className="flex h-16 items-center justify-between gap-4">
+      <Container className="flex h-16 items-center justify-between gap-3 sm:gap-4">
         <BrandLogo
-          locale={locale}
+          href={withLocalePath(locale, "/")}
           title={dictionary.header.brandTitle}
           subtitle={dictionary.header.brandSubtitle}
         />
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-2.5 lg:flex">
           <LanguageSwitcher locale={locale} currentPath={currentPath} dictionary={dictionary} />
           <nav aria-label={dictionary.header.mainNavigationAria} className="flex items-center gap-1.5">
             {SITE_NAV_ITEMS.map((item) => {
@@ -157,10 +235,31 @@ export function Header({ locale, dictionary }: HeaderProps) {
               );
             })}
           </nav>
+          <Button
+            variant="outline"
+            size="sm"
+            aria-label={dictionary.header.openAuthModalLabel}
+            onClick={() => setIsAuthModalOpen(true)}
+            className="h-9 px-3"
+          >
+            {user ? nickname || dictionary.header.authSignInCta : dictionary.header.authSignInCta}
+          </Button>
           <ThemeToggle labels={dictionary.theme} />
         </div>
 
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex items-center gap-2 lg:hidden">
+          <Button
+            variant="outline"
+            size="sm"
+            aria-label={dictionary.header.openAuthModalLabel}
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              setIsAuthModalOpen(true);
+            }}
+            className="h-9 w-9 px-0"
+          >
+            <span className="text-xs font-semibold">{user ? (nickname.slice(0, 1) || "U") : "U"}</span>
+          </Button>
           <ThemeToggle labels={dictionary.theme} />
           <Button
             variant="outline"
@@ -202,13 +301,13 @@ export function Header({ locale, dictionary }: HeaderProps) {
       <div
         aria-hidden={!isMobileMenuOpen}
         className={cn(
-          "fixed inset-0 z-50 bg-foreground/25 backdrop-blur-[2px] transition-opacity duration-300 md:hidden",
+          "fixed inset-0 z-50 bg-foreground/25 backdrop-blur-[2px] transition-opacity duration-300 lg:hidden",
           isMobileMenuOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
         )}
         onClick={() => setIsMobileMenuOpen(false)}
       />
 
-      <div className="pointer-events-none fixed inset-x-0 top-16 z-60 h-[calc(100dvh-4rem)] overflow-x-clip md:hidden">
+      <div className="pointer-events-none fixed inset-x-0 top-16 z-[60] h-[calc(100dvh-4rem)] overflow-x-clip lg:hidden">
         <div
           id="mobile-navigation"
           className={cn(
@@ -252,6 +351,73 @@ export function Header({ locale, dictionary }: HeaderProps) {
           </nav>
         </div>
       </div>
+
+      <div
+        aria-hidden={!isAuthModalOpen}
+        className={cn(
+          "fixed inset-0 z-[70] bg-foreground/35 backdrop-blur-[2px] transition-opacity duration-300",
+          isAuthModalOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+        )}
+        onClick={() => setIsAuthModalOpen(false)}
+      />
+
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={dictionary.header.authTitle}
+        className={cn(
+          "fixed left-1/2 top-1/2 z-[80] w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl transition-all duration-300",
+          isAuthModalOpen
+            ? "pointer-events-auto scale-100 opacity-100"
+            : "pointer-events-none scale-95 opacity-0",
+        )}
+      >
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">{dictionary.header.authTitle}</h2>
+            <p className="text-sm text-muted">{dictionary.header.authDescription}</p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label={dictionary.header.closeAuthModalLabel}
+            onClick={() => setIsAuthModalOpen(false)}
+          >
+            ×
+          </Button>
+        </div>
+
+        {user ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2.5">
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarUrl} alt={nickname || "user"} className="h-9 w-9 rounded-full object-cover" />
+              ) : (
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-sm font-semibold text-foreground">
+                  {(nickname || user.email || "U").slice(0, 1).toUpperCase()}
+                </span>
+              )}
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-foreground">{nickname || user.email}</p>
+                <p className="truncate text-xs text-muted">
+                  {dictionary.header.authSignedInAs} {user.email}
+                </p>
+              </div>
+            </div>
+            <Button type="button" variant="outline" className="w-full" onClick={onSignOut}>
+              {dictionary.header.authSignOut}
+            </Button>
+          </div>
+        ) : !isAuthAvailable ? (
+          <p className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-muted">
+            {dictionary.header.authSupabaseRequired}
+          </p>
+        ) : (
+          <SocialLoginButtons nextPath={authNextPath} variant="public" />
+        )}
+      </aside>
     </header>
   );
 }

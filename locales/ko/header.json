@@ -4,5 +4,13 @@
   "mainNavigationAria": "메인 내비게이션",
   "mobileNavigationAria": "모바일 내비게이션",
   "openMobileMenuLabel": "모바일 메뉴 열기",
-  "closeMobileMenuLabel": "모바일 메뉴 닫기"
+  "closeMobileMenuLabel": "모바일 메뉴 닫기",
+  "openAuthModalLabel": "로그인 모달 열기",
+  "closeAuthModalLabel": "로그인 모달 닫기",
+  "authTitle": "사용자 로그인",
+  "authDescription": "Google, GitHub, Kakao 계정으로 로그인할 수 있습니다.",
+  "authSignedInAs": "현재 로그인:",
+  "authSignOut": "로그아웃",
+  "authSignInCta": "로그인",
+  "authSupabaseRequired": "로그인을 위해 Supabase 환경변수 설정이 필요합니다."
 }

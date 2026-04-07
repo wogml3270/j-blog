@@ -1,6 +1,6 @@
 import type { TocItem } from "@/types/content";
 
-type TableOfContentsProps = {
+interface TableOfContentsProps {
   items: TocItem[];
   title: string;
 };

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { SITE_CONFIG } from "@/lib/site/profile";
 
 type ContactPayload = {
   name: string;
@@ -34,7 +35,7 @@ function parseBody(body: unknown): ContactPayload | null {
 
 async function sendContactNotification(payload: ContactPayload) {
   const apiKey = process.env.RESEND_API_KEY;
-  const toEmail = process.env.SITE_CONTACT_TO_EMAIL;
+  const toEmail = process.env.SITE_CONTACT_TO_EMAIL ?? SITE_CONFIG.email;
 
   if (!apiKey || !toEmail) {
     return;

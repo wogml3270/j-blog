@@ -50,7 +50,7 @@
 
 ## 6) DB/운영 문서화
 - Supabase 초기 스키마 및 RLS 정책 SQL을 추가했습니다.
-  - `supabase/schema.sql`
+  - `supabase/schema-v1.0.0.sql`
 - 초기 데이터 이관 스크립트를 추가했습니다.
   - `scripts/seed-supabase.mjs`
   - `npm run seed:supabase`

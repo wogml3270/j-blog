@@ -6,20 +6,74 @@ import {
   getAdminProjects,
   type AdminProjectInput,
 } from "@/lib/projects/repository";
-import type { ProjectLinks } from "@/types/content";
+import type { ProjectLinkItem, ProjectLinks } from "@/types/content";
 
 function toLinks(value: unknown): ProjectLinks {
+  const normalize = (items: ProjectLinkItem[]): ProjectLinks => {
+    const seen = new Set<string>();
+    const next: ProjectLinks = [];
+
+    for (const item of items) {
+      const label = item.label.trim();
+      const url = item.url.trim();
+
+      if (!label || !url) {
+        continue;
+      }
+
+      const key = `${label}::${url}`;
+
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      next.push({ label, url });
+    }
+
+    return next;
+  };
+
+  if (Array.isArray(value)) {
+    return normalize(
+      value
+        .filter((item) => item && typeof item === "object")
+        .map((item) => {
+          const raw = item as Record<string, unknown>;
+
+          return {
+            label: typeof raw.label === "string" ? raw.label : "",
+            url: typeof raw.url === "string" ? raw.url : "",
+          };
+        }),
+    );
+  }
+
   if (!value || typeof value !== "object") {
-    return {};
+    return [];
   }
 
   const raw = value as Record<string, unknown>;
+  const legacy: ProjectLinkItem[] = [];
 
-  return {
-    live: typeof raw.live === "string" ? raw.live : undefined,
-    repo: typeof raw.repo === "string" ? raw.repo : undefined,
-    detail: typeof raw.detail === "string" ? raw.detail : undefined,
-  };
+  for (const [key, maybeUrl] of Object.entries(raw)) {
+    if (typeof maybeUrl !== "string") {
+      continue;
+    }
+
+    const url = maybeUrl.trim();
+
+    if (!url) {
+      continue;
+    }
+
+    const label =
+      key === "live" ? "Live" : key === "repo" ? "Repository" : key === "detail" ? "Case Study" : key;
+
+    legacy.push({ label, url });
+  }
+
+  return normalize(legacy);
 }
 
 function parseBody(body: unknown): AdminProjectInput | null {
@@ -34,8 +88,7 @@ function parseBody(body: unknown): AdminProjectInput | null {
     typeof source.title !== "string" ||
     typeof source.summary !== "string" ||
     typeof source.thumbnail !== "string" ||
-    typeof source.role !== "string" ||
-    typeof source.period !== "string"
+    typeof source.role !== "string"
   ) {
     return null;
   }
@@ -48,7 +101,15 @@ function parseBody(body: unknown): AdminProjectInput | null {
     summary: source.summary.trim(),
     thumbnail: source.thumbnail.trim(),
     role: source.role.trim(),
-    period: source.period.trim(),
+    period: typeof source.period === "string" ? source.period.trim() : undefined,
+    startDate:
+      typeof source.startDate === "string" && source.startDate.trim()
+        ? source.startDate.trim()
+        : null,
+    endDate:
+      typeof source.endDate === "string" && source.endDate.trim()
+        ? source.endDate.trim()
+        : null,
     techStack: Array.isArray(source.techStack)
       ? source.techStack.map((item) => String(item).trim()).filter(Boolean)
       : [],

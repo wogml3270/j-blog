@@ -9,11 +9,12 @@ export type TocItem = {
   level: 2 | 3 | 4;
 };
 
-export type ProjectLinks = {
-  live?: string;
-  repo?: string;
-  detail?: string;
+export type ProjectLinkItem = {
+  label: string;
+  url: string;
 };
+
+export type ProjectLinks = ProjectLinkItem[];
 
 export type Project = {
   id?: string;
@@ -23,6 +24,8 @@ export type Project = {
   thumbnail: string;
   role: string;
   period: string;
+  startDate?: string | null;
+  endDate?: string | null;
   techStack: string[];
   achievements: string[];
   contributions: string[];
@@ -48,6 +51,7 @@ export type BlogPostSummary = {
   title: string;
   description: string;
   date: string;
+  thumbnail?: string | null;
   tags: string[];
   readingTime: string;
 };
@@ -72,6 +76,7 @@ export type AdminPost = {
   slug: string;
   title: string;
   description: string;
+  thumbnail?: string | null;
   bodyMarkdown: string;
   tags: string[];
   readingTime: string;
@@ -88,6 +93,8 @@ export type AdminProject = {
   thumbnail: string;
   role: string;
   period: string;
+  startDate?: string | null;
+  endDate?: string | null;
   techStack: string[];
   achievements: string[];
   contributions: string[];
@@ -102,10 +109,25 @@ export type ProfileContent = {
   name: string;
   title: string;
   summary: string;
+  techStack: string[];
+  aboutIntroDescriptionKo: string;
   aboutExperience: string;
   strengths: string[];
   workStyle: string;
   status: PublishStatus;
+  updatedAt: string;
+};
+
+export type ContactMessageStatus = "new" | "read" | "replied";
+
+export type ContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: ContactMessageStatus;
+  createdAt: string;
   updatedAt: string;
 };
 

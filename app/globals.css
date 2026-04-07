@@ -127,6 +127,12 @@ html[data-theme-transition="active"] .locale-root * {
   .ui-skeleton-animated::after {
     animation: none;
   }
+
+  .ui-strong-motion,
+  .ui-strong-motion * {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
 }
 
 a {
@@ -176,4 +182,13 @@ a {
   margin-top: 2rem;
   margin-bottom: 2rem;
   border-color: var(--border);
+}
+
+.swiper-pagination-bullet {
+  background: color-mix(in srgb, var(--foreground) 35%, transparent) !important;
+  opacity: 1 !important;
+}
+
+.swiper-pagination-bullet-active {
+  background: var(--foreground) !important;
 }

@@ -20,6 +20,7 @@ create table if not exists public.posts (
   slug text not null unique,
   title text not null,
   description text not null,
+  thumbnail text,
   body_markdown text not null,
   reading_time text not null default '1분',
   status public.publish_status not null default 'draft',
@@ -50,6 +51,8 @@ create table if not exists public.projects (
   thumbnail text not null,
   role text not null,
   period text not null,
+  start_date date,
+  end_date date,
   tech_stack jsonb not null default '[]'::jsonb,
   achievements jsonb not null default '[]'::jsonb,
   contributions jsonb not null default '[]'::jsonb,
@@ -65,6 +68,7 @@ create table if not exists public.profile_content (
   name text not null,
   title text not null,
   summary text not null,
+  tech_stack jsonb not null default '[]'::jsonb,
   about_experience text not null,
   strengths jsonb not null default '[]'::jsonb,
   work_style text not null,
@@ -73,6 +77,36 @@ create table if not exists public.profile_content (
   updated_at timestamptz not null default timezone('utc', now()),
   constraint profile_content_singleton check (id = 1)
 );
+
+alter table public.profile_content alter column name set default '';
+alter table public.profile_content alter column title set default '';
+alter table public.profile_content alter column summary set default '';
+alter table public.profile_content alter column about_experience set default '';
+alter table public.profile_content alter column work_style set default '';
+
+insert into public.profile_content (
+  id,
+  name,
+  title,
+  summary,
+  tech_stack,
+  about_experience,
+  strengths,
+  work_style,
+  status
+)
+values (
+  1,
+  '',
+  '',
+  '',
+  '[]'::jsonb,
+  '',
+  '[]'::jsonb,
+  '',
+  'draft'
+)
+on conflict (id) do nothing;
 
 create table if not exists public.comments (
   id uuid primary key default gen_random_uuid(),
@@ -323,6 +357,15 @@ alter table public.comments add column if not exists author_email text;
 alter table public.comments add column if not exists author_nickname text;
 alter table public.comments add column if not exists author_avatar_url text;
 
+alter table public.profile_content add column if not exists tech_stack jsonb default '[]'::jsonb;
+update public.profile_content set tech_stack = coalesce(tech_stack, '[]'::jsonb);
+alter table public.profile_content alter column tech_stack set not null;
+
+alter table public.projects add column if not exists start_date date;
+alter table public.projects add column if not exists end_date date;
+
+alter table public.posts add column if not exists thumbnail text;
+
 update public.comments
 set
   author_email = coalesce(nullif(author_email, ''), 'unknown@example.com'),
@@ -331,3 +374,7 @@ where author_email is null or author_email = '' or author_nickname is null or au
 
 alter table public.comments alter column author_email set not null;
 alter table public.comments alter column author_nickname set not null;
+
+insert into storage.buckets (id, name, public)
+values ('project-thumbnails', 'project-thumbnails', true)
+on conflict (id) do nothing;

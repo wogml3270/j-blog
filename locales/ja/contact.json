@@ -1,0 +1,19 @@
+{
+  "fabLabel": "お問い合わせ",
+  "openAriaLabel": "お問い合わせフォームを開く",
+  "closeAriaLabel": "お問い合わせフォームを閉じる",
+  "title": "お問い合わせ",
+  "description": "内容を送信いただければ確認後ご連絡します。",
+  "nameLabel": "お名前",
+  "emailLabel": "メールアドレス",
+  "subjectLabel": "件名",
+  "messageLabel": "内容",
+  "namePlaceholder": "お名前を入力してください",
+  "emailPlaceholder": "you@example.com",
+  "subjectPlaceholder": "件名を入力してください",
+  "messagePlaceholder": "お問い合わせ内容を入力してください",
+  "submitLabel": "送信",
+  "submittingLabel": "送信中...",
+  "successMessage": "お問い合わせを受け付けました。",
+  "errorMessage": "送信に失敗しました。しばらくして再度お試しください。"
+}

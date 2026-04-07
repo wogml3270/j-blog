@@ -2,13 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { SocialLoginButtons } from "@/components/auth/social-login-buttons";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { hasSupabasePublicEnv } from "@/lib/supabase/env";
 import type { BlogComment } from "@/types/content";
 
-type CommentsLabels = {
+interface CommentsLabels {
   title: string;
   description: string;
   signedInAs: string;
@@ -26,24 +25,17 @@ type CommentsLabels = {
   loginRequired: string;
 };
 
-type CommentsSectionProps = {
+interface CommentsSectionProps {
   postSlug: string;
-  nextPath: string;
   labels: CommentsLabels;
   initialComments: BlogComment[];
 };
 
-type CommentFormState = {
-  email: string;
-  nickname: string;
-  avatarUrl: string;
+interface CommentFormState {
   content: string;
 };
 
 const EMPTY_FORM: CommentFormState = {
-  email: "",
-  nickname: "",
-  avatarUrl: "",
   content: "",
 };
 
@@ -109,69 +101,69 @@ function toDisplayDate(value: string): string {
 
 export function CommentsSection({
   postSlug,
-  nextPath,
   labels,
   initialComments,
 }: CommentsSectionProps) {
   const [comments, setComments] = useState<BlogComment[]>(initialComments);
   const [user, setUser] = useState<User | null>(null);
+  const [isAuthAvailable] = useState<boolean>(() => hasSupabasePublicEnv());
   const [form, setForm] = useState<CommentFormState>(EMPTY_FORM);
   const [isPending, setIsPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const nickname = useMemo(() => getNicknameFromUser(user), [user]);
+  const avatarUrl = useMemo(() => getAvatarFromUser(user), [user]);
+  const email = user?.email ?? "";
+
   const authLabel = useMemo(() => {
-    if (!user?.email) {
+    if (!email) {
       return "";
     }
 
-    return `${labels.signedInAs} ${user.email}`;
-  }, [labels.signedInAs, user?.email]);
+    return `${labels.signedInAs} ${email}`;
+  }, [email, labels.signedInAs]);
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
+    if (!isAuthAvailable) {
+      return;
+    }
+
+    let supabase: ReturnType<typeof getSupabaseBrowserClient> | null = null;
 
     let isMounted = true;
 
+    try {
+      supabase = getSupabaseBrowserClient();
+    } catch {
+      return;
+    }
+
     const bootstrap = async () => {
-      const {
-        data: { user: initialUser },
-      } = await supabase.auth.getUser();
+      if (!supabase) {
+        return;
+      }
+
+      const { data } = await supabase.auth.getUser();
 
       if (!isMounted) {
         return;
       }
 
-      setUser(initialUser ?? null);
+      setUser(data.user ?? null);
     };
 
     bootstrap();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
+      data.subscription.unsubscribe();
     };
-  }, []);
-
-  useEffect(() => {
-    if (!user) {
-      setForm(EMPTY_FORM);
-      return;
-    }
-
-    setForm((prev) => ({
-      ...prev,
-      email: prev.email || user.email || "",
-      nickname: prev.nickname || getNicknameFromUser(user),
-      avatarUrl: prev.avatarUrl || getAvatarFromUser(user),
-    }));
-  }, [user]);
+  }, [isAuthAvailable]);
 
   const onSignOut = async () => {
     const supabase = getSupabaseBrowserClient();
@@ -184,7 +176,7 @@ export function CommentsSection({
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!user) {
+    if (!user || !email) {
       setErrorMessage(labels.loginRequired);
       return;
     }
@@ -201,9 +193,9 @@ export function CommentsSection({
         },
         body: JSON.stringify({
           postSlug,
-          email: form.email,
-          nickname: form.nickname,
-          avatarUrl: form.avatarUrl || undefined,
+          email,
+          nickname: nickname || email.split("@")[0] || "user",
+          avatarUrl: avatarUrl || undefined,
           content: form.content,
         }),
       });
@@ -218,10 +210,7 @@ export function CommentsSection({
       }
 
       setComments((prev) => [...prev, payload.comment as BlogComment]);
-      setForm((prev) => ({
-        ...prev,
-        content: "",
-      }));
+      setForm(EMPTY_FORM);
       setMessage(labels.success);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "요청 중 오류가 발생했습니다.");
@@ -231,74 +220,51 @@ export function CommentsSection({
   };
 
   return (
-    <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 sm:p-6">
-      <header className="space-y-1">
-        <h2 className="text-xl font-semibold tracking-tight text-foreground">{labels.title}</h2>
+    <section className="space-y-3 rounded-xl border border-border bg-surface p-3.5 sm:p-4">
+      <header className="space-y-0.5">
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">{labels.title}</h2>
         <p className="text-sm text-muted">{labels.description}</p>
       </header>
 
       {user ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2">
-          <p className="text-sm text-muted">{authLabel}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background px-2.5 py-2">
+          <div className="flex min-w-0 items-center gap-2">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt={nickname || "user"} className="h-7 w-7 rounded-full object-cover" />
+            ) : (
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-[11px] font-semibold text-foreground">
+                {(nickname || email || "U").slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-foreground">{nickname || email}</p>
+              <p className="truncate text-xs text-muted">{authLabel}</p>
+            </div>
+          </div>
           <Button type="button" size="sm" variant="ghost" onClick={onSignOut}>
             {labels.signOut}
           </Button>
         </div>
+      ) : !isAuthAvailable ? (
+        <div className="rounded-lg border border-border bg-background px-2.5 py-2">
+          <p className="text-sm text-muted">댓글 로그인을 위한 Supabase 설정이 필요합니다.</p>
+        </div>
       ) : (
-        <div className="space-y-2 rounded-lg border border-border bg-background p-3">
-          <p className="text-sm text-muted">{labels.signInHint}</p>
-          <SocialLoginButtons nextPath={nextPath} variant="public" />
+        <div className="rounded-lg border border-border bg-background px-2.5 py-2">
+          <p className="text-sm text-muted">
+            {labels.signInHint} (헤더의 로그인 버튼을 이용해주세요)
+          </p>
         </div>
       )}
 
-      <form className="space-y-3" onSubmit={onSubmit}>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="space-y-1">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted">
-              {labels.emailLabel}
-            </span>
-            <Input
-              type="email"
-              value={form.email}
-              onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-              placeholder="you@example.com"
-              required
-              disabled={!user || isPending}
-            />
-          </label>
-
-          <label className="space-y-1">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted">
-              {labels.nicknameLabel}
-            </span>
-            <Input
-              value={form.nickname}
-              onChange={(event) => setForm((prev) => ({ ...prev, nickname: event.target.value }))}
-              placeholder="닉네임"
-              required
-              disabled={!user || isPending}
-            />
-          </label>
-        </div>
-
-        <label className="space-y-1">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted">
-            {labels.avatarLabel}
-          </span>
-          <Input
-            value={form.avatarUrl}
-            onChange={(event) => setForm((prev) => ({ ...prev, avatarUrl: event.target.value }))}
-            placeholder="https://example.com/avatar.png"
-            disabled={!user || isPending}
-          />
-        </label>
-
+      <form className="space-y-2.5" onSubmit={onSubmit}>
         <label className="space-y-1">
           <span className="text-xs font-medium uppercase tracking-wide text-muted">
             {labels.contentLabel}
           </span>
           <textarea
-            className="min-h-[120px] w-full rounded-md border border-border bg-background p-3 text-sm text-foreground placeholder:text-muted focus-visible:outline-none"
+            className="min-h-[78px] w-full rounded-md border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted focus-visible:outline-none"
             value={form.content}
             onChange={(event) => setForm((prev) => ({ ...prev, content: event.target.value }))}
             placeholder={labels.contentPlaceholder}
@@ -307,7 +273,7 @@ export function CommentsSection({
           />
         </label>
 
-        <Button type="submit" className="w-full sm:w-auto" disabled={!user || isPending}>
+        <Button type="submit" size="sm" className="w-full sm:w-auto" disabled={!user || !isAuthAvailable || isPending}>
           {isPending ? labels.submitting : labels.submit}
         </Button>
       </form>
@@ -315,34 +281,34 @@ export function CommentsSection({
       {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
       {errorMessage ? <p className="text-sm text-red-500">{errorMessage}</p> : null}
 
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {comments.length > 0 ? (
           comments.map((comment) => (
-            <article key={comment.id} className="rounded-lg border border-border bg-background p-4">
-              <div className="mb-2 flex items-center gap-3">
+            <article key={comment.id} className="rounded-lg border border-border bg-background p-2.5">
+              <div className="mb-1.5 flex items-center gap-2">
                 {comment.authorAvatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={comment.authorAvatarUrl}
                     alt={comment.authorNickname}
-                    className="h-9 w-9 rounded-full border border-border object-cover"
+                    className="h-7 w-7 rounded-full border border-border object-cover"
                     loading="lazy"
                   />
                 ) : (
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-sm font-semibold text-foreground">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-[11px] font-semibold text-foreground">
                     {comment.authorNickname.slice(0, 1)}
                   </span>
                 )}
                 <div>
                   <p className="text-sm font-semibold text-foreground">{comment.authorNickname}</p>
-                  <p className="text-xs text-muted">{toDisplayDate(comment.createdAt)}</p>
+                  <p className="text-[11px] text-muted">{toDisplayDate(comment.createdAt)}</p>
                 </div>
               </div>
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{comment.content}</p>
             </article>
           ))
         ) : (
-          <p className="rounded-lg border border-dashed border-border bg-background px-4 py-6 text-center text-sm text-muted">
+          <p className="rounded-lg border border-dashed border-border bg-background px-4 py-4 text-center text-sm text-muted">
             {labels.empty}
           </p>
         )}

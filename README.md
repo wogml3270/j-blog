@@ -27,7 +27,8 @@ npm run dev
 
 Supabase SQL Editor에서 아래 파일을 실행합니다.
 
-- `supabase/schema.sql`
+- 최초 1회: `supabase/schema-v1.0.0.sql`
+- 이후 증분: `supabase/schema-v1.0.1.sql` -> `supabase/schema-v1.0.2.sql` 순서로 적용
 
 적용 후 `admin_allowlist`에 기본 슈퍼관리자(`wogml3270@gmail.com`)가 등록됩니다.
 
@@ -58,7 +59,7 @@ npm run seed:supabase
 
 - 공개 사이트: `/{lang}` (`ko`, `en`, `ja`)
 - 관리자 로그인: `/admin/login`
-- 관리자 화면: `/admin`, `/admin/posts`, `/admin/projects`, `/admin/profile`
+- 관리자 화면: `/admin/dashboard`, `/admin/home`, `/admin/about`, `/admin/projects`, `/admin/blog`, `/admin/contact`
 - OAuth 콜백: `/auth/callback`
 
 ## 품질 체크

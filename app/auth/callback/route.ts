@@ -3,11 +3,11 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function toSafeNextPath(raw: string | null): string {
   if (!raw) {
-    return "/admin";
+    return "/admin/dashboard";
   }
 
   if (!raw.startsWith("/") || raw.startsWith("//")) {
-    return "/admin";
+    return "/admin/dashboard";
   }
 
   return raw;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { EditorDrawer } from "@/components/admin/editor-drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,16 @@ import type { AdminPost, PublishStatus } from "@/types/content";
 
 type PostsManagerProps = {
   initialPosts: AdminPost[];
+  initialSelectedId?: string | null;
 };
+
+type ThumbnailInputMode = "url" | "upload";
 
 type PostFormState = {
   slug: string;
   title: string;
   description: string;
+  thumbnail: string;
   status: PublishStatus;
   publishedAt: string;
   readingTime: string;
@@ -27,6 +31,7 @@ const EMPTY_FORM: PostFormState = {
   slug: "",
   title: "",
   description: "",
+  thumbnail: "",
   status: "published",
   publishedAt: "",
   readingTime: "",
@@ -53,6 +58,7 @@ function toFormState(post: AdminPost): PostFormState {
     slug: post.slug,
     title: post.title,
     description: post.description,
+    thumbnail: post.thumbnail ?? "",
     status: post.status,
     publishedAt: toDateInputValue(post.publishedAt),
     readingTime: post.readingTime,
@@ -86,22 +92,35 @@ function toDisplayDate(value: string | null): string {
 function statusBadge(status: PublishStatus): string {
   return status === "published"
     ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-    : "bg-amber-500/15 text-amber-700 dark:text-amber-300";
+    : "bg-slate-500/15 text-slate-700 dark:text-slate-300";
 }
 
-export function PostsManager({ initialPosts }: PostsManagerProps) {
+function toStatusLabel(status: PublishStatus): string {
+  return status === "published" ? "공개" : "비공개";
+}
+
+export function PostsManager({
+  initialPosts,
+  initialSelectedId = null,
+}: PostsManagerProps) {
   const [posts, setPosts] = useState<AdminPost[]>(initialPosts);
   const [form, setForm] = useState<PostFormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [thumbnailMode, setThumbnailMode] = useState<ThumbnailInputMode>("url");
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const hasAppliedInitialSelection = useRef(false);
 
   const previewHtml = useMemo(() => renderMarkdownToHtml(form.bodyMarkdown), [form.bodyMarkdown]);
 
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setThumbnailMode("url");
+    setThumbnailFile(null);
     setMessage(null);
     setDrawerOpen(true);
   };
@@ -109,6 +128,8 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
   const openEdit = (post: AdminPost) => {
     setEditingId(post.id);
     setForm(toFormState(post));
+    setThumbnailMode("url");
+    setThumbnailFile(null);
     setMessage(null);
     setDrawerOpen(true);
   };
@@ -124,6 +145,47 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
     setPosts(payload.posts ?? []);
   };
 
+  const onUploadThumbnail = async () => {
+    if (!thumbnailFile) {
+      setMessage("업로드할 이미지 파일을 선택해주세요.");
+      return;
+    }
+
+    setIsUploadingThumbnail(true);
+    setMessage(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", thumbnailFile);
+      formData.append("scope", "posts");
+
+      const response = await fetch("/api/admin/media/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? "썸네일 업로드에 실패했습니다.");
+      }
+
+      const payload = (await response.json()) as { url?: string };
+
+      if (!payload.url) {
+        throw new Error("업로드된 썸네일 URL을 확인할 수 없습니다.");
+      }
+
+      setForm((prev) => ({ ...prev, thumbnail: payload.url ?? "" }));
+      setThumbnailFile(null);
+      setThumbnailMode("url");
+      setMessage("썸네일 업로드가 완료되었습니다.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "썸네일 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setIsUploadingThumbnail(false);
+    }
+  };
+
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsPending(true);
@@ -134,6 +196,7 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
         slug: form.slug,
         title: form.title,
         description: form.description,
+        thumbnail: form.thumbnail.trim() || null,
         status: form.status,
         publishedAt: form.publishedAt || null,
         readingTime: form.readingTime,
@@ -159,6 +222,8 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
       setDrawerOpen(false);
       setEditingId(null);
       setForm(EMPTY_FORM);
+      setThumbnailMode("url");
+      setThumbnailFile(null);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "요청 중 오류가 발생했습니다.");
     } finally {
@@ -196,9 +261,24 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
     }
   };
 
+  useEffect(() => {
+    if (hasAppliedInitialSelection.current || !initialSelectedId) {
+      return;
+    }
+
+    const target = posts.find((item) => item.id === initialSelectedId);
+
+    if (!target) {
+      return;
+    }
+
+    openEdit(target);
+    hasAppliedInitialSelection.current = true;
+  }, [initialSelectedId, posts]);
+
   return (
     <>
-      <section className="mx-auto w-full max-w-4xl space-y-4">
+      <section className="mx-auto w-full space-y-4">
         <header className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3">
           <div>
             <p className="text-sm text-muted">전체 게시글 {posts.length}개</p>
@@ -219,11 +299,16 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
                   className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-foreground/5"
                 >
                   <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", statusBadge(post.status))}>
-                    {post.status}
+                    {toStatusLabel(post.status)}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                     {post.title}
                   </span>
+                  {post.thumbnail ? (
+                    <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs text-foreground">
+                      썸네일
+                    </span>
+                  ) : null}
                   <span className="hidden text-xs text-muted sm:inline">{post.slug}</span>
                   <span className="text-xs text-muted">{toDisplayDate(post.publishedAt)}</span>
                 </button>
@@ -263,17 +348,79 @@ export function PostsManager({ initialPosts }: PostsManagerProps) {
             required
           />
 
+          <div className="space-y-2 rounded-lg border border-border bg-background p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">썸네일 (선택)</p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant={thumbnailMode === "url" ? "solid" : "ghost"}
+                size="sm"
+                onClick={() => setThumbnailMode("url")}
+              >
+                외부 링크
+              </Button>
+              <Button
+                type="button"
+                variant={thumbnailMode === "upload" ? "solid" : "ghost"}
+                size="sm"
+                onClick={() => setThumbnailMode("upload")}
+              >
+                파일 업로드
+              </Button>
+            </div>
+
+            {thumbnailMode === "url" ? (
+              <Input
+                value={form.thumbnail}
+                onChange={(event) => setForm((prev) => ({ ...prev, thumbnail: event.target.value }))}
+                placeholder="https://... 또는 비워두기"
+              />
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => setThumbnailFile(event.target.files?.[0] ?? null)}
+                  className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
+                />
+                <Button
+                  type="button"
+                  onClick={onUploadThumbnail}
+                  disabled={isUploadingThumbnail || !thumbnailFile}
+                >
+                  {isUploadingThumbnail ? "업로드 중..." : "업로드 후 적용"}
+                </Button>
+              </div>
+            )}
+            <p className="truncate text-xs text-muted">
+              현재 썸네일: {form.thumbnail || "설정 안 함"}
+            </p>
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-3">
-            <select
-              className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-              value={form.status}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, status: event.target.value as PublishStatus }))
-              }
-            >
-              <option value="published">published</option>
-              <option value="draft">draft</option>
-            </select>
+            <fieldset className="rounded-md border border-border bg-background px-3 py-2">
+              <legend className="px-1 text-xs text-muted">공개 상태</legend>
+              <div className="mt-1 flex flex-wrap gap-3 text-sm">
+                <label className="inline-flex cursor-pointer items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="post-status"
+                    checked={form.status === "published"}
+                    onChange={() => setForm((prev) => ({ ...prev, status: "published" }))}
+                  />
+                  공개
+                </label>
+                <label className="inline-flex cursor-pointer items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="post-status"
+                    checked={form.status === "draft"}
+                    onChange={() => setForm((prev) => ({ ...prev, status: "draft" }))}
+                  />
+                  비공개
+                </label>
+              </div>
+            </fieldset>
             <Input
               type="date"
               value={form.publishedAt}

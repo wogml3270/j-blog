@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 
-type EditorDrawerProps = {
+interface EditorDrawerProps {
   open: boolean;
   title: string;
   description?: string;

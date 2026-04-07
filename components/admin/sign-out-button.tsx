@@ -3,8 +3,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { cn } from "@/lib/utils/cn";
 
-export function SignOutButton() {
+type SignOutButtonProps = {
+  className?: string;
+};
+
+export function SignOutButton({ className }: SignOutButtonProps) {
   const [pending, setPending] = useState(false);
 
   const onSignOut = async () => {
@@ -22,7 +27,7 @@ export function SignOutButton() {
       type="button"
       variant="outline"
       size="sm"
-      className="w-full"
+      className={cn(className)}
       onClick={onSignOut}
       disabled={pending}
     >

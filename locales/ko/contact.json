@@ -1,0 +1,19 @@
+{
+  "fabLabel": "문의",
+  "openAriaLabel": "문의 폼 열기",
+  "closeAriaLabel": "문의 폼 닫기",
+  "title": "문의 보내기",
+  "description": "필요한 내용을 남겨주시면 확인 후 답변드릴게요.",
+  "nameLabel": "이름",
+  "emailLabel": "이메일",
+  "subjectLabel": "제목",
+  "messageLabel": "내용",
+  "namePlaceholder": "이름을 입력하세요",
+  "emailPlaceholder": "you@example.com",
+  "subjectPlaceholder": "문의 제목을 입력하세요",
+  "messagePlaceholder": "문의 내용을 입력하세요",
+  "submitLabel": "전송",
+  "submittingLabel": "전송 중...",
+  "successMessage": "문의가 접수되었습니다.",
+  "errorMessage": "문의 전송에 실패했습니다. 잠시 후 다시 시도해주세요."
+}

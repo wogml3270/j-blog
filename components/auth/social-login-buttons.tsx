@@ -20,7 +20,7 @@ const providerItems: Array<{ key: SocialProvider; label: string }> = [
 ];
 
 export function SocialLoginButtons({
-  nextPath = "/admin",
+  nextPath = "/admin/dashboard",
   variant = "admin",
   className,
 }: SocialLoginButtonsProps) {

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { getAdminState } from "@/lib/auth/admin";
+import { Container } from "@/components/layout/container";
 
 export default async function AdminProtectedLayout({
   children,
@@ -14,9 +15,9 @@ export default async function AdminProtectedLayout({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-5 px-4 py-6 sm:px-6 lg:flex-row lg:items-start lg:px-8">
+    <Container className="mx-auto flex w-full flex-col gap-4 py-4 sm:gap-5 sm:py-6 xl:flex-row xl:items-start">
       <AdminSidebar email={state.email} />
       <section className="min-w-0 flex-1">{children}</section>
-    </div>
+    </Container>
   );
 }

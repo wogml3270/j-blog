@@ -111,27 +111,13 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
       <section className="space-y-3">
         <SectionTitle title={dictionary.projects.relatedLinks} />
         <ul className="flex flex-wrap gap-3 text-sm">
-          {project.links.live ? (
-            <li>
-              <a href={project.links.live} target="_blank" rel="noreferrer" className="underline">
-                {dictionary.projects.live}
+          {project.links.map((item) => (
+            <li key={`${item.label}-${item.url}`}>
+              <a href={item.url} target="_blank" rel="noreferrer" className="underline">
+                {item.label}
               </a>
             </li>
-          ) : null}
-          {project.links.repo ? (
-            <li>
-              <a href={project.links.repo} target="_blank" rel="noreferrer" className="underline">
-                {dictionary.projects.repository}
-              </a>
-            </li>
-          ) : null}
-          {project.links.detail ? (
-            <li>
-              <a href={project.links.detail} target="_blank" rel="noreferrer" className="underline">
-                {dictionary.projects.caseStudy}
-              </a>
-            </li>
-          ) : null}
+          ))}
         </ul>
       </section>
     </article>

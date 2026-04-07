@@ -5,6 +5,8 @@ import {
   Noto_Sans_KR,
   Plus_Jakarta_Sans,
 } from "next/font/google";
+import "swiper/css";
+import "swiper/css/pagination";
 import { ThemeProvider } from "@/components/theme/provider";
 import { defaultLocale, isLocale, localeInfo } from "@/lib/i18n/config";
 import { SITE_CONFIG, getSiteCopy } from "@/lib/site/profile";

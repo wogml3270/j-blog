@@ -95,6 +95,18 @@ const profile = {
   title: "Frontend Developer (3년차)",
   summary:
     "사용자 경험과 유지보수성을 함께 개선하는 프론트엔드 개발자입니다. 제품의 목적과 사용자 맥락을 이해하고, 안정적인 UI 아키텍처를 만드는 데 집중합니다.",
+  about_intro_description_ko:
+    "사용자 중심 UI 구현과 유지보수 가능한 구조 설계를 중요하게 생각합니다.",
+  tech_stack: [
+    "TypeScript",
+    "React",
+    "Next.js",
+    "Tailwind CSS",
+    "TanStack Query",
+    "Zustand",
+    "Vitest",
+    "Playwright",
+  ],
   about_experience:
     "3년 동안 B2B SaaS와 컨슈머 서비스를 모두 경험하며, 데이터 밀집형 대시보드와 콘텐츠 플랫폼의 UI를 설계하고 운영했습니다.",
   strengths: [

@@ -32,6 +32,8 @@ function parseBody(body: unknown): AdminPostInput | null {
     slug: source.slug.trim(),
     title: source.title.trim(),
     description: source.description.trim(),
+    thumbnail:
+      typeof source.thumbnail === "string" ? source.thumbnail.trim() || null : null,
     bodyMarkdown: source.bodyMarkdown,
     readingTime: typeof source.readingTime === "string" ? source.readingTime : undefined,
     status,
