@@ -1,26 +1,15 @@
-import { ProjectsManager } from "@/components/admin/projects-manager";
+import { ProjectsManager } from "@/components/admin/projects/projects-manager";
 import { getAdminProjects } from "@/lib/projects/repository";
+import { pickSingleQueryValue } from "@/lib/utils/search-params";
 
 type AdminProjectsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function pickQueryValue(value: string | string[] | undefined): string | null {
-  if (typeof value === "string") {
-    return value;
-  }
-
-  if (Array.isArray(value) && typeof value[0] === "string") {
-    return value[0];
-  }
-
-  return null;
-}
-
 export default async function AdminProjectsPage({ searchParams }: AdminProjectsPageProps) {
   const projects = await getAdminProjects();
   const query = await searchParams;
-  const initialSelectedId = pickQueryValue(query.id);
+  const initialSelectedId = pickSingleQueryValue(query.id);
 
   return (
     <main className="space-y-5">

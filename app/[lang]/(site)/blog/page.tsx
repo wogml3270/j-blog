@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BlogCard } from "@/components/blog/card";
-import { SectionTitle } from "@/components/ui/section-title";
+import { ContentListLayout } from "@/components/ui/content-list-layout";
 import { getAllPublishedPosts } from "@/lib/blog/repository";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -39,16 +39,14 @@ export default async function BlogListPage({ params }: BlogListPageProps) {
   const posts = await getAllPublishedPosts();
 
   return (
-    <div className="space-y-8">
-      <SectionTitle
-        title={dictionary.blog.listTitle}
-        description={dictionary.blog.listDescription}
-      />
-      <div className="grid gap-4 md:grid-cols-2">
-        {posts.map((post) => (
-          <BlogCard key={post.slug} post={post} locale={lang} />
-        ))}
-      </div>
-    </div>
+    <ContentListLayout
+      title={dictionary.blog.listTitle}
+      description={dictionary.blog.listDescription}
+      listClassName="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4"
+    >
+      {posts.map((post) => (
+        <BlogCard key={post.slug} post={post} locale={lang} />
+      ))}
+    </ContentListLayout>
   );
 }

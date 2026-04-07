@@ -8,7 +8,7 @@ import {
   getAllPosts as getFallbackPosts,
   getPostBySlug as getFallbackPostBySlug,
 } from "@/lib/blog/registry";
-import { estimateReadingTime, extractTocFromMarkdown } from "@/lib/blog/markdown";
+import { extractTocFromMarkdown } from "@/lib/blog/markdown";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 type PostRow = {
@@ -18,7 +18,6 @@ type PostRow = {
   description: string;
   thumbnail: string | null;
   body_markdown: string;
-  reading_time: string | null;
   status: PublishStatus;
   published_at: string | null;
   updated_at: string;
@@ -31,7 +30,6 @@ export type AdminPostInput = {
   description: string;
   thumbnail?: string | null;
   bodyMarkdown: string;
-  readingTime?: string;
   status: PublishStatus;
   publishedAt?: string | null;
   tags: string[];
@@ -43,7 +41,7 @@ type RepoResult<T> = {
 };
 
 const POST_SELECT_FIELDS =
-  "id,slug,title,description,thumbnail,body_markdown,reading_time,status,published_at,updated_at,post_tag_map(post_tags(name))";
+  "id,slug,title,description,thumbnail,body_markdown,status,published_at,updated_at,post_tag_map(post_tags(name))";
 
 function normalizeTags(tags: string[]): string[] {
   return [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
@@ -91,7 +89,6 @@ function relationToTagNames(value: unknown): string[] {
 
 function rowToSummary(row: PostRow): BlogPostSummary {
   const date = row.published_at ?? row.updated_at;
-  const readingTime = row.reading_time || estimateReadingTime(row.body_markdown, "ko");
 
   return {
     id: row.id,
@@ -101,7 +98,6 @@ function rowToSummary(row: PostRow): BlogPostSummary {
     thumbnail: row.thumbnail,
     date,
     tags: relationToTagNames(row.post_tag_map),
-    readingTime,
   };
 }
 
@@ -113,7 +109,6 @@ function rowToAdminPost(row: PostRow): AdminPost {
     description: row.description,
     thumbnail: row.thumbnail,
     bodyMarkdown: row.body_markdown,
-    readingTime: row.reading_time || estimateReadingTime(row.body_markdown, "ko"),
     tags: relationToTagNames(row.post_tag_map),
     status: row.status,
     publishedAt: row.published_at,
@@ -201,7 +196,6 @@ function fallbackPostList(): BlogPostSummary[] {
     description: item.meta.description,
     date: item.meta.date,
     tags: item.meta.tags,
-    readingTime: item.meta.readingTime,
   }));
 }
 
@@ -249,7 +243,6 @@ export async function getPublishedPostBySlug(slug: string): Promise<BlogPostDeta
       thumbnail: null,
       date: fallback.meta.date,
       tags: fallback.meta.tags,
-      readingTime: fallback.meta.readingTime,
       toc: fallback.meta.toc,
       Component: fallback.Component,
       status: "published",
@@ -280,7 +273,6 @@ export async function getPublishedPostBySlug(slug: string): Promise<BlogPostDeta
       thumbnail: null,
       date: fallback.meta.date,
       tags: fallback.meta.tags,
-      readingTime: fallback.meta.readingTime,
       toc: fallback.meta.toc,
       Component: fallback.Component,
       status: "published",
@@ -340,7 +332,6 @@ export async function createAdminPost(
     };
   }
 
-  const readingTime = input.readingTime?.trim() || estimateReadingTime(input.bodyMarkdown, "ko");
   const normalizedStatus: PublishStatus = input.status === "published" ? "published" : "draft";
 
   const { data, error } = await service
@@ -351,7 +342,6 @@ export async function createAdminPost(
       description: input.description,
       thumbnail: input.thumbnail?.trim() || null,
       body_markdown: input.bodyMarkdown,
-      reading_time: readingTime,
       status: normalizedStatus,
       published_at: normalizePublishedAt(normalizedStatus, input.publishedAt),
       created_by: userId,
@@ -387,7 +377,6 @@ export async function updateAdminPost(
     };
   }
 
-  const readingTime = input.readingTime?.trim() || estimateReadingTime(input.bodyMarkdown, "ko");
   const normalizedStatus: PublishStatus = input.status === "published" ? "published" : "draft";
 
   const { error } = await service
@@ -398,7 +387,6 @@ export async function updateAdminPost(
       description: input.description,
       thumbnail: input.thumbnail?.trim() || null,
       body_markdown: input.bodyMarkdown,
-      reading_time: readingTime,
       status: normalizedStatus,
       published_at: normalizePublishedAt(normalizedStatus, input.publishedAt),
     })

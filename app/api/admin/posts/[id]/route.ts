@@ -39,7 +39,6 @@ function parseBody(body: unknown): AdminPostInput | null {
     thumbnail:
       typeof source.thumbnail === "string" ? source.thumbnail.trim() || null : null,
     bodyMarkdown: source.bodyMarkdown,
-    readingTime: typeof source.readingTime === "string" ? source.readingTime : undefined,
     status,
     publishedAt: typeof source.publishedAt === "string" ? source.publishedAt : null,
     tags,

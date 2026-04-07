@@ -18,9 +18,14 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useRef, useState } from "react";
-import { EditorDrawer } from "@/components/admin/editor-drawer";
+import { EditorDrawer } from "@/components/admin/common/editor-drawer";
+import { ManagerList, ManagerListRow } from "@/components/admin/common/manager-list";
+import { MarkdownField } from "@/components/admin/common/markdown-field";
+import { ManagerShell } from "@/components/admin/common/manager-shell";
+import { StatusRadioGroup } from "@/components/admin/common/status-radio-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { cn } from "@/lib/utils/cn";
 import type { AdminProject, ProjectLinkItem, ProjectLinks, PublishStatus } from "@/types/content";
 
@@ -276,6 +281,7 @@ export function ProjectsManager({
   const [form, setForm] = useState<ProjectFormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [thumbnailMode, setThumbnailMode] = useState<ThumbnailInputMode>("url");
+  const [useSummaryEditor, setUseSummaryEditor] = useState(false);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -295,6 +301,7 @@ export function ProjectsManager({
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setUseSummaryEditor(false);
     setThumbnailMode("url");
     setThumbnailFile(null);
     setMessage(null);
@@ -304,12 +311,14 @@ export function ProjectsManager({
   const openEdit = (project: AdminProject) => {
     setEditingId(project.id);
     setForm(toFormState(project));
+    setUseSummaryEditor(false);
     setThumbnailMode("url");
     setThumbnailFile(null);
     setMessage(null);
     setDrawerOpen(true);
   };
 
+  // 저장/삭제 직후 목록 상태를 서버 기준으로 동기화한다.
   const loadProjects = async () => {
     const response = await fetch("/api/admin/projects", { method: "GET" });
 
@@ -450,6 +459,12 @@ export function ProjectsManager({
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!form.summary.trim()) {
+      setMessage("프로젝트 요약을 입력해주세요.");
+      return;
+    }
+
     setIsPending(true);
     setMessage(null);
 
@@ -493,6 +508,7 @@ export function ProjectsManager({
       setDrawerOpen(false);
       setEditingId(null);
       setForm(EMPTY_FORM);
+      setUseSummaryEditor(false);
       setThumbnailMode("url");
       setThumbnailFile(null);
     } catch (error) {
@@ -523,6 +539,7 @@ export function ProjectsManager({
         setDrawerOpen(false);
         setEditingId(null);
         setForm(EMPTY_FORM);
+        setUseSummaryEditor(false);
       }
       setMessage("프로젝트를 삭제했습니다.");
     } catch (error) {
@@ -533,6 +550,7 @@ export function ProjectsManager({
   };
 
   useEffect(() => {
+    // 대시보드 딥링크(id 쿼리)로 들어온 경우 최초 한 번 대상 프로젝트를 연다.
     if (hasAppliedInitialSelection.current || !initialSelectedId) {
       return;
     }
@@ -549,26 +567,25 @@ export function ProjectsManager({
 
   return (
     <>
-      <section className="ui-strong-motion mx-auto w-full space-y-4">
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3.5">
-          <div>
-            <p className="text-sm text-muted">전체 프로젝트 {projects.length}개</p>
-            <p className="text-xs text-muted">프로젝트를 클릭하면 오른쪽 패널에서 수정할 수 있습니다.</p>
-          </div>
+      <ManagerShell
+        motion
+        summary={`전체 프로젝트 ${projects.length}개`}
+        detail="프로젝트를 클릭하면 오른쪽 패널에서 수정할 수 있습니다."
+        action={
           <Button type="button" onClick={openCreate}>
             새 프로젝트
           </Button>
-        </header>
-
-        <ul className="overflow-hidden rounded-xl border border-border bg-surface">
-          {projects.length > 0 ? (
-            projects.map((project) => (
-              <li key={project.id} className="border-b border-border last:border-b-0">
-                <button
-                  type="button"
-                  onClick={() => openEdit(project)}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:bg-foreground/5"
-                >
+        }
+        message={message}
+      >
+        <ManagerList hasItems={projects.length > 0} emptyLabel="아직 프로젝트가 없습니다.">
+          {projects.map((project) => (
+            <ManagerListRow
+              key={project.id}
+              onClick={() => openEdit(project)}
+              className="transition-all duration-300 hover:-translate-y-0.5"
+            >
+              <>
                   <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", statusBadge(project.status))}>
                     {toStatusLabel(project.status)}
                   </span>
@@ -581,16 +598,11 @@ export function ProjectsManager({
                       추천
                     </span>
                   ) : null}
-                </button>
-              </li>
-            ))
-          ) : (
-            <li className="px-4 py-8 text-center text-sm text-muted">아직 프로젝트가 없습니다.</li>
-          )}
-        </ul>
-
-        {message ? <p className="text-sm text-muted">{message}</p> : null}
-      </section>
+              </>
+            </ManagerListRow>
+          ))}
+        </ManagerList>
+      </ManagerShell>
 
       <EditorDrawer
         open={drawerOpen}
@@ -611,14 +623,18 @@ export function ProjectsManager({
             placeholder="제목"
             required
           />
-          <Input
+          <MarkdownField
+            label="요약"
             value={form.summary}
-            onChange={(event) => setForm((prev) => ({ ...prev, summary: event.target.value }))}
+            onChange={(value) => setForm((prev) => ({ ...prev, summary: value }))}
+            useEditor={useSummaryEditor}
+            onToggleEditor={setUseSummaryEditor}
             placeholder="요약"
             required
+            minHeight={180}
           />
 
-          <div className="space-y-2 rounded-lg border border-border bg-background p-3.5">
+          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">썸네일 입력 방식</p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -667,7 +683,7 @@ export function ProjectsManager({
             <p className="truncate text-xs text-muted">
               현재 썸네일: {form.thumbnail || "설정되지 않음"}
             </p>
-          </div>
+          </SurfaceCard>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
@@ -693,29 +709,17 @@ export function ProjectsManager({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <fieldset className="rounded-md border border-border bg-background px-3 py-2">
-              <legend className="px-1 text-xs text-muted">공개 상태</legend>
-              <div className="mt-1 flex flex-wrap gap-3 text-sm">
-                <label className="inline-flex cursor-pointer items-center gap-1.5">
-                  <input
-                    type="radio"
-                    name="project-status"
-                    checked={form.status === "published"}
-                    onChange={() => setForm((prev) => ({ ...prev, status: "published" }))}
-                  />
-                  공개
-                </label>
-                <label className="inline-flex cursor-pointer items-center gap-1.5">
-                  <input
-                    type="radio"
-                    name="project-status"
-                    checked={form.status === "draft"}
-                    onChange={() => setForm((prev) => ({ ...prev, status: "draft" }))}
-                  />
-                  비공개
-                </label>
-              </div>
-            </fieldset>
+            <StatusRadioGroup
+              legend="공개 상태"
+              name="project-status"
+              value={form.status}
+              options={[
+                { value: "published", label: "공개" },
+                { value: "draft", label: "비공개" },
+              ]}
+              onChange={(value) => setForm((prev) => ({ ...prev, status: value as PublishStatus }))}
+              className="rounded-md px-3 py-2"
+            />
             <label className="inline-flex h-12 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
               <input
                 type="checkbox"
@@ -726,7 +730,7 @@ export function ProjectsManager({
             </label>
           </div>
 
-          <div className="space-y-2 rounded-lg border border-border bg-background p-3.5">
+          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">기술 스택</p>
             <div className="flex items-center gap-2">
               <Input
@@ -767,9 +771,9 @@ export function ProjectsManager({
                 <p className="text-xs text-muted">아직 추가된 기술 스택이 없습니다.</p>
               )}
             </div>
-          </div>
+          </SurfaceCard>
 
-          <div className="space-y-2 rounded-lg border border-border bg-background p-3.5">
+          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">성과</p>
             <div className="flex items-center gap-2">
               <Input
@@ -814,9 +818,9 @@ export function ProjectsManager({
                 </ul>
               </SortableContext>
             </DndContext>
-          </div>
+          </SurfaceCard>
 
-          <div className="space-y-2 rounded-lg border border-border bg-background p-3.5">
+          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">주요 기여</p>
             <div className="flex items-center gap-2">
               <Input
@@ -861,9 +865,9 @@ export function ProjectsManager({
                 </ul>
               </SortableContext>
             </DndContext>
-          </div>
+          </SurfaceCard>
 
-          <div className="space-y-2 rounded-lg border border-border bg-background p-3.5">
+          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">관련 링크</p>
             <div className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
               <Input
@@ -916,11 +920,11 @@ export function ProjectsManager({
                 </ul>
               </SortableContext>
             </DndContext>
-          </div>
+          </SurfaceCard>
 
           <div className="flex gap-2">
             <Button type="submit" className="flex-1" disabled={isPending}>
-              {isPending ? "저장 중..." : editingId ? "수정 저장" : "프로젝트 생성"}
+              {isPending ? "저장 중..." : editingId ? "저장" : "프로젝트 생성"}
             </Button>
             {editingId ? (
               <Button type="button" variant="ghost" onClick={() => onDelete(editingId)} disabled={isPending}>

@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ManagerShell } from "@/components/admin/common/manager-shell";
+import { StatusRadioGroup } from "@/components/admin/common/status-radio-group";
 import { Button } from "@/components/ui/button";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { cn } from "@/lib/utils/cn";
 import type { ProfileContent, PublishStatus } from "@/types/content";
 
@@ -63,6 +66,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
   const isDirty = serializeForm(form) !== serializeForm(savedForm);
 
+  // 소개 섹션은 KO DB 값을 기준으로 저장하므로 문자열 정규화를 서버 요청 전에 수행한다.
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsPending(true);
@@ -102,22 +106,26 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
   };
 
   return (
-    <section className="ui-strong-motion mx-auto w-full space-y-4">
-      <header className="rounded-2xl border border-border bg-surface px-4 py-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+    <ManagerShell
+      motion
+      summary="소개 페이지 콘텐츠를 관리합니다."
+      detail="KO 소개 문구는 DB에서 관리되고, EN/JA는 locale 문구를 유지합니다."
+    >
+      <SurfaceCard
+        tone="surface"
+        radius="2xl"
+        padding="md"
+        interactive
+        className="space-y-4 sm:p-5"
+      >
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-muted">소개 페이지 콘텐츠를 관리합니다.</p>
           <span className={cn("rounded-full border px-2.5 py-1 text-xs font-semibold", statusBadge(form.status))}>
             {toStatusLabel(form.status)}
           </span>
         </div>
-        <p className="mt-1 text-xs text-muted">KO 소개 문구는 DB에서 관리되고, EN/JA는 locale 문구를 유지합니다.</p>
-      </header>
 
-      <form
-        className="space-y-4 rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-sm transition-all duration-300 hover:shadow-md"
-        onSubmit={onSubmit}
-      >
-        <section className="space-y-2 rounded-xl border border-border bg-background p-3 sm:p-4">
+        <form className="space-y-4" onSubmit={onSubmit}>
+        <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-2 sm:p-4">
           <div className="space-y-1">
             <h3 className="text-sm font-semibold text-foreground">About</h3>
             <p className="text-xs text-muted">소개 상단 문구와 본문 설명을 관리합니다.</p>
@@ -136,9 +144,9 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
             placeholder="소개 경험 문단"
             required
           />
-        </section>
+        </SurfaceCard>
 
-        <section className="space-y-2 rounded-xl border border-border bg-background p-3 sm:p-4">
+        <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-2 sm:p-4">
           <div className="space-y-1">
             <h3 className="text-sm font-semibold text-foreground">핵심 역량</h3>
             <p className="text-xs text-muted">한 줄에 한 항목씩 입력하세요.</p>
@@ -149,9 +157,9 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
             className="min-h-[112px] w-full rounded-md border border-border bg-surface p-3 text-sm transition-colors focus:border-foreground/30"
             placeholder="강점 (줄바꿈 구분)"
           />
-        </section>
+        </SurfaceCard>
 
-        <section className="space-y-2 rounded-xl border border-border bg-background p-3 sm:p-4">
+        <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-2 sm:p-4">
           <div className="space-y-1">
             <h3 className="text-sm font-semibold text-foreground">작업 방식</h3>
             <p className="text-xs text-muted">협업 스타일과 전달 방식을 설명합니다.</p>
@@ -163,31 +171,19 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
             placeholder="업무 스타일"
             required
           />
-        </section>
+        </SurfaceCard>
 
-        <fieldset className="rounded-xl border border-border bg-background p-3 sm:p-4">
-          <legend className="px-1 text-xs font-medium text-muted">공개 상태</legend>
-          <div className="mt-2 flex flex-wrap gap-3">
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm">
-              <input
-                type="radio"
-                name="about-status"
-                checked={form.status === "published"}
-                onChange={() => setForm((prev) => ({ ...prev, status: "published" }))}
-              />
-              공개
-            </label>
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm">
-              <input
-                type="radio"
-                name="about-status"
-                checked={form.status === "draft"}
-                onChange={() => setForm((prev) => ({ ...prev, status: "draft" }))}
-              />
-              비공개
-            </label>
-          </div>
-        </fieldset>
+        <StatusRadioGroup
+          legend="공개 상태"
+          name="about-status"
+          value={form.status}
+          options={[
+            { value: "published", label: "공개" },
+            { value: "draft", label: "비공개" },
+          ]}
+          onChange={(value) => setForm((prev) => ({ ...prev, status: value as PublishStatus }))}
+          className="sm:p-4"
+        />
 
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span
@@ -204,7 +200,8 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
             {isPending ? "저장 중..." : "소개 저장"}
           </Button>
         </div>
-      </form>
+        </form>
+      </SurfaceCard>
 
       {notice ? (
         <p
@@ -217,6 +214,6 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
           {notice.text}
         </p>
       ) : null}
-    </section>
+    </ManagerShell>
   );
 }

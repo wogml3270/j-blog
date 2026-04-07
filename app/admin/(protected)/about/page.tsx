@@ -1,4 +1,4 @@
-import { AboutManager } from "@/components/admin/about-manager";
+import { AboutManager } from "@/components/admin/about/about-manager";
 import { getAdminProfileContent } from "@/lib/profile/repository";
 
 export default async function AdminAboutPage() {

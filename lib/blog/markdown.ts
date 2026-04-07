@@ -1,4 +1,3 @@
-import type { Locale } from "@/lib/i18n/config";
 import type { TocItem } from "@/types/content";
 
 function escapeHtml(value: string): string {
@@ -25,6 +24,7 @@ function formatInline(markdown: string): string {
 
   return escaped
     .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/~~([^~]+)~~/g, "<s>$1</s>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>")
     .replace(
@@ -63,24 +63,19 @@ export function extractTocFromMarkdown(markdown: string): TocItem[] {
   return toc;
 }
 
-export function estimateReadingTime(markdown: string, locale: Locale = "ko"): string {
-  const normalized = markdown.replace(/```[\s\S]*?```/g, " ").replace(/<[^>]+>/g, " ");
-  const wordCount = normalized
-    .split(/\s+/)
-    .map((token) => token.trim())
-    .filter(Boolean).length;
-
-  const minutes = Math.max(1, Math.ceil(wordCount / 220));
-
-  if (locale === "ko") {
-    return `${minutes}분`;
-  }
-
-  if (locale === "ja") {
-    return `${minutes}分`;
-  }
-
-  return `${minutes} min read`;
+export function stripMarkdownToPlainText(markdown: string): string {
+  return markdown
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/!\[[^\]]*]\(([^)]+)\)/g, " ")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/[*_~>]/g, "")
+    .replace(/\r?\n+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function renderMarkdownToHtml(markdown: string): string {
@@ -89,6 +84,8 @@ export function renderMarkdownToHtml(markdown: string): string {
 
   let paragraphBuffer: string[] = [];
   let listBuffer: string[] = [];
+  let listType: "ul" | "ol" | null = null;
+  let quoteBuffer: string[] = [];
   let codeBlockBuffer: string[] = [];
   let isCodeBlock = false;
 
@@ -102,13 +99,25 @@ export function renderMarkdownToHtml(markdown: string): string {
   };
 
   const flushList = () => {
-    if (listBuffer.length === 0) {
+    if (listBuffer.length === 0 || !listType) {
       return;
     }
 
     const items = listBuffer.map((item) => `<li>${formatInline(item)}</li>`).join("");
-    chunks.push(`<ul>${items}</ul>`);
+    chunks.push(`<${listType}>${items}</${listType}>`);
     listBuffer = [];
+    listType = null;
+  };
+
+  const flushQuote = () => {
+    if (quoteBuffer.length === 0) {
+      return;
+    }
+
+    chunks.push(
+      `<blockquote><p>${quoteBuffer.map((line) => formatInline(line)).join("<br />")}</p></blockquote>`,
+    );
+    quoteBuffer = [];
   };
 
   const flushCodeBlock = () => {
@@ -123,10 +132,12 @@ export function renderMarkdownToHtml(markdown: string): string {
 
   for (const rawLine of lines) {
     const line = rawLine.trimEnd();
+    const collapsed = line.replace(/\s+/g, "");
 
     if (line.startsWith("```")) {
       flushParagraph();
       flushList();
+      flushQuote();
 
       if (isCodeBlock) {
         flushCodeBlock();
@@ -143,11 +154,20 @@ export function renderMarkdownToHtml(markdown: string): string {
       continue;
     }
 
-    const headingMatch = line.match(/^(#{2,4})\s+(.+)$/);
+    if (collapsed === "***" || collapsed === "---" || collapsed === "___") {
+      flushParagraph();
+      flushList();
+      flushQuote();
+      chunks.push("<hr />");
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
 
     if (headingMatch) {
       flushParagraph();
       flushList();
+      flushQuote();
 
       const level = headingMatch[1].length;
       const text = headingMatch[2].trim();
@@ -157,25 +177,48 @@ export function renderMarkdownToHtml(markdown: string): string {
       continue;
     }
 
-    const listMatch = line.match(/^-\s+(.+)$/);
+    const unorderedListMatch = line.match(/^\s*[-*+]\s+(.+)$/);
+    const orderedListMatch = line.match(/^\s*\d+\.\s+(.+)$/);
 
-    if (listMatch) {
+    if (unorderedListMatch || orderedListMatch) {
       flushParagraph();
-      listBuffer.push(listMatch[1]);
+
+      const nextListType = orderedListMatch ? "ol" : "ul";
+
+      if (listType && listType !== nextListType) {
+        flushList();
+      }
+
+      flushQuote();
+      listType = nextListType;
+      listBuffer.push((orderedListMatch ?? unorderedListMatch)?.[1] ?? "");
+      continue;
+    }
+
+    const quoteMatch = line.match(/^\s*>\s?(.*)$/);
+
+    if (quoteMatch) {
+      flushParagraph();
+      flushList();
+      quoteBuffer.push(quoteMatch[1]);
       continue;
     }
 
     if (line.trim().length === 0) {
       flushParagraph();
       flushList();
+      flushQuote();
       continue;
     }
 
+    flushList();
+    flushQuote();
     paragraphBuffer.push(line.trim());
   }
 
   flushParagraph();
   flushList();
+  flushQuote();
 
   if (isCodeBlock) {
     flushCodeBlock();

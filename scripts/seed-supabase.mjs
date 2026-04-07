@@ -236,7 +236,6 @@ async function seedPostsFromMdx() {
           title: metadata.title,
           description: metadata.description,
           body_markdown: markdown,
-          reading_time: metadata.readingTime ?? "5분",
           status: "published",
           published_at: metadata.date,
         },

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { getAdminPosts } from "@/lib/blog/repository";
 import { getAdminContactMessages } from "@/lib/contact/repository";
 import { getAdminProfileContent } from "@/lib/profile/repository";
@@ -23,6 +24,7 @@ function formatDate(value: string | null): string {
 }
 
 export default async function AdminDashboardPage() {
+  // 대시보드는 서로 독립적인 데이터 소스를 병렬 로딩해 초기 응답 시간을 줄인다.
   const [posts, projects, profile, contacts] = await Promise.all([
     getAdminPosts(),
     getAdminProjects(),
@@ -87,7 +89,7 @@ export default async function AdminDashboardPage() {
         </Link>
       </div>
 
-      <section className="rounded-xl border border-border bg-surface p-4">
+      <SurfaceCard tone="surface" padding="md">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">지금 확인할 항목</h2>
         <ul className="mt-3 space-y-2 text-sm">
           {newContactsCount > 0 ? (
@@ -125,10 +127,10 @@ export default async function AdminDashboardPage() {
             <li className="text-muted">지금 즉시 처리할 항목이 없습니다.</li>
           ) : null}
         </ul>
-      </section>
+      </SurfaceCard>
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <section className="rounded-xl border border-border bg-surface p-4">
+        <SurfaceCard tone="surface" padding="md">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">최근 블로그 변경</h2>
             <Link href="/admin/blog" className="text-xs text-foreground underline">
@@ -154,9 +156,9 @@ export default async function AdminDashboardPage() {
               <li className="text-sm text-muted">데이터가 없습니다.</li>
             )}
           </ul>
-        </section>
+        </SurfaceCard>
 
-        <section className="rounded-xl border border-border bg-surface p-4">
+        <SurfaceCard tone="surface" padding="md">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">최근 프로젝트 변경</h2>
             <Link href="/admin/projects" className="text-xs text-foreground underline">
@@ -185,9 +187,9 @@ export default async function AdminDashboardPage() {
               <li className="text-sm text-muted">데이터가 없습니다.</li>
             )}
           </ul>
-        </section>
+        </SurfaceCard>
 
-        <section className="rounded-xl border border-border bg-surface p-4">
+        <SurfaceCard tone="surface" padding="md">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">최근 문의</h2>
             <Link href="/admin/contact" className="text-xs text-foreground underline">
@@ -220,7 +222,7 @@ export default async function AdminDashboardPage() {
               <li className="text-sm text-muted">데이터가 없습니다.</li>
             )}
           </ul>
-        </section>
+        </SurfaceCard>
       </div>
     </main>
   );

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/layout/brand-logo";
-import { SignOutButton } from "@/components/admin/sign-out-button";
+import { SignOutButton } from "@/components/admin/common/sign-out-button";
 import { ThemeToggle } from "@/components/theme/toggle";
 import { cn } from "@/lib/utils/cn";
 

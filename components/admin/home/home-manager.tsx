@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ManagerShell } from "@/components/admin/common/manager-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import type { ProfileContent } from "@/types/content";
 
 type HomeManagerProps = {
@@ -47,6 +49,7 @@ export function HomeManager({ initialHome }: HomeManagerProps) {
 
   const isDirty = serializeForm(form) !== serializeForm(savedForm);
 
+  // 저장 payload를 한 곳에서 정규화해 서버와 클라이언트의 값 차이를 줄인다.
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsPending(true);
@@ -85,19 +88,22 @@ export function HomeManager({ initialHome }: HomeManagerProps) {
   };
 
   return (
-    <section className="ui-strong-motion mx-auto w-full space-y-4">
-      <header className="rounded-2xl border border-border bg-surface px-4 py-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
-        <p className="text-sm text-muted">홈 화면의 히어로/기술스택 데이터를 관리합니다.</p>
-        <p className="mt-1 text-xs text-muted">드로어 없이 이 화면에서 바로 수정/저장할 수 있습니다.</p>
-      </header>
-
-      <form
-        className="space-y-4 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-all duration-300 hover:shadow-md"
-        onSubmit={onSubmit}
+    <ManagerShell
+      motion
+      summary="홈 화면의 히어로/기술스택 데이터를 관리합니다."
+      detail="드로어 없이 이 화면에서 바로 수정/저장할 수 있습니다."
+    >
+      <SurfaceCard
+        tone="surface"
+        radius="2xl"
+        padding="md"
+        interactive
+        className="space-y-4"
       >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Input
-            value={form.name}
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input
+              value={form.name}
             onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
             placeholder="이름"
             required
@@ -139,7 +145,8 @@ export function HomeManager({ initialHome }: HomeManagerProps) {
             {isPending ? "저장 중..." : "홈 저장"}
           </Button>
         </div>
-      </form>
+        </form>
+      </SurfaceCard>
 
       {notice ? (
         <p
@@ -152,6 +159,6 @@ export function HomeManager({ initialHome }: HomeManagerProps) {
           {notice.text}
         </p>
       ) : null}
-    </section>
+    </ManagerShell>
   );
 }

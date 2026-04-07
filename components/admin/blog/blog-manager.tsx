@@ -1,14 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { EditorDrawer } from "@/components/admin/editor-drawer";
+import { EditorDrawer } from "@/components/admin/common/editor-drawer";
+import { ManagerList, ManagerListRow } from "@/components/admin/common/manager-list";
+import { MarkdownField } from "@/components/admin/common/markdown-field";
+import { ManagerShell } from "@/components/admin/common/manager-shell";
+import { StatusRadioGroup } from "@/components/admin/common/status-radio-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { renderMarkdownToHtml } from "@/lib/blog/markdown";
 import { cn } from "@/lib/utils/cn";
 import type { AdminPost, PublishStatus } from "@/types/content";
 
-type PostsManagerProps = {
+type BlogManagerProps = {
   initialPosts: AdminPost[];
   initialSelectedId?: string | null;
 };
@@ -22,7 +27,6 @@ type PostFormState = {
   thumbnail: string;
   status: PublishStatus;
   publishedAt: string;
-  readingTime: string;
   tagsText: string;
   bodyMarkdown: string;
 };
@@ -34,7 +38,6 @@ const EMPTY_FORM: PostFormState = {
   thumbnail: "",
   status: "published",
   publishedAt: "",
-  readingTime: "",
   tagsText: "",
   bodyMarkdown: "",
 };
@@ -61,7 +64,6 @@ function toFormState(post: AdminPost): PostFormState {
     thumbnail: post.thumbnail ?? "",
     status: post.status,
     publishedAt: toDateInputValue(post.publishedAt),
-    readingTime: post.readingTime,
     tagsText: post.tags.join(", "),
     bodyMarkdown: post.bodyMarkdown,
   };
@@ -99,14 +101,15 @@ function toStatusLabel(status: PublishStatus): string {
   return status === "published" ? "공개" : "비공개";
 }
 
-export function PostsManager({
+export function BlogManager({
   initialPosts,
   initialSelectedId = null,
-}: PostsManagerProps) {
+}: BlogManagerProps) {
   const [posts, setPosts] = useState<AdminPost[]>(initialPosts);
   const [form, setForm] = useState<PostFormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [thumbnailMode, setThumbnailMode] = useState<ThumbnailInputMode>("url");
+  const [useMarkdownEditor, setUseMarkdownEditor] = useState(false);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -114,11 +117,13 @@ export function PostsManager({
   const [message, setMessage] = useState<string | null>(null);
   const hasAppliedInitialSelection = useRef(false);
 
+  // 미리보기 HTML은 입력 markdown 변화에만 반응하도록 메모이징한다.
   const previewHtml = useMemo(() => renderMarkdownToHtml(form.bodyMarkdown), [form.bodyMarkdown]);
 
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setUseMarkdownEditor(false);
     setThumbnailMode("url");
     setThumbnailFile(null);
     setMessage(null);
@@ -128,12 +133,14 @@ export function PostsManager({
   const openEdit = (post: AdminPost) => {
     setEditingId(post.id);
     setForm(toFormState(post));
+    setUseMarkdownEditor(false);
     setThumbnailMode("url");
     setThumbnailFile(null);
     setMessage(null);
     setDrawerOpen(true);
   };
 
+  // 저장/삭제 이후 서버 정렬 기준(updated_at)을 반영하기 위해 목록을 재조회한다.
   const loadPosts = async () => {
     const response = await fetch("/api/admin/posts", { method: "GET" });
 
@@ -188,6 +195,12 @@ export function PostsManager({
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!form.bodyMarkdown.trim()) {
+      setMessage("본문을 입력해주세요.");
+      return;
+    }
+
     setIsPending(true);
     setMessage(null);
 
@@ -199,7 +212,6 @@ export function PostsManager({
         thumbnail: form.thumbnail.trim() || null,
         status: form.status,
         publishedAt: form.publishedAt || null,
-        readingTime: form.readingTime,
         tags: parseTags(form.tagsText),
         bodyMarkdown: form.bodyMarkdown,
       };
@@ -222,6 +234,7 @@ export function PostsManager({
       setDrawerOpen(false);
       setEditingId(null);
       setForm(EMPTY_FORM);
+      setUseMarkdownEditor(false);
       setThumbnailMode("url");
       setThumbnailFile(null);
     } catch (error) {
@@ -252,6 +265,7 @@ export function PostsManager({
         setDrawerOpen(false);
         setEditingId(null);
         setForm(EMPTY_FORM);
+        setUseMarkdownEditor(false);
       }
       setMessage("게시글을 삭제했습니다.");
     } catch (error) {
@@ -262,6 +276,7 @@ export function PostsManager({
   };
 
   useEffect(() => {
+    // 대시보드 딥링크(id 쿼리) 진입 시 초기 대상 글을 자동으로 연다.
     if (hasAppliedInitialSelection.current || !initialSelectedId) {
       return;
     }
@@ -278,26 +293,20 @@ export function PostsManager({
 
   return (
     <>
-      <section className="mx-auto w-full space-y-4">
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3">
-          <div>
-            <p className="text-sm text-muted">전체 게시글 {posts.length}개</p>
-            <p className="text-xs text-muted">행을 클릭하면 오른쪽에서 편집 패널이 열립니다.</p>
-          </div>
+      <ManagerShell
+        summary={`전체 게시글 ${posts.length}개`}
+        detail="행을 클릭하면 오른쪽에서 편집 패널이 열립니다."
+        action={
           <Button type="button" onClick={openCreate}>
             새 게시글
           </Button>
-        </header>
-
-        <ul className="overflow-hidden rounded-xl border border-border bg-surface">
-          {posts.length > 0 ? (
-            posts.map((post) => (
-              <li key={post.id} className="border-b border-border last:border-b-0">
-                <button
-                  type="button"
-                  onClick={() => openEdit(post)}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-foreground/5"
-                >
+        }
+        message={message}
+      >
+        <ManagerList hasItems={posts.length > 0} emptyLabel="아직 게시글이 없습니다.">
+          {posts.map((post) => (
+            <ManagerListRow key={post.id} onClick={() => openEdit(post)}>
+              <>
                   <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", statusBadge(post.status))}>
                     {toStatusLabel(post.status)}
                   </span>
@@ -311,16 +320,11 @@ export function PostsManager({
                   ) : null}
                   <span className="hidden text-xs text-muted sm:inline">{post.slug}</span>
                   <span className="text-xs text-muted">{toDisplayDate(post.publishedAt)}</span>
-                </button>
-              </li>
-            ))
-          ) : (
-            <li className="px-4 py-8 text-center text-sm text-muted">아직 게시글이 없습니다.</li>
-          )}
-        </ul>
-
-        {message ? <p className="text-sm text-muted">{message}</p> : null}
-      </section>
+              </>
+            </ManagerListRow>
+          ))}
+        </ManagerList>
+      </ManagerShell>
 
       <EditorDrawer
         open={drawerOpen}
@@ -348,7 +352,7 @@ export function PostsManager({
             required
           />
 
-          <div className="space-y-2 rounded-lg border border-border bg-background p-3">
+          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">썸네일 (선택)</p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -395,41 +399,24 @@ export function PostsManager({
             <p className="truncate text-xs text-muted">
               현재 썸네일: {form.thumbnail || "설정 안 함"}
             </p>
-          </div>
+          </SurfaceCard>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <fieldset className="rounded-md border border-border bg-background px-3 py-2">
-              <legend className="px-1 text-xs text-muted">공개 상태</legend>
-              <div className="mt-1 flex flex-wrap gap-3 text-sm">
-                <label className="inline-flex cursor-pointer items-center gap-1.5">
-                  <input
-                    type="radio"
-                    name="post-status"
-                    checked={form.status === "published"}
-                    onChange={() => setForm((prev) => ({ ...prev, status: "published" }))}
-                  />
-                  공개
-                </label>
-                <label className="inline-flex cursor-pointer items-center gap-1.5">
-                  <input
-                    type="radio"
-                    name="post-status"
-                    checked={form.status === "draft"}
-                    onChange={() => setForm((prev) => ({ ...prev, status: "draft" }))}
-                  />
-                  비공개
-                </label>
-              </div>
-            </fieldset>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <StatusRadioGroup
+              legend="공개 상태"
+              name="post-status"
+              value={form.status}
+              options={[
+                { value: "published", label: "공개" },
+                { value: "draft", label: "비공개" },
+              ]}
+              onChange={(value) => setForm((prev) => ({ ...prev, status: value as PublishStatus }))}
+              className="rounded-md px-3 py-2"
+            />
             <Input
               type="date"
               value={form.publishedAt}
               onChange={(event) => setForm((prev) => ({ ...prev, publishedAt: event.target.value }))}
-            />
-            <Input
-              value={form.readingTime}
-              onChange={(event) => setForm((prev) => ({ ...prev, readingTime: event.target.value }))}
-              placeholder="예: 6분"
             />
           </div>
 
@@ -439,22 +426,31 @@ export function PostsManager({
             placeholder="태그 (쉼표 또는 줄바꿈 구분)"
           />
 
-          <textarea
+          <MarkdownField
+            label="본문"
             value={form.bodyMarkdown}
-            onChange={(event) => setForm((prev) => ({ ...prev, bodyMarkdown: event.target.value }))}
-            className="min-h-[220px] w-full rounded-md border border-border bg-background p-3 text-sm text-foreground"
+            onChange={(value) => setForm((prev) => ({ ...prev, bodyMarkdown: value }))}
+            useEditor={useMarkdownEditor}
+            onToggleEditor={setUseMarkdownEditor}
             placeholder="Markdown 본문"
+            minHeight={320}
             required
           />
 
-          <div className="rounded-xl border border-border bg-background p-3">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">미리보기</p>
-            <div className="prose max-h-[280px] overflow-auto" dangerouslySetInnerHTML={{ __html: previewHtml }} />
-          </div>
+          {useMarkdownEditor ? (
+            <p className="text-xs text-muted">
+              에디터 사용 중에는 상단 에디터의 우측 미리보기가 기준입니다.
+            </p>
+          ) : (
+            <div className="rounded-xl border border-border bg-background p-3">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">미리보기</p>
+              <div className="prose max-h-[280px] overflow-auto" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Button type="submit" className="flex-1" disabled={isPending}>
-              {isPending ? "저장 중..." : editingId ? "수정 저장" : "게시글 생성"}
+              {isPending ? "저장 중..." : editingId ? "저장" : "게시글 생성"}
             </Button>
             {editingId ? (
               <Button type="button" variant="ghost" onClick={() => onDelete(editingId)} disabled={isPending}>

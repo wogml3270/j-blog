@@ -64,8 +64,6 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
       <header className="space-y-4">
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
           <time dateTime={post.date}>{formatDate(post.date, lang)}</time>
-          <span aria-hidden="true">•</span>
-          <span>{post.readingTime}</span>
         </div>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">{post.title}</h1>
         <p className="text-base text-muted">{post.description}</p>

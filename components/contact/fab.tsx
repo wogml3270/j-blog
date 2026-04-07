@@ -175,7 +175,7 @@ export function ContactFab({ labels }: ContactFabProps) {
         aria-modal="true"
         aria-label={labels.title}
         className={cn(
-          "fixed bottom-5 right-5 z-[60] w-[min(92vw,26rem)] rounded-2xl border border-border bg-surface p-4 shadow-2xl transition-all duration-300 sm:bottom-6 sm:right-6",
+          "fixed bottom-5 right-5 z-60 w-[min(92vw,26rem)] rounded-2xl border border-border bg-surface p-4 shadow-2xl transition-all duration-300 sm:bottom-6 sm:right-6",
           open
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none translate-y-6 opacity-0",

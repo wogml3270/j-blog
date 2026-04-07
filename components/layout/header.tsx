@@ -307,7 +307,7 @@ export function Header({ locale, dictionary }: HeaderProps) {
         onClick={() => setIsMobileMenuOpen(false)}
       />
 
-      <div className="pointer-events-none fixed inset-x-0 top-16 z-[60] h-[calc(100dvh-4rem)] overflow-x-clip lg:hidden">
+      <div className="pointer-events-none fixed inset-x-0 top-16 z-60 h-[calc(100dvh-4rem)] overflow-x-clip lg:hidden">
         <div
           id="mobile-navigation"
           className={cn(
@@ -355,7 +355,7 @@ export function Header({ locale, dictionary }: HeaderProps) {
       <div
         aria-hidden={!isAuthModalOpen}
         className={cn(
-          "fixed inset-0 z-[70] bg-foreground/35 backdrop-blur-[2px] transition-opacity duration-300",
+          "fixed inset-0 z-70 bg-foreground/35 backdrop-blur-[2px] transition-opacity duration-300",
           isAuthModalOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
         )}
         onClick={() => setIsAuthModalOpen(false)}
@@ -366,7 +366,7 @@ export function Header({ locale, dictionary }: HeaderProps) {
         aria-modal="true"
         aria-label={dictionary.header.authTitle}
         className={cn(
-          "fixed left-1/2 top-1/2 z-[80] w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl transition-all duration-300",
+          "fixed left-1/2 top-1/2 z-80 w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl transition-all duration-300",
           isAuthModalOpen
             ? "pointer-events-auto scale-100 opacity-100"
             : "pointer-events-none scale-95 opacity-0",

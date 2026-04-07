@@ -1,26 +1,15 @@
-import { ContactManager } from "@/components/admin/contact-manager";
+import { ContactManager } from "@/components/admin/contact/contact-manager";
 import { getAdminContactMessages } from "@/lib/contact/repository";
+import { pickSingleQueryValue } from "@/lib/utils/search-params";
 
 type AdminContactPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function pickQueryValue(value: string | string[] | undefined): string | null {
-  if (typeof value === "string") {
-    return value;
-  }
-
-  if (Array.isArray(value) && typeof value[0] === "string") {
-    return value[0];
-  }
-
-  return null;
-}
-
 export default async function AdminContactPage({ searchParams }: AdminContactPageProps) {
   const contacts = await getAdminContactMessages();
   const query = await searchParams;
-  const initialSelectedId = pickQueryValue(query.id);
+  const initialSelectedId = pickSingleQueryValue(query.id);
 
   return (
     <main className="space-y-5">

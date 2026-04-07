@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MarkdownContent } from "@/components/blog/markdown-content";
 import { ProjectMeta } from "@/components/project/meta";
 import { SectionTitle } from "@/components/ui/section-title";
+import { stripMarkdownToPlainText } from "@/lib/blog/markdown";
 import { isLocale, withLocalePath } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getPublishedProjectBySlug } from "@/lib/projects/repository";
@@ -35,7 +37,7 @@ export async function generateMetadata({
     locale: lang,
     pathname: `/projects/${slug}`,
     title: project.title,
-    description: project.summary,
+    description: stripMarkdownToPlainText(project.summary),
   });
 }
 
@@ -61,7 +63,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         </Link>
         <div className="space-y-3">
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">{project.title}</h1>
-          <p className="text-base text-muted">{project.summary}</p>
+          <MarkdownContent markdown={project.summary} />
         </div>
       </header>
 
@@ -74,7 +76,6 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           className="h-full w-full object-cover"
         />
       </div>
-
       <ProjectMeta
         role={project.role}
         period={project.period}
@@ -83,6 +84,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         periodLabel={dictionary.projects.period}
         techStackLabel={dictionary.projects.techStack}
       />
+
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-3">

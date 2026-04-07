@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProjectCard } from "@/components/project/card";
 import { Button } from "@/components/ui/button";
+import { ContentListLayout } from "@/components/ui/content-list-layout";
 import { Input } from "@/components/ui/input";
-import { SectionTitle } from "@/components/ui/section-title";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getAllPublishedProjects } from "@/lib/projects/repository";
@@ -41,35 +42,35 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
   const projects = await getAllPublishedProjects(lang);
 
   return (
-    <div className="space-y-8">
-      <SectionTitle
-        title={dictionary.projects.listTitle}
-        description={dictionary.projects.listDescription}
-      />
-
-      <form className="grid gap-3 rounded-xl border border-dashed border-border bg-surface p-4 sm:grid-cols-[1fr_auto]">
-        <Input
-          disabled
-          placeholder={dictionary.projects.filterPlaceholder}
-          aria-label={dictionary.projects.filterPlaceholder}
+    <ContentListLayout
+      title={dictionary.projects.listTitle}
+      description={dictionary.projects.listDescription}
+      toolbar={
+        <SurfaceCard tone="surface" dashed padding="md">
+          <form className="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <Input
+              disabled
+              placeholder={dictionary.projects.filterPlaceholder}
+              aria-label={dictionary.projects.filterPlaceholder}
+            />
+            <Button disabled variant="outline">
+              {dictionary.projects.filterButton}
+            </Button>
+          </form>
+        </SurfaceCard>
+      }
+      listClassName="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4"
+    >
+      {projects.map((project) => (
+        <ProjectCard
+          key={project.slug}
+          project={project}
+          locale={lang}
+          detailLabel={dictionary.projects.detailLabel}
+          roleLabel={dictionary.projects.role}
+          periodLabel={dictionary.projects.period}
         />
-        <Button disabled variant="outline">
-          {dictionary.projects.filterButton}
-        </Button>
-      </form>
-
-      <div className="grid gap-5 md:grid-cols-2">
-        {projects.map((project) => (
-          <ProjectCard
-            key={project.slug}
-            project={project}
-            locale={lang}
-            detailLabel={dictionary.projects.detailLabel}
-            roleLabel={dictionary.projects.role}
-            periodLabel={dictionary.projects.period}
-          />
-        ))}
-      </div>
-    </div>
+      ))}
+    </ContentListLayout>
   );
 }

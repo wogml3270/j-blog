@@ -42,7 +42,6 @@ export type BlogPostMeta = {
   date: string;
   tags: string[];
   toc: TocItem[];
-  readingTime: string;
 };
 
 export type BlogPostSummary = {
@@ -53,7 +52,6 @@ export type BlogPostSummary = {
   date: string;
   thumbnail?: string | null;
   tags: string[];
-  readingTime: string;
 };
 
 export type BlogPostDetail = BlogPostSummary & {
@@ -79,7 +77,6 @@ export type AdminPost = {
   thumbnail?: string | null;
   bodyMarkdown: string;
   tags: string[];
-  readingTime: string;
   status: PublishStatus;
   publishedAt: string | null;
   updatedAt: string;
@@ -126,6 +123,7 @@ export type ContactMessage = {
   email: string;
   subject: string;
   message: string;
+  adminNote: string;
   status: ContactMessageStatus;
   createdAt: string;
   updatedAt: string;

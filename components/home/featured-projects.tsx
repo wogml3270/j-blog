@@ -40,7 +40,7 @@ export function FeaturedProjects({
 
       <Swiper
         modules={[Pagination, Keyboard]}
-        className="!pb-10"
+        className="pb-10"
         spaceBetween={18}
         slidesPerView={1}
         keyboard={{ enabled: true }}

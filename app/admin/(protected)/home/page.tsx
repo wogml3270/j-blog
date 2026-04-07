@@ -1,4 +1,4 @@
-import { HomeManager } from "@/components/admin/home-manager";
+import { HomeManager } from "@/components/admin/home/home-manager";
 import { getAdminProfileContent } from "@/lib/profile/repository";
 
 export default async function AdminHomePage() {
