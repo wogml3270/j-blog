@@ -1,7 +1,7 @@
 import FirstPost, { metadata as firstPostMeta } from "@/content/blog/first-post.mdx";
 import SecondPost, { metadata as secondPostMeta } from "@/content/blog/second-post.mdx";
 import ThirdPost, { metadata as thirdPostMeta } from "@/content/blog/third-post.mdx";
-import type { BlogPostMeta, BlogRegistryItem } from "@/types/content";
+import type { BlogPostMeta, BlogRegistryItem } from "@/types/blog";
 
 const posts: BlogRegistryItem[] = [
   { meta: firstPostMeta as BlogPostMeta, Component: FirstPost },

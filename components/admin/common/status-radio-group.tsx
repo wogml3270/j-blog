@@ -1,30 +1,16 @@
 import { cn } from "@/lib/utils/cn";
-
-type StatusOption = {
-  value: string;
-  label: string;
-};
-
-export type StatusRadioGroupProps = {
-  legend: string;
-  name: string;
-  value: string;
-  options: StatusOption[];
-  onChange: (value: string) => void;
-  className?: string;
-};
+import type { StatusRadioGroupProps } from "@/types/ui";
 
 export function StatusRadioGroup({
-  legend,
   name,
   value,
   options,
   onChange,
   className,
 }: StatusRadioGroupProps) {
+  // 상태값 입력은 라디오 그룹으로 통일해 관리자 탭 간 UX 일관성을 유지한다.
   return (
     <fieldset className={cn("rounded-xl border border-border bg-background p-3.5", className)}>
-      <legend className="px-1 text-xs font-medium uppercase tracking-wide text-muted">{legend}</legend>
       <div className="mt-2 flex flex-wrap gap-2.5">
         {options.map((item) => {
           const isChecked = value === item.value;

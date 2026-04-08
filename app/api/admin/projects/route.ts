@@ -3,10 +3,10 @@ import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { revalidateProjectPaths } from "@/lib/cache/revalidate";
 import {
   createAdminProject,
-  getAdminProjects,
-  type AdminProjectInput,
+  getAdminProjectsPaginated,
 } from "@/lib/projects/repository";
-import type { ProjectLinkItem, ProjectLinks } from "@/types/content";
+import { normalizePagination } from "@/lib/utils/pagination";
+import type { AdminProjectInput, ProjectLinkItem, ProjectLinks } from "@/types/projects";
 
 function toLinks(value: unknown): ProjectLinks {
   const normalize = (items: ProjectLinkItem[]): ProjectLinks => {
@@ -99,6 +99,7 @@ function parseBody(body: unknown): AdminProjectInput | null {
     slug: source.slug.trim(),
     title: source.title.trim(),
     summary: source.summary.trim(),
+    useSummaryEditor: Boolean(source.useSummaryEditor),
     thumbnail: source.thumbnail.trim(),
     role: source.role.trim(),
     period: typeof source.period === "string" ? source.period.trim() : undefined,
@@ -125,15 +126,22 @@ function parseBody(body: unknown): AdminProjectInput | null {
   };
 }
 
-export async function GET() {
+// 관리자 프로젝트 목록은 페이지네이션 메타와 함께 반환한다.
+export async function GET(request: Request) {
   const guard = await getAdminGuardForApi();
 
   if (!guard.ok) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
 
-  const projects = await getAdminProjects();
-  return NextResponse.json({ projects });
+  const url = new URL(request.url);
+  const { page, pageSize } = normalizePagination(
+    url.searchParams.get("page"),
+    url.searchParams.get("pageSize"),
+  );
+  const result = await getAdminProjectsPaginated(page, pageSize);
+
+  return NextResponse.json(result);
 }
 
 export async function POST(request: Request) {

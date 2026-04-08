@@ -5,7 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { hasSupabasePublicEnv } from "@/lib/supabase/env";
-import type { BlogComment } from "@/types/content";
+import type { BlogComment } from "@/types/blog";
 
 interface CommentsLabels {
   title: string;

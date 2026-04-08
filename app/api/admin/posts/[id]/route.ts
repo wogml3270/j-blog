@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
 import {
   deleteAdminPost,
-  type AdminPostInput,
   updateAdminPost,
 } from "@/lib/blog/repository";
 import { revalidateBlogPaths } from "@/lib/cache/revalidate";
+import type { AdminPostInput } from "@/types/blog";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -38,7 +38,9 @@ function parseBody(body: unknown): AdminPostInput | null {
     description: source.description.trim(),
     thumbnail:
       typeof source.thumbnail === "string" ? source.thumbnail.trim() || null : null,
+    featured: Boolean(source.featured),
     bodyMarkdown: source.bodyMarkdown,
+    useMarkdownEditor: Boolean(source.useMarkdownEditor),
     status,
     publishedAt: typeof source.publishedAt === "string" ? source.publishedAt : null,
     tags,

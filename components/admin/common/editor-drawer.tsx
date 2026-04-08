@@ -3,14 +3,7 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
-
-interface EditorDrawerProps {
-  open: boolean;
-  title: string;
-  description?: string;
-  onClose: () => void;
-  children: React.ReactNode;
-};
+import type { EditorDrawerProps } from "@/types/ui";
 
 export function EditorDrawer({
   open,
@@ -19,6 +12,7 @@ export function EditorDrawer({
   onClose,
   children,
 }: EditorDrawerProps) {
+  // 드로어가 열린 동안 스크롤/ESC 닫기 동작을 공통 처리한다.
   useEffect(() => {
     if (!open) {
       return;

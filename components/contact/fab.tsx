@@ -4,37 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils/cn";
-
-interface ContactLabels {
-  fabLabel: string;
-  openAriaLabel: string;
-  closeAriaLabel: string;
-  title: string;
-  description: string;
-  nameLabel: string;
-  emailLabel: string;
-  subjectLabel: string;
-  messageLabel: string;
-  namePlaceholder: string;
-  emailPlaceholder: string;
-  subjectPlaceholder: string;
-  messagePlaceholder: string;
-  submitLabel: string;
-  submittingLabel: string;
-  successMessage: string;
-  errorMessage: string;
-};
-
-interface ContactFabProps {
-  labels: ContactLabels;
-};
-
-interface ContactFormState {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-};
+import { usePublicUiStore } from "@/stores/public-ui";
+import type { ContactFabProps, ContactFormState } from "@/types/ui";
 
 const EMPTY_FORM: ContactFormState = {
   name: "",
@@ -44,7 +15,9 @@ const EMPTY_FORM: ContactFormState = {
 };
 
 export function ContactFab({ labels }: ContactFabProps) {
-  const [open, setOpen] = useState(false);
+  const open = usePublicUiStore((state) => state.isContactModalOpen);
+  const openContactModal = usePublicUiStore((state) => state.openContactModal);
+  const closeContactModal = usePublicUiStore((state) => state.closeContactModal);
   const [form, setForm] = useState<ContactFormState>(EMPTY_FORM);
   const [isPending, setIsPending] = useState(false);
   const [notice, setNotice] = useState<{ kind: "success" | "error"; text: string } | null>(null);
@@ -63,7 +36,7 @@ export function ContactFab({ labels }: ContactFabProps) {
 
     const onKeydown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpen(false);
+        closeContactModal();
       }
     };
 
@@ -73,7 +46,7 @@ export function ContactFab({ labels }: ContactFabProps) {
       document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", onKeydown);
     };
-  }, [open]);
+  }, [closeContactModal, open]);
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -103,7 +76,7 @@ export function ContactFab({ labels }: ContactFabProps) {
       setForm(EMPTY_FORM);
       setNotice({ kind: "success", text: labels.successMessage });
       closeTimerRef.current = window.setTimeout(() => {
-        setOpen(false);
+        closeContactModal();
         setNotice(null);
         setFloatingSuccess(labels.successMessage);
         closeTimerRef.current = null;
@@ -136,7 +109,7 @@ export function ContactFab({ labels }: ContactFabProps) {
       <button
         type="button"
         aria-label={labels.openAriaLabel}
-        onClick={() => setOpen(true)}
+        onClick={openContactModal}
         className="fixed bottom-5 right-5 z-50 inline-flex h-12 w-12 items-center justify-center rounded-full border border-border bg-foreground text-background shadow-lg transition-transform hover:-translate-y-0.5 sm:bottom-6 sm:right-6"
       >
         <svg
@@ -167,18 +140,18 @@ export function ContactFab({ labels }: ContactFabProps) {
           "fixed inset-0 z-50 bg-foreground/35 backdrop-blur-[2px] transition-opacity duration-300",
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
         )}
-        onClick={() => setOpen(false)}
+        onClick={closeContactModal}
       />
 
       <aside
         role="dialog"
         aria-modal="true"
         aria-label={labels.title}
-        className={cn(
-          "fixed bottom-5 right-5 z-60 w-[min(92vw,26rem)] rounded-2xl border border-border bg-surface p-4 shadow-2xl transition-all duration-300 sm:bottom-6 sm:right-6",
-          open
-            ? "pointer-events-auto translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-6 opacity-0",
+          className={cn(
+            "fixed bottom-5 right-5 z-60 w-[min(92vw,26rem)] rounded-2xl border border-border bg-surface p-4 shadow-2xl transition-all duration-300 sm:bottom-6 sm:right-6",
+            open
+              ? "pointer-events-auto translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-6 opacity-0",
         )}
       >
         <div className="mb-3 flex items-start justify-between gap-2">
@@ -191,7 +164,7 @@ export function ContactFab({ labels }: ContactFabProps) {
             variant="ghost"
             size="sm"
             aria-label={labels.closeAriaLabel}
-            onClick={() => setOpen(false)}
+            onClick={closeContactModal}
           >
             ×
           </Button>

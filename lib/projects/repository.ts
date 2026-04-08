@@ -1,10 +1,12 @@
+import type { PaginatedResult } from "@/types/admin";
+import type { PublishStatus } from "@/types/db";
 import type {
   AdminProject,
+  AdminProjectInput,
   Project,
   ProjectLinkItem,
   ProjectLinks,
-  PublishStatus,
-} from "@/types/content";
+} from "@/types/projects";
 import type { Locale } from "@/lib/i18n/config";
 import {
   getAllProjects as getFallbackProjects,
@@ -12,12 +14,18 @@ import {
   getProjectBySlug as getFallbackProjectBySlug,
 } from "@/lib/projects/data";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import {
+  ADMIN_PAGE_SIZE_OPTIONS,
+  buildPaginatedResult,
+  DEFAULT_ADMIN_PAGE_SIZE,
+} from "@/lib/utils/pagination";
 
 type ProjectRow = {
   id: string;
   slug: string;
   title: string;
   summary: string;
+  use_markdown_editor: boolean | null;
   thumbnail: string;
   role: string;
   period: string;
@@ -32,30 +40,13 @@ type ProjectRow = {
   updated_at: string;
 };
 
-export type AdminProjectInput = {
-  slug: string;
-  title: string;
-  summary: string;
-  thumbnail: string;
-  role: string;
-  period?: string;
-  startDate?: string | null;
-  endDate?: string | null;
-  techStack: string[];
-  achievements: string[];
-  contributions: string[];
-  links: ProjectLinks;
-  featured: boolean;
-  status: PublishStatus;
-};
-
 type RepoResult<T> = {
   data: T | null;
   error: string | null;
 };
 
 const PROJECT_SELECT_FIELDS =
-  "id,slug,title,summary,thumbnail,role,period,start_date,end_date,tech_stack,achievements,contributions,links,featured,status,updated_at";
+  "id,slug,title,summary,use_markdown_editor,thumbnail,role,period,start_date,end_date,tech_stack,achievements,contributions,links,featured,status,updated_at";
 
 const LEGACY_LINK_LABELS: Record<string, string> = {
   live: "Live",
@@ -227,6 +218,7 @@ function rowToAdminProject(row: ProjectRow): AdminProject {
     slug: row.slug,
     title: row.title,
     summary: row.summary,
+    useSummaryEditor: Boolean(row.use_markdown_editor),
     thumbnail: row.thumbnail,
     role: row.role,
     period: syncPeriod(startDate, endDate, row.period),
@@ -276,11 +268,12 @@ export async function getAllPublishedProjects(locale: Locale): Promise<Project[]
   return (data as ProjectRow[]).map(rowToProject);
 }
 
-export async function getFeaturedProjects(locale: Locale, limit = 3): Promise<Project[]> {
+export async function getFeaturedProjects(locale: Locale, limit?: number): Promise<Project[]> {
   const service = createSupabaseServiceClient();
+  const safeLimit = typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : null;
 
   if (!service) {
-    return getFallbackFeaturedProjects(locale, limit).map((project) => ({
+    return getFallbackFeaturedProjects(locale, safeLimit ?? undefined).map((project) => ({
       ...project,
       id: project.slug,
       status: "published",
@@ -288,16 +281,21 @@ export async function getFeaturedProjects(locale: Locale, limit = 3): Promise<Pr
     }));
   }
 
-  const { data, error } = await service
+  let query = service
     .from("projects")
     .select(PROJECT_SELECT_FIELDS)
     .eq("status", "published")
     .eq("featured", true)
-    .order("updated_at", { ascending: false })
-    .limit(limit);
+    .order("updated_at", { ascending: false });
+
+  if (safeLimit) {
+    query = query.limit(safeLimit);
+  }
+
+  const { data, error } = await query;
 
   if (error || !data) {
-    return getFallbackFeaturedProjects(locale, limit).map((project) => ({
+    return getFallbackFeaturedProjects(locale, safeLimit ?? undefined).map((project) => ({
       ...project,
       id: project.slug,
       status: "published",
@@ -369,6 +367,42 @@ export async function getAdminProjects(): Promise<AdminProject[]> {
   return (data as ProjectRow[]).map(rowToAdminProject);
 }
 
+export async function getAdminProjectsPaginated(
+  page = 1,
+  pageSize = 10,
+): Promise<PaginatedResult<AdminProject>> {
+  const service = createSupabaseServiceClient();
+
+  if (!service) {
+    return buildPaginatedResult([], page, pageSize, 0);
+  }
+
+  const safePage = Math.max(1, Math.floor(page));
+  const parsedPageSize = Math.floor(pageSize);
+  const safePageSize = ADMIN_PAGE_SIZE_OPTIONS.includes(parsedPageSize as 3 | 5 | 10)
+    ? parsedPageSize
+    : DEFAULT_ADMIN_PAGE_SIZE;
+  const from = (safePage - 1) * safePageSize;
+  const to = from + safePageSize - 1;
+
+  const { data, error, count } = await service
+    .from("projects")
+    .select(PROJECT_SELECT_FIELDS, { count: "exact" })
+    .order("updated_at", { ascending: false })
+    .range(from, to);
+
+  if (error || !data) {
+    return buildPaginatedResult([], safePage, safePageSize, 0);
+  }
+
+  return buildPaginatedResult(
+    (data as ProjectRow[]).map(rowToAdminProject),
+    safePage,
+    safePageSize,
+    count ?? 0,
+  );
+}
+
 async function getAdminProjectById(id: string): Promise<AdminProject | null> {
   const service = createSupabaseServiceClient();
 
@@ -411,6 +445,7 @@ export async function createAdminProject(
       slug: input.slug,
       title: input.title,
       summary: input.summary,
+      use_markdown_editor: input.useSummaryEditor,
       thumbnail: input.thumbnail,
       role: input.role,
       period,
@@ -462,6 +497,7 @@ export async function updateAdminProject(
       slug: input.slug,
       title: input.title,
       summary: input.summary,
+      use_markdown_editor: input.useSummaryEditor,
       thumbnail: input.thumbnail,
       role: input.role,
       period,

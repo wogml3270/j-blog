@@ -1,13 +1,9 @@
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { cn } from "@/lib/utils/cn";
-
-type ManagerListProps = {
-  children: React.ReactNode;
-  hasItems: boolean;
-  emptyLabel: string;
-};
+import type { ManagerListProps, ManagerListRowProps } from "@/types/ui";
 
 export function ManagerList({ children, hasItems, emptyLabel }: ManagerListProps) {
+  // 리스트 비어있음/정상 상태 렌더를 동일한 카드 컴포넌트로 처리한다.
   return (
     <SurfaceCard tone="surface" className="overflow-hidden">
       <ul>
@@ -21,13 +17,8 @@ export function ManagerList({ children, hasItems, emptyLabel }: ManagerListProps
   );
 }
 
-type ManagerListRowProps = {
-  onClick: () => void;
-  children: React.ReactNode;
-  className?: string;
-};
-
 export function ManagerListRow({ onClick, children, className }: ManagerListRowProps) {
+  // 행 전체를 클릭 타겟으로 고정해 관리자 선택 UX를 단순화한다.
   return (
     <li className="border-b border-border last:border-b-0">
       <button

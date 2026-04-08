@@ -57,34 +57,42 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
 
   return (
     <article className="space-y-8">
-      <header className="space-y-4">
+      <div className="space-y-3">
         <Link href={withLocalePath(lang, "/projects")} className="inline-flex text-sm text-muted underline">
           {dictionary.projects.backToList}
         </Link>
-        <div className="space-y-3">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">{project.title}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{project.title}</h1>
+      </div>
+
+      <section className="grid gap-5 lg:grid-cols-12 lg:items-stretch">
+        <div className="overflow-hidden rounded-xl border border-border lg:col-span-7">
+          <Image
+            src={project.thumbnail}
+            alt={`${project.title} thumbnail`}
+            width={1200}
+            height={675}
+            className="h-56 w-full object-cover sm:h-72 lg:h-full"
+          />
+        </div>
+
+        <div className="lg:col-span-5">
+          <ProjectMeta
+            role={project.role}
+            period={project.period}
+            techStack={project.techStack}
+            roleLabel={dictionary.projects.role}
+            periodLabel={dictionary.projects.period}
+            techStackLabel={dictionary.projects.techStack}
+          />
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <SectionTitle title={dictionary.projects.review} />
+        <div className="rounded-xl border border-border bg-surface p-5">
           <MarkdownContent markdown={project.summary} />
         </div>
-      </header>
-
-      <div className="overflow-hidden rounded-xl border border-border">
-        <Image
-          src={project.thumbnail}
-          alt={`${project.title} thumbnail`}
-          width={1200}
-          height={675}
-          className="h-full w-full object-cover"
-        />
-      </div>
-      <ProjectMeta
-        role={project.role}
-        period={project.period}
-        techStack={project.techStack}
-        roleLabel={dictionary.projects.role}
-        periodLabel={dictionary.projects.period}
-        techStackLabel={dictionary.projects.techStack}
-      />
-
+      </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-3">

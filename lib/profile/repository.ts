@@ -1,4 +1,5 @@
-import type { ProfileContent, PublishStatus } from "@/types/content";
+import type { ProfileContent } from "@/types/profile";
+import type { PublishStatus } from "@/types/db";
 import type { Locale } from "@/lib/i18n/config";
 import { TECH_STACK, getAboutSummary, getHomeIntro } from "@/lib/site/profile";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";

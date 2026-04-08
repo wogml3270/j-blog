@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SettingsIcon } from "@/components/ui/icons/settings-icon";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { SignOutButton } from "@/components/admin/common/sign-out-button";
 import { ThemeToggle } from "@/components/theme/toggle";
 import { cn } from "@/lib/utils/cn";
-
-interface AdminSidebarProps {
-  email: string | null;
-};
+import type { AdminSidebarProps } from "@/types/ui";
 
 const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "대시보드" },
@@ -26,15 +24,24 @@ export function AdminSidebar({ email }: AdminSidebarProps) {
   return (
     <aside className="w-full rounded-xl border border-border bg-surface p-3.5 sm:p-4 xl:sticky xl:top-6 xl:h-[calc(100dvh-3rem)] xl:w-[272px] xl:self-start">
       <div className="space-y-3.5">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col items-start justify-between gap-2">
           <BrandLogo href="/admin/dashboard" title="Jaehee Park" subtitle="frontend engineer" />
-          <ThemeToggle
-            labels={{
-              loadingLabel: "테마 로딩 중",
-              toLightLabel: "라이트 모드로 전환",
-              toDarkLabel: "다크 모드로 전환",
-            }}
-          />
+          <div className="flex gap-3">
+            <ThemeToggle
+              labels={{
+                loadingLabel: "테마 로딩 중",
+                toLightLabel: "라이트 모드로 전환",
+                toDarkLabel: "다크 모드로 전환",
+              }}
+            />
+            <button
+              type="button"
+              aria-label="설정 (준비 중)"
+              className="cursor-not-allowed inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-muted transition-colors hover:text-foreground"
+            >
+              <SettingsIcon />
+            </button>
+          </div>
         </div>
         <div className="flex items-center justify-between gap-2 xl:block">
           <p className="text-xs font-medium uppercase tracking-wide text-muted">관리자</p>

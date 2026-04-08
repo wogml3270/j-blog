@@ -4,7 +4,7 @@ import { FeaturedProjects } from "@/components/home/featured-projects";
 import { Hero } from "@/components/home/hero";
 import { RecentPosts } from "@/components/home/recent-posts";
 import { TechStack } from "@/components/home/tech-stack";
-import { getRecentPublishedPosts } from "@/lib/blog/repository";
+import { getFeaturedPublishedPosts } from "@/lib/blog/repository";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getPublishedProfileContent } from "@/lib/profile/repository";
@@ -42,8 +42,8 @@ export default async function HomePage({ params }: HomePageProps) {
   const dictionary = getDictionary(lang);
   const [profile, featuredProjects, recentPosts] = await Promise.all([
     getPublishedProfileContent(lang),
-    getFeaturedProjects(lang, 3),
-    getRecentPublishedPosts(3),
+    getFeaturedProjects(lang),
+    getFeaturedPublishedPosts(),
   ]);
 
   return (
@@ -68,7 +68,6 @@ export default async function HomePage({ params }: HomePageProps) {
         title={dictionary.home.featuredProjectsTitle}
         description={dictionary.home.featuredProjectsDescription}
         allProjectsLabel={dictionary.home.allProjects}
-        detailLabel={dictionary.projects.detailLabel}
       />
       <RecentPosts
         locale={lang}

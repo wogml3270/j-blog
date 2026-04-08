@@ -1,15 +1,22 @@
 import type {
   AdminPost,
+  AdminPostInput,
   BlogPostDetail,
   BlogPostSummary,
-  PublishStatus,
-} from "@/types/content";
+} from "@/types/blog";
+import type { PaginatedResult } from "@/types/admin";
+import type { PublishStatus } from "@/types/db";
 import {
   getAllPosts as getFallbackPosts,
   getPostBySlug as getFallbackPostBySlug,
 } from "@/lib/blog/registry";
 import { extractTocFromMarkdown } from "@/lib/blog/markdown";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import {
+  ADMIN_PAGE_SIZE_OPTIONS,
+  buildPaginatedResult,
+  DEFAULT_ADMIN_PAGE_SIZE,
+} from "@/lib/utils/pagination";
 
 type PostRow = {
   id: string;
@@ -17,22 +24,13 @@ type PostRow = {
   title: string;
   description: string;
   thumbnail: string | null;
+  featured: boolean;
   body_markdown: string;
+  use_markdown_editor: boolean | null;
   status: PublishStatus;
   published_at: string | null;
   updated_at: string;
   post_tag_map?: unknown;
-};
-
-export type AdminPostInput = {
-  slug: string;
-  title: string;
-  description: string;
-  thumbnail?: string | null;
-  bodyMarkdown: string;
-  status: PublishStatus;
-  publishedAt?: string | null;
-  tags: string[];
 };
 
 type RepoResult<T> = {
@@ -41,7 +39,7 @@ type RepoResult<T> = {
 };
 
 const POST_SELECT_FIELDS =
-  "id,slug,title,description,thumbnail,body_markdown,status,published_at,updated_at,post_tag_map(post_tags(name))";
+  "id,slug,title,description,thumbnail,featured,body_markdown,use_markdown_editor,status,published_at,updated_at,post_tag_map(post_tags(name))";
 
 function normalizeTags(tags: string[]): string[] {
   return [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
@@ -96,6 +94,7 @@ function rowToSummary(row: PostRow): BlogPostSummary {
     title: row.title,
     description: row.description,
     thumbnail: row.thumbnail,
+    featured: row.featured,
     date,
     tags: relationToTagNames(row.post_tag_map),
   };
@@ -108,7 +107,9 @@ function rowToAdminPost(row: PostRow): AdminPost {
     title: row.title,
     description: row.description,
     thumbnail: row.thumbnail,
+    featured: row.featured,
     bodyMarkdown: row.body_markdown,
+    useMarkdownEditor: Boolean(row.use_markdown_editor),
     tags: relationToTagNames(row.post_tag_map),
     status: row.status,
     publishedAt: row.published_at,
@@ -195,6 +196,7 @@ function fallbackPostList(): BlogPostSummary[] {
     title: item.meta.title,
     description: item.meta.description,
     date: item.meta.date,
+    featured: true,
     tags: item.meta.tags,
   }));
 }
@@ -223,6 +225,44 @@ export async function getAllPublishedPosts(): Promise<BlogPostSummary[]> {
 export async function getRecentPublishedPosts(limit = 3): Promise<BlogPostSummary[]> {
   const posts = await getAllPublishedPosts();
   return posts.slice(0, limit);
+}
+
+export async function getFeaturedPublishedPosts(limit?: number): Promise<BlogPostSummary[]> {
+  const service = createSupabaseServiceClient();
+  const safeLimit = typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : null;
+
+  if (!service) {
+    const fallback = fallbackPostList();
+    return safeLimit ? fallback.slice(0, safeLimit) : fallback;
+  }
+
+  let query = service
+    .from("posts")
+    .select(POST_SELECT_FIELDS)
+    .eq("status", "published")
+    .eq("featured", true)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("updated_at", { ascending: false });
+
+  if (safeLimit) {
+    query = query.limit(safeLimit);
+  }
+
+  const { data, error } = await query;
+
+  if (error || !data) {
+    const fallback = fallbackPostList();
+    return safeLimit ? fallback.slice(0, safeLimit) : fallback;
+  }
+
+  const featuredPosts = (data as PostRow[]).map(rowToSummary);
+
+  if (featuredPosts.length > 0) {
+    return featuredPosts;
+  }
+
+  const allPublished = await getAllPublishedPosts();
+  return safeLimit ? allPublished.slice(0, safeLimit) : allPublished;
 }
 
 export async function getPublishedPostBySlug(slug: string): Promise<BlogPostDetail | null> {
@@ -319,6 +359,42 @@ export async function getAdminPosts(): Promise<AdminPost[]> {
   return (data as PostRow[]).map(rowToAdminPost);
 }
 
+export async function getAdminPostsPaginated(
+  page = 1,
+  pageSize = 10,
+): Promise<PaginatedResult<AdminPost>> {
+  const service = createSupabaseServiceClient();
+
+  if (!service) {
+    return buildPaginatedResult([], page, pageSize, 0);
+  }
+
+  const safePage = Math.max(1, Math.floor(page));
+  const parsedPageSize = Math.floor(pageSize);
+  const safePageSize = ADMIN_PAGE_SIZE_OPTIONS.includes(parsedPageSize as 3 | 5 | 10)
+    ? parsedPageSize
+    : DEFAULT_ADMIN_PAGE_SIZE;
+  const from = (safePage - 1) * safePageSize;
+  const to = from + safePageSize - 1;
+
+  const { data, error, count } = await service
+    .from("posts")
+    .select(POST_SELECT_FIELDS, { count: "exact" })
+    .order("updated_at", { ascending: false })
+    .range(from, to);
+
+  if (error || !data) {
+    return buildPaginatedResult([], safePage, safePageSize, 0);
+  }
+
+  return buildPaginatedResult(
+    (data as PostRow[]).map(rowToAdminPost),
+    safePage,
+    safePageSize,
+    count ?? 0,
+  );
+}
+
 export async function createAdminPost(
   input: AdminPostInput,
   userId: string,
@@ -341,7 +417,9 @@ export async function createAdminPost(
       title: input.title,
       description: input.description,
       thumbnail: input.thumbnail?.trim() || null,
+      featured: Boolean(input.featured),
       body_markdown: input.bodyMarkdown,
+      use_markdown_editor: input.useMarkdownEditor,
       status: normalizedStatus,
       published_at: normalizePublishedAt(normalizedStatus, input.publishedAt),
       created_by: userId,
@@ -386,7 +464,9 @@ export async function updateAdminPost(
       title: input.title,
       description: input.description,
       thumbnail: input.thumbnail?.trim() || null,
+      featured: Boolean(input.featured),
       body_markdown: input.bodyMarkdown,
+      use_markdown_editor: input.useMarkdownEditor,
       status: normalizedStatus,
       published_at: normalizePublishedAt(normalizedStatus, input.publishedAt),
     })

@@ -1,15 +1,6 @@
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { cn } from "@/lib/utils/cn";
-
-type ManagerShellProps = {
-  children: React.ReactNode;
-  summary: string;
-  detail?: string;
-  action?: React.ReactNode;
-  message?: string | null;
-  className?: string;
-  motion?: boolean;
-};
+import type { ManagerShellProps } from "@/types/ui";
 
 export function ManagerShell({
   children,
@@ -20,6 +11,7 @@ export function ManagerShell({
   className,
   motion = false,
 }: ManagerShellProps) {
+  // 관리자 섹션의 공통 상단 정보/메시지 레이아웃을 통일한다.
   return (
     <section className={cn("mx-auto w-full space-y-4", motion && "ui-strong-motion", className)}>
       <SurfaceCard className="px-4 py-3.5" tone="surface">

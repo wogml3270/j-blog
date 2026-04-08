@@ -1,13 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { SITE_CONFIG } from "@/lib/site/profile";
-
-type ContactPayload = {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-};
+import type { ContactPayload } from "@/types/contact";
 
 function parseBody(body: unknown): ContactPayload | null {
   if (!body || typeof body !== "object") {

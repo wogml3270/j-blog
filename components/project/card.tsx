@@ -2,24 +2,13 @@ import Image from "next/image";
 import { SlideIn } from "@/components/ui/slide-in";
 import { Tag } from "@/components/ui/tag";
 import { MediaCard } from "@/components/ui/media-card";
-import type { Locale } from "@/lib/i18n/config";
 import { withLocalePath } from "@/lib/i18n/config";
 import { stripMarkdownToPlainText } from "@/lib/blog/markdown";
-import type { Project } from "@/types/content";
-
-type ProjectCardProps = {
-  project: Project;
-  locale: Locale;
-  detailLabel: string;
-  roleLabel?: string;
-  periodLabel?: string;
-  animationDelay?: number;
-};
+import type { ProjectCardProps } from "@/types/ui";
 
 export function ProjectCard({
   project,
   locale,
-  detailLabel,
   roleLabel = "Role",
   periodLabel = "Period",
   animationDelay = 0,
@@ -62,11 +51,6 @@ export function ProjectCard({
               <Tag key={tech}>{tech}</Tag>
             ))}
           </div>
-        }
-        footer={
-          <span className="inline-flex items-center text-sm font-medium text-foreground underline">
-            {detailLabel}
-          </span>
         }
         bodyClassName="space-y-4 p-5"
       />

@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
 import {
   createAdminPost,
-  getAdminPosts,
-  type AdminPostInput,
+  getAdminPostsPaginated,
 } from "@/lib/blog/repository";
 import { revalidateBlogPaths } from "@/lib/cache/revalidate";
+import { normalizePagination } from "@/lib/utils/pagination";
+import type { AdminPostInput } from "@/types/blog";
 
 function parseBody(body: unknown): AdminPostInput | null {
   if (!body || typeof body !== "object") {
@@ -34,22 +35,31 @@ function parseBody(body: unknown): AdminPostInput | null {
     description: source.description.trim(),
     thumbnail:
       typeof source.thumbnail === "string" ? source.thumbnail.trim() || null : null,
+    featured: Boolean(source.featured),
     bodyMarkdown: source.bodyMarkdown,
+    useMarkdownEditor: Boolean(source.useMarkdownEditor),
     status,
     publishedAt: typeof source.publishedAt === "string" ? source.publishedAt : null,
     tags,
   };
 }
 
-export async function GET() {
+// 관리자 게시글 목록은 page/pageSize 기반 응답으로 통일한다.
+export async function GET(request: Request) {
   const guard = await getAdminGuardForApi();
 
   if (!guard.ok) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
 
-  const posts = await getAdminPosts();
-  return NextResponse.json({ posts });
+  const url = new URL(request.url);
+  const { page, pageSize } = normalizePagination(
+    url.searchParams.get("page"),
+    url.searchParams.get("pageSize"),
+  );
+  const result = await getAdminPostsPaginated(page, pageSize);
+
+  return NextResponse.json(result);
 }
 
 export async function POST(request: Request) {

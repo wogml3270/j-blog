@@ -45,20 +45,8 @@ export function ThemeProvider({
   enableSystem = true,
   storageKey = "theme",
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") {
-      return defaultTheme;
-    }
-
-    try {
-      const saved = window.localStorage.getItem(storageKey) as Theme | null;
-      return saved === "light" || saved === "dark" || saved === "system"
-        ? saved
-        : defaultTheme;
-    } catch {
-      return defaultTheme;
-    }
-  });
+  // 서버/클라이언트의 첫 렌더를 일치시키기 위해 초기값은 항상 defaultTheme로 고정한다.
+  const [theme, setThemeState] = useState<Theme>(defaultTheme);
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() =>
     getSystemTheme(),
   );
@@ -87,6 +75,20 @@ export function ThemeProvider({
   }, [applyTheme, resolvedTheme]);
 
   useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(storageKey) as Theme | null;
+
+      if (saved === "light" || saved === "dark" || saved === "system") {
+        const frame = window.requestAnimationFrame(() => {
+          setThemeState(saved);
+        });
+
+        return () => window.cancelAnimationFrame(frame);
+      }
+    } catch {}
+  }, [storageKey]);
+
+  useEffect(() => {
     if (!enableSystem) {
       return;
     }
@@ -113,6 +115,7 @@ export function ThemeProvider({
       setThemeState(nextTheme);
       try {
         window.localStorage.setItem(storageKey, nextTheme);
+        document.cookie = `${storageKey}=${encodeURIComponent(nextTheme)}; path=/; max-age=31536000; samesite=lax`;
       } catch {}
       const nextResolvedTheme: ResolvedTheme =
         nextTheme === "system" ? getSystemTheme() : nextTheme;

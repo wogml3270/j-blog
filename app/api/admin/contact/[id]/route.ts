@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { updateAdminContactMessage } from "@/lib/contact/repository";
-import type { ContactMessageStatus } from "@/types/content";
+import type { ContactMessageStatus } from "@/types/db";
 
 type RouteContext = {
   params: Promise<{ id: string }>;

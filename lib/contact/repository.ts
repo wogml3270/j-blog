@@ -1,5 +1,12 @@
-import type { ContactMessage, ContactMessageStatus } from "@/types/content";
+import type { PaginatedResult } from "@/types/admin";
+import type { ContactMessage } from "@/types/contact";
+import type { ContactMessageStatus } from "@/types/db";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import {
+  ADMIN_PAGE_SIZE_OPTIONS,
+  buildPaginatedResult,
+  DEFAULT_ADMIN_PAGE_SIZE,
+} from "@/lib/utils/pagination";
 
 type ContactMessageRow = {
   id: string;
@@ -49,6 +56,42 @@ export async function getAdminContactMessages(): Promise<ContactMessage[]> {
   }
 
   return (data as ContactMessageRow[]).map(rowToContactMessage);
+}
+
+export async function getAdminContactMessagesPaginated(
+  page = 1,
+  pageSize = 10,
+): Promise<PaginatedResult<ContactMessage>> {
+  const service = createSupabaseServiceClient();
+
+  if (!service) {
+    return buildPaginatedResult([], page, pageSize, 0);
+  }
+
+  const safePage = Math.max(1, Math.floor(page));
+  const parsedPageSize = Math.floor(pageSize);
+  const safePageSize = ADMIN_PAGE_SIZE_OPTIONS.includes(parsedPageSize as 3 | 5 | 10)
+    ? parsedPageSize
+    : DEFAULT_ADMIN_PAGE_SIZE;
+  const from = (safePage - 1) * safePageSize;
+  const to = from + safePageSize - 1;
+
+  const { data, error, count } = await service
+    .from("contact_messages")
+    .select("id,name,email,subject,message,admin_note,status,created_at,updated_at", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error || !data) {
+    return buildPaginatedResult([], safePage, safePageSize, 0);
+  }
+
+  return buildPaginatedResult(
+    (data as ContactMessageRow[]).map(rowToContactMessage),
+    safePage,
+    safePageSize,
+    count ?? 0,
+  );
 }
 
 export async function getAdminContactMessageById(id: string): Promise<ContactMessage | null> {

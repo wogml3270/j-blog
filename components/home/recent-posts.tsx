@@ -7,7 +7,7 @@ import { BlogCard } from "@/components/blog/card";
 import { SectionTitle } from "@/components/ui/section-title";
 import type { Locale } from "@/lib/i18n/config";
 import { withLocalePath } from "@/lib/i18n/config";
-import type { BlogPostSummary } from "@/types/content";
+import type { BlogPostSummary } from "@/types/blog";
 
 type RecentPostsProps = {
   locale: Locale;

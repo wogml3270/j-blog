@@ -49,7 +49,8 @@ export function ToastMarkdownEditor({
       const instance = new Editor({
         el: containerRef.current,
         initialEditType: "markdown",
-        previewStyle: "vertical",
+        // 미리보기는 Toast UI 기본 렌더를 그대로 신뢰하고 탭 형태로 노출한다.
+        previewStyle: "tab",
         hideModeSwitch: true,
         usageStatistics: false,
         height,
@@ -91,5 +92,10 @@ export function ToastMarkdownEditor({
     }
   }, [value]);
 
-  return <div ref={containerRef} className={cn("rounded-md border border-border bg-background", className)} />;
+  return (
+    <div
+      ref={containerRef}
+      className={cn("admin-toast-editor rounded-md border border-border bg-background", className)}
+    />
+  );
 }

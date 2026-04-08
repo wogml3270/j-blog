@@ -167,10 +167,9 @@ a {
   margin-top: 0.9rem;
 }
 
-.prose ul {
+.prose ul, .prose ol {
   margin-top: 0.8rem;
   padding-left: 1.25rem;
-  list-style-type: disc;
 }
 
 .prose code {
@@ -182,6 +181,97 @@ a {
   margin-top: 2rem;
   margin-bottom: 2rem;
   border-color: var(--border);
+}
+
+.markdown-viewer .toastui-editor-contents {
+  color: var(--foreground);
+}
+
+.markdown-viewer .toastui-editor-contents h1,
+.markdown-viewer .toastui-editor-contents h2,
+.markdown-viewer .toastui-editor-contents h3,
+.markdown-viewer .toastui-editor-contents h4,
+.markdown-viewer .toastui-editor-contents h5,
+.markdown-viewer .toastui-editor-contents h6,
+.markdown-viewer .toastui-editor-contents p,
+.markdown-viewer .toastui-editor-contents li,
+.markdown-viewer .toastui-editor-contents blockquote,
+.markdown-viewer .toastui-editor-contents td,
+.markdown-viewer .toastui-editor-contents th {
+  color: var(--foreground) !important;
+}
+
+.markdown-viewer .toastui-editor-contents a {
+  color: var(--accent) !important;
+}
+
+.markdown-viewer .toastui-editor-contents code {
+  font-family: var(--font-mono), monospace;
+}
+
+.markdown-viewer .toastui-editor-contents pre code {
+  white-space: pre-wrap;
+}
+
+.admin-toast-editor .toastui-editor-defaultUI {
+  border: 0;
+  background: var(--background);
+}
+
+.admin-toast-editor .toastui-editor-toolbar {
+  border-bottom-color: var(--border);
+  background: color-mix(in srgb, var(--surface) 80%, var(--background));
+}
+
+.admin-toast-editor .toastui-editor-main {
+  background: var(--background);
+}
+
+.admin-toast-editor .toastui-editor-md-container,
+.admin-toast-editor .toastui-editor-md-preview {
+  background: var(--background);
+}
+
+.admin-toast-editor .toastui-editor-contents {
+  color: var(--foreground);
+}
+
+.admin-toast-editor .toastui-editor-contents h1,
+.admin-toast-editor .toastui-editor-contents h2,
+.admin-toast-editor .toastui-editor-contents h3,
+.admin-toast-editor .toastui-editor-contents h4,
+.admin-toast-editor .toastui-editor-contents h5,
+.admin-toast-editor .toastui-editor-contents h6,
+.admin-toast-editor .toastui-editor-contents p,
+.admin-toast-editor .toastui-editor-contents li,
+.admin-toast-editor .toastui-editor-contents blockquote,
+.admin-toast-editor .toastui-editor-contents td,
+.admin-toast-editor .toastui-editor-contents th {
+  color: var(--foreground) !important;
+}
+
+.admin-toast-editor .toastui-editor-md-preview .toastui-editor-contents a {
+  color: var(--accent) !important;
+}
+
+.admin-toast-editor .toastui-editor-contents code {
+  font-family: var(--font-mono), monospace;
+}
+
+.admin-toast-editor .toastui-editor-md-preview {
+  border-left-color: var(--border);
+}
+
+.admin-toast-editor .CodeMirror,
+.admin-toast-editor .CodeMirror-scroll,
+.admin-toast-editor .CodeMirror-gutters {
+  background: var(--background) !important;
+}
+
+.admin-toast-editor .CodeMirror pre,
+.admin-toast-editor .CodeMirror-line,
+.admin-toast-editor .CodeMirror-lines {
+  color: var(--foreground) !important;
 }
 
 .swiper-pagination-bullet {

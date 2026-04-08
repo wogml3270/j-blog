@@ -35,7 +35,8 @@ export default async function AdminDashboardPage() {
   const newContactsCount = contacts.filter((item) => item.status === "new").length;
   const draftPostsCount = posts.filter((item) => item.status === "draft").length;
   const draftProjectsCount = projects.filter((item) => item.status === "draft").length;
-  const featuredProjectsCount = projects.filter((item) => item.featured).length;
+  const mainVisiblePostsCount = posts.filter((item) => item.featured).length;
+  const mainVisibleProjectsCount = projects.filter((item) => item.featured).length;
   const recentPosts = posts.slice(0, 3);
   const recentProjects = projects.slice(0, 3);
   const recentContacts = contacts.slice(0, 3);
@@ -51,7 +52,7 @@ export default async function AdminDashboardPage() {
         >
           <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">블로그 글</p>
           <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">{posts.length}</p>
-          <p className="mt-1 text-xs text-muted">비공개 {draftPostsCount}개</p>
+          <p className="mt-1 text-xs text-muted">메인 노출 {mainVisiblePostsCount}개</p>
         </Link>
 
         <Link
@@ -60,7 +61,7 @@ export default async function AdminDashboardPage() {
         >
           <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">프로젝트</p>
           <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">{projects.length}</p>
-          <p className="mt-1 text-xs text-muted">추천 {featuredProjectsCount}개</p>
+          <p className="mt-1 text-xs text-muted">메인 노출 {mainVisibleProjectsCount}개</p>
         </Link>
 
         <Link
@@ -142,12 +143,13 @@ export default async function AdminDashboardPage() {
               recentPosts.map((post) => (
                 <li key={post.id}>
                   <Link
-                    href={`/admin/blog?id=${post.id}`}
+                    href={`/admin/blog?page=1&id=${post.id}`}
                     className="block rounded-md border border-border bg-background px-3 py-2 transition hover:border-foreground/35"
                   >
                     <p className="truncate text-sm font-medium text-foreground hover:underline">{post.title}</p>
                     <p className="text-xs text-muted">
-                      {post.status === "published" ? "공개" : "비공개"} · {formatDate(post.publishedAt)}
+                      {post.status === "published" ? "공개" : "비공개"} ·
+                      {post.featured ? " 메인 노출" : " 일반"} · {formatDate(post.publishedAt)}
                     </p>
                   </Link>
                 </li>
@@ -170,7 +172,7 @@ export default async function AdminDashboardPage() {
               recentProjects.map((project) => (
                 <li key={project.id}>
                   <Link
-                    href={`/admin/projects?id=${project.id}`}
+                    href={`/admin/projects?page=1&id=${project.id}`}
                     className="block rounded-md border border-border bg-background px-3 py-2 transition hover:border-foreground/35"
                   >
                     <p className="truncate text-sm font-medium text-foreground hover:underline">
@@ -178,7 +180,7 @@ export default async function AdminDashboardPage() {
                     </p>
                     <p className="text-xs text-muted">
                       {project.status === "published" ? "공개" : "비공개"} ·
-                      {project.featured ? " 추천" : " 일반"}
+                      {project.featured ? " 메인 노출" : " 일반"}
                     </p>
                   </Link>
                 </li>
@@ -201,7 +203,7 @@ export default async function AdminDashboardPage() {
               recentContacts.map((contact) => (
                 <li key={contact.id}>
                   <Link
-                    href={`/admin/contact?id=${contact.id}`}
+                    href={`/admin/contact?page=1&id=${contact.id}`}
                     className="block rounded-md border border-border bg-background px-3 py-2 transition hover:border-foreground/35"
                   >
                     <p className="truncate text-sm font-medium text-foreground hover:underline">

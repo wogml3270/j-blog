@@ -17,56 +17,31 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { EditorDrawer } from "@/components/admin/common/editor-drawer";
 import { ManagerList, ManagerListRow } from "@/components/admin/common/manager-list";
 import { MarkdownField } from "@/components/admin/common/markdown-field";
 import { ManagerShell } from "@/components/admin/common/manager-shell";
+import { AdminPagination } from "@/components/admin/common/pagination";
 import { StatusRadioGroup } from "@/components/admin/common/status-radio-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { cn } from "@/lib/utils/cn";
-import type { AdminProject, ProjectLinkItem, ProjectLinks, PublishStatus } from "@/types/content";
-
-type ProjectsManagerProps = {
-  initialProjects: AdminProject[];
-  initialSelectedId?: string | null;
-};
-
-type ThumbnailInputMode = "url" | "upload";
-
-type SortableTextItem = {
-  id: string;
-  value: string;
-};
-
-type SortableLinkItem = {
-  id: string;
-  label: string;
-  url: string;
-};
-
-type ProjectFormState = {
-  slug: string;
-  title: string;
-  summary: string;
-  thumbnail: string;
-  role: string;
-  startDate: string;
-  endDate: string;
-  status: PublishStatus;
-  featured: boolean;
-  techStack: string[];
-  techStackInput: string;
-  achievements: SortableTextItem[];
-  achievementInput: string;
-  contributions: SortableTextItem[];
-  contributionInput: string;
-  links: SortableLinkItem[];
-  linkLabelInput: string;
-  linkUrlInput: string;
-};
+import { useAdminDetailStore } from "@/stores/admin-detail";
+import { useAdminListUiStore } from "@/stores/admin-list-ui";
+import type { PaginatedResult } from "@/types/admin";
+import type { PublishStatus } from "@/types/db";
+import type { AdminProject, ProjectLinkItem, ProjectLinks } from "@/types/projects";
+import type {
+  ProjectFormState,
+  ProjectsManagerProps,
+  SortableLinkItem,
+  SortableRowProps,
+  SortableTextItem,
+  ThumbnailInputMode,
+} from "@/types/ui";
 
 const EMPTY_FORM: ProjectFormState = {
   slug: "",
@@ -231,12 +206,6 @@ function reorderById<T extends { id: string }>(items: T[], event: DragEndEvent):
   return arrayMove(items, oldIndex, newIndex);
 }
 
-type SortableRowProps = {
-  id: string;
-  children: React.ReactNode;
-  onRemove: () => void;
-};
-
 function SortableRow({ id, children, onRemove }: SortableRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
@@ -274,10 +243,18 @@ function SortableRow({ id, children, onRemove }: SortableRowProps) {
 }
 
 export function ProjectsManager({
-  initialProjects,
+  initialPage,
   initialSelectedId = null,
 }: ProjectsManagerProps) {
-  const [projects, setProjects] = useState<AdminProject[]>(initialProjects);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [projects, setProjects] = useState<AdminProject[]>(initialPage.items);
+  const [page, setPage] = useState(initialPage.page);
+  const [pageSize, setPageSize] = useState(initialPage.pageSize);
+  const [total, setTotal] = useState(initialPage.total);
+  const [totalPages, setTotalPages] = useState(initialPage.totalPages);
   const [form, setForm] = useState<ProjectFormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [thumbnailMode, setThumbnailMode] = useState<ThumbnailInputMode>("url");
@@ -288,6 +265,10 @@ export function ProjectsManager({
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const hasAppliedInitialSelection = useRef(false);
+  const openDetail = useAdminDetailStore((state) => state.open);
+  const closeDetail = useAdminDetailStore((state) => state.close);
+  const savedPageSize = useAdminListUiStore((state) => state.pageSizeByScope.projects);
+  const setSavedPageSize = useAdminListUiStore((state) => state.setPageSize);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -298,6 +279,22 @@ export function ProjectsManager({
     }),
   );
 
+  // 상세 선택 상태와 현재 페이지를 URL query와 일치시킨다.
+  const syncQuery = useCallback((next: { id?: string | null; page?: number; pageSize?: number }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", String(next.page ?? page));
+    params.set("pageSize", String(next.pageSize ?? pageSize));
+
+    if (next.id) {
+      params.set("id", next.id);
+    } else {
+      params.delete("id");
+    }
+
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [page, pageSize, pathname, router, searchParams]);
+
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
@@ -306,29 +303,50 @@ export function ProjectsManager({
     setThumbnailFile(null);
     setMessage(null);
     setDrawerOpen(true);
+    closeDetail("projects");
+    syncQuery({ id: null });
   };
 
-  const openEdit = (project: AdminProject) => {
+  const openEdit = useCallback((project: AdminProject) => {
     setEditingId(project.id);
     setForm(toFormState(project));
-    setUseSummaryEditor(false);
+    setUseSummaryEditor(project.useSummaryEditor);
     setThumbnailMode("url");
     setThumbnailFile(null);
     setMessage(null);
     setDrawerOpen(true);
+    openDetail("projects", project.id);
+    syncQuery({ id: project.id });
+  }, [openDetail, syncQuery]);
+
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    closeDetail("projects");
+    syncQuery({ id: null });
   };
 
   // 저장/삭제 직후 목록 상태를 서버 기준으로 동기화한다.
-  const loadProjects = async () => {
-    const response = await fetch("/api/admin/projects", { method: "GET" });
+  const loadProjects = useCallback(async (nextPage = page, nextPageSize = pageSize) => {
+    const response = await fetch(`/api/admin/projects?page=${nextPage}&pageSize=${nextPageSize}`, { method: "GET" });
 
     if (!response.ok) {
       throw new Error("프로젝트 목록을 불러오지 못했습니다.");
     }
 
-    const payload = (await response.json()) as { projects: AdminProject[] };
-    setProjects(payload.projects ?? []);
-  };
+    const payload = (await response.json()) as PaginatedResult<AdminProject>;
+    setProjects(payload.items ?? []);
+    setPage(payload.page);
+    setPageSize(payload.pageSize);
+    setTotal(payload.total);
+    setTotalPages(payload.totalPages);
+
+    if ((payload.items?.length ?? 0) === 0 && payload.total > 0 && nextPage > 1) {
+      await loadProjects(nextPage - 1, nextPageSize);
+      return;
+    }
+
+    syncQuery({ id: null, page: payload.page, pageSize: payload.pageSize });
+  }, [page, pageSize, syncQuery]);
 
   const onUploadThumbnail = async () => {
     if (!thumbnailFile) {
@@ -477,6 +495,7 @@ export function ProjectsManager({
         slug: form.slug,
         title: form.title,
         summary: form.summary,
+        useSummaryEditor,
         thumbnail: form.thumbnail,
         role: form.role,
         startDate: form.startDate || null,
@@ -503,7 +522,7 @@ export function ProjectsManager({
         throw new Error(payload.error ?? "저장에 실패했습니다.");
       }
 
-      await loadProjects();
+      await loadProjects(page);
       setMessage(editingId ? "프로젝트를 수정했습니다." : "프로젝트를 생성했습니다.");
       setDrawerOpen(false);
       setEditingId(null);
@@ -511,6 +530,8 @@ export function ProjectsManager({
       setUseSummaryEditor(false);
       setThumbnailMode("url");
       setThumbnailFile(null);
+      closeDetail("projects");
+      syncQuery({ id: null });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "요청 중 오류가 발생했습니다.");
     } finally {
@@ -534,13 +555,15 @@ export function ProjectsManager({
         throw new Error(payload.error ?? "삭제에 실패했습니다.");
       }
 
-      await loadProjects();
+      await loadProjects(page);
       if (editingId === id) {
         setDrawerOpen(false);
         setEditingId(null);
         setForm(EMPTY_FORM);
         setUseSummaryEditor(false);
+        closeDetail("projects");
       }
+      syncQuery({ id: null });
       setMessage("프로젝트를 삭제했습니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "요청 중 오류가 발생했습니다.");
@@ -558,18 +581,56 @@ export function ProjectsManager({
     const target = projects.find((item) => item.id === initialSelectedId);
 
     if (!target) {
+      syncQuery({ id: null });
+      hasAppliedInitialSelection.current = true;
       return;
     }
 
     openEdit(target);
     hasAppliedInitialSelection.current = true;
-  }, [initialSelectedId, projects]);
+  }, [initialSelectedId, openEdit, projects, syncQuery]);
+
+  const onChangePage = async (nextPage: number) => {
+    if (nextPage === page || nextPage < 1 || nextPage > totalPages) {
+      return;
+    }
+
+    setDrawerOpen(false);
+    setEditingId(null);
+    closeDetail("projects");
+    await loadProjects(nextPage, pageSize);
+  };
+
+  const onChangePageSize = async (nextPageSize: number) => {
+    if (nextPageSize === pageSize) {
+      return;
+    }
+
+    setSavedPageSize("projects", nextPageSize);
+    setDrawerOpen(false);
+    setEditingId(null);
+    closeDetail("projects");
+    await loadProjects(1, nextPageSize);
+  };
+
+  useEffect(() => {
+    // URL에 pageSize가 없으면 마지막으로 선택한 표시 개수를 우선 적용한다.
+    if (searchParams.get("pageSize")) {
+      return;
+    }
+
+    if (savedPageSize === pageSize) {
+      return;
+    }
+
+    void loadProjects(1, savedPageSize);
+  }, [loadProjects, pageSize, savedPageSize, searchParams]);
 
   return (
     <>
       <ManagerShell
         motion
-        summary={`전체 프로젝트 ${projects.length}개`}
+        summary={`전체 프로젝트 ${total}개`}
         detail="프로젝트를 클릭하면 오른쪽 패널에서 수정할 수 있습니다."
         action={
           <Button type="button" onClick={openCreate}>
@@ -595,18 +656,26 @@ export function ProjectsManager({
                   <span className="hidden text-xs text-muted sm:inline">{project.slug}</span>
                   {project.featured ? (
                     <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
-                      추천
+                      메인 노출
                     </span>
                   ) : null}
               </>
             </ManagerListRow>
           ))}
         </ManagerList>
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          pageSize={pageSize}
+          onPageChange={onChangePage}
+          onPageSizeChange={onChangePageSize}
+        />
       </ManagerShell>
 
       <EditorDrawer
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={closeDrawer}
         title={editingId ? "프로젝트 편집" : "새 프로젝트"}
         description="필수 필드를 채운 뒤 저장하면 공개 페이지와 동기화됩니다."
       >
@@ -708,7 +777,7 @@ export function ProjectsManager({
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 items-center">
             <StatusRadioGroup
               legend="공개 상태"
               name="project-status"
@@ -726,7 +795,7 @@ export function ProjectsManager({
                 checked={form.featured}
                 onChange={(event) => setForm((prev) => ({ ...prev, featured: event.target.checked }))}
               />
-              추천 프로젝트
+              메인 페이지 노출
             </label>
           </div>
 

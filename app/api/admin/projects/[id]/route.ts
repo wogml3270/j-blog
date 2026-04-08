@@ -3,10 +3,9 @@ import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { revalidateProjectPaths } from "@/lib/cache/revalidate";
 import {
   deleteAdminProject,
-  type AdminProjectInput,
   updateAdminProject,
 } from "@/lib/projects/repository";
-import type { ProjectLinkItem, ProjectLinks } from "@/types/content";
+import type { AdminProjectInput, ProjectLinkItem, ProjectLinks } from "@/types/projects";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -103,6 +102,7 @@ function parseBody(body: unknown): AdminProjectInput | null {
     slug: source.slug.trim(),
     title: source.title.trim(),
     summary: source.summary.trim(),
+    useSummaryEditor: Boolean(source.useSummaryEditor),
     thumbnail: source.thumbnail.trim(),
     role: source.role.trim(),
     period: typeof source.period === "string" ? source.period.trim() : undefined,

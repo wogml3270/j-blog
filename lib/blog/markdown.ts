@@ -1,4 +1,4 @@
-import type { TocItem } from "@/types/content";
+import type { TocItem } from "@/types/blog";
 
 function escapeHtml(value: string): string {
   return value

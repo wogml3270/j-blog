@@ -5,18 +5,8 @@ import { Keyboard, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { ProjectCard } from "@/components/project/card";
 import { SectionTitle } from "@/components/ui/section-title";
-import type { Locale } from "@/lib/i18n/config";
 import { withLocalePath } from "@/lib/i18n/config";
-import type { Project } from "@/types/content";
-
-type FeaturedProjectsProps = {
-  locale: Locale;
-  projects: Project[];
-  title: string;
-  description: string;
-  allProjectsLabel: string;
-  detailLabel: string;
-};
+import type { FeaturedProjectsProps } from "@/types/ui";
 
 export function FeaturedProjects({
   locale,
@@ -24,7 +14,6 @@ export function FeaturedProjects({
   title,
   description,
   allProjectsLabel,
-  detailLabel,
 }: FeaturedProjectsProps) {
   return (
     <section aria-labelledby="featured-projects-title" className="space-y-6">
@@ -55,7 +44,6 @@ export function FeaturedProjects({
             <ProjectCard
               project={project}
               locale={locale}
-              detailLabel={detailLabel}
               animationDelay={80 + index * 60}
             />
           </SwiperSlide>

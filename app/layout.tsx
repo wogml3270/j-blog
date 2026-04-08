@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import {
   JetBrains_Mono,
   Noto_Sans_JP,
@@ -41,24 +40,6 @@ const mono = JetBrains_Mono({
 });
 
 const defaultSite = getSiteCopy(defaultLocale);
-const themeInitScript = `(() => {
-  try {
-    const storageKey = "theme";
-    const saved = window.localStorage.getItem(storageKey);
-    const isValid = saved === "light" || saved === "dark" || saved === "system";
-    const theme = isValid ? saved : "light";
-    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const resolvedTheme = theme === "system" ? (systemDark ? "dark" : "light") : theme;
-    const root = document.documentElement;
-    root.classList.remove("light", "dark");
-    root.classList.add(resolvedTheme);
-    root.style.colorScheme = resolvedTheme;
-  } catch {
-    const root = document.documentElement;
-    root.classList.add("light");
-    root.style.colorScheme = "light";
-  }
-})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_CONFIG.siteUrl),
@@ -89,9 +70,6 @@ export default async function RootLayout({
       className={`${sansKo.variable} ${sansEn.variable} ${sansJa.variable} ${mono.variable} light`}
     >
       <body className="min-h-dvh bg-background text-foreground antialiased">
-        <Script id="theme-init" strategy="beforeInteractive">
-          {themeInitScript}
-        </Script>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           {children}
         </ThemeProvider>

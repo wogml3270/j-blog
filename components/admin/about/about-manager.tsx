@@ -6,7 +6,8 @@ import { StatusRadioGroup } from "@/components/admin/common/status-radio-group";
 import { Button } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { cn } from "@/lib/utils/cn";
-import type { ProfileContent, PublishStatus } from "@/types/content";
+import type { ProfileContent } from "@/types/profile";
+import type { PublishStatus } from "@/types/db";
 
 type AboutManagerProps = {
   initialAbout: ProfileContent;

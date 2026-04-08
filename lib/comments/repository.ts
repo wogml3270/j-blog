@@ -1,4 +1,5 @@
-import type { BlogComment, CommentStatus } from "@/types/content";
+import type { BlogComment } from "@/types/blog";
+import type { CommentStatus } from "@/types/db";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 type CommentRow = Record<string, unknown>;

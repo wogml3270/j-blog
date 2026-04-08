@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { SocialProviderIcon, type SocialProviderKey } from "@/components/ui/icons/social-provider-icon";
 import { cn } from "@/lib/utils/cn";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
-type SocialProvider = "google" | "github" | "kakao";
+type SocialProvider = SocialProviderKey;
 
 type SocialLoginButtonsProps = {
   nextPath?: string;
@@ -59,15 +60,22 @@ export function SocialLoginButtons({
           key={provider.key}
           type="button"
           variant="outline"
-          className="w-full justify-center"
+          className="h-12 w-full justify-start rounded-xl border-border/80 bg-background/35 px-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-foreground/5"
           disabled={loadingProvider !== null}
           onClick={() => onLogin(provider.key)}
         >
-          {loadingProvider === provider.key
-            ? "이동 중..."
-            : variant === "admin"
-              ? `${provider.label}로 로그인`
-              : `${provider.label} 로그인`}
+          <span className="flex w-full items-center gap-3">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface/80">
+              <SocialProviderIcon provider={provider.key} />
+            </span>
+            <span className="text-base font-semibold tracking-tight text-foreground">
+              {loadingProvider === provider.key
+                ? "이동 중..."
+                : variant === "admin"
+                  ? `${provider.label}로 로그인`
+                  : `${provider.label} 로그인`}
+            </span>
+          </span>
         </Button>
       ))}
 

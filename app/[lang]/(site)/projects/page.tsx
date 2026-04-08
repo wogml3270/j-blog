@@ -66,7 +66,6 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
           key={project.slug}
           project={project}
           locale={lang}
-          detailLabel={dictionary.projects.detailLabel}
           roleLabel={dictionary.projects.role}
           periodLabel={dictionary.projects.period}
         />

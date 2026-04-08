@@ -5,7 +5,7 @@ import { MediaCard } from "@/components/ui/media-card";
 import type { Locale } from "@/lib/i18n/config";
 import { withLocalePath } from "@/lib/i18n/config";
 import { formatDate } from "@/lib/utils/format-date";
-import type { BlogPostSummary } from "@/types/content";
+import type { BlogPostSummary } from "@/types/blog";
 
 interface BlogCardProps {
   post: BlogPostSummary;

@@ -5,7 +5,7 @@ import { ManagerShell } from "@/components/admin/common/manager-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import type { ProfileContent } from "@/types/content";
+import type { ProfileContent } from "@/types/profile";
 
 type HomeManagerProps = {
   initialHome: ProfileContent;
@@ -15,7 +15,8 @@ type HomeFormState = {
   name: string;
   title: string;
   summary: string;
-  techStackText: string;
+  techStack: string[];
+  techStackInput: string;
 };
 
 function toFormState(profile: ProfileContent): HomeFormState {
@@ -23,12 +24,13 @@ function toFormState(profile: ProfileContent): HomeFormState {
     name: profile.name,
     title: profile.title,
     summary: profile.summary,
-    techStackText: profile.techStack.join(", "),
+    techStack: [...profile.techStack],
+    techStackInput: "",
   };
 }
 
-function parseTechStack(value: string): string[] {
-  return [...new Set(value.split(/[\n,]/).map((item) => item.trim()).filter(Boolean))];
+function uniqueStringList(items: string[]): string[] {
+  return [...new Set(items.map((item) => item.trim()).filter(Boolean))];
 }
 
 function serializeForm(form: HomeFormState): string {
@@ -36,7 +38,7 @@ function serializeForm(form: HomeFormState): string {
     name: form.name.trim(),
     title: form.title.trim(),
     summary: form.summary.trim(),
-    techStack: parseTechStack(form.techStackText),
+    techStack: uniqueStringList(form.techStack),
   });
 }
 
@@ -63,7 +65,7 @@ export function HomeManager({ initialHome }: HomeManagerProps) {
           name: form.name,
           title: form.title,
           summary: form.summary,
-          techStack: parseTechStack(form.techStackText),
+          techStack: uniqueStringList(form.techStack),
         }),
       });
 
@@ -87,6 +89,28 @@ export function HomeManager({ initialHome }: HomeManagerProps) {
     }
   };
 
+  // 기술 스택은 Enter/추가 버튼으로 한 항목씩 관리한다.
+  const addTechStack = () => {
+    const value = form.techStackInput.trim();
+
+    if (!value) {
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      techStack: uniqueStringList([...prev.techStack, value]),
+      techStackInput: "",
+    }));
+  };
+
+  const removeTechStack = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      techStack: prev.techStack.filter((item) => item !== value),
+    }));
+  };
+
   return (
     <ManagerShell
       motion
@@ -104,47 +128,83 @@ export function HomeManager({ initialHome }: HomeManagerProps) {
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
               value={form.name}
-            onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-            placeholder="이름"
-            required
-          />
+              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+              placeholder="이름"
+              required
+            />
+            <Input
+              value={form.title}
+              onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+              placeholder="직함"
+              required
+            />
+          </div>
+
           <Input
-            value={form.title}
-            onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-            placeholder="직함"
+            value={form.summary}
+            onChange={(event) => setForm((prev) => ({ ...prev, summary: event.target.value }))}
+            placeholder="홈 소개 요약"
             required
           />
-        </div>
 
-        <Input
-          value={form.summary}
-          onChange={(event) => setForm((prev) => ({ ...prev, summary: event.target.value }))}
-          placeholder="홈 소개 요약"
-          required
-        />
+          <div className="space-y-2 rounded-md border border-border bg-background p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">기술 스택</p>
+            <div className="flex items-center gap-2">
+              <Input
+                className="min-w-0 flex-1"
+                value={form.techStackInput}
+                onChange={(event) => setForm((prev) => ({ ...prev, techStackInput: event.target.value }))}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    addTechStack();
+                  }
+                }}
+                placeholder="기술명을 입력하고 Enter"
+              />
+              <Button type="button" className="h-10 shrink-0 px-4" onClick={addTechStack}>
+                추가
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {form.techStack.length > 0 ? (
+                form.techStack.map((item) => (
+                  <span
+                    key={item}
+                    className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs"
+                  >
+                    {item}
+                    <button
+                      type="button"
+                      className="text-muted hover:text-foreground"
+                      aria-label={`${item} 삭제`}
+                      onClick={() => removeTechStack(item)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))
+              ) : (
+                <p className="text-xs text-muted">아직 추가된 기술 스택이 없습니다.</p>
+              )}
+            </div>
+          </div>
 
-        <textarea
-          value={form.techStackText}
-          onChange={(event) => setForm((prev) => ({ ...prev, techStackText: event.target.value }))}
-          className="min-h-[110px] w-full rounded-md border border-border bg-background p-3 text-sm transition-colors focus:border-foreground/30"
-          placeholder="기술 스택 (쉼표 또는 줄바꿈 구분)"
-        />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span
+              className={
+                isDirty
+                  ? "rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
+                  : "rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300"
+              }
+            >
+              {isDirty ? "변경 사항 있음" : "저장된 상태"}
+            </span>
 
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span
-            className={
-              isDirty
-                ? "rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
-                : "rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300"
-            }
-          >
-            {isDirty ? "변경 사항 있음" : "저장된 상태"}
-          </span>
-
-          <Button type="submit" disabled={!isDirty || isPending}>
-            {isPending ? "저장 중..." : "홈 저장"}
-          </Button>
-        </div>
+            <Button type="submit" disabled={!isDirty || isPending}>
+              {isPending ? "저장 중..." : "홈 저장"}
+            </Button>
+          </div>
         </form>
       </SurfaceCard>
 

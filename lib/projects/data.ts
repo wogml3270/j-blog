@@ -1,5 +1,5 @@
 import type { Locale } from "@/lib/i18n/config";
-import type { Project, ProjectLinks } from "@/types/content";
+import type { Project, ProjectLinks } from "@/types/projects";
 
 type LocalizedText = Record<Locale, string>;
 type LocalizedList = Record<Locale, string[]>;
@@ -285,8 +285,11 @@ export function getAllProjects(locale: Locale): Project[] {
   return projectSeeds.map((project) => toLocalizedProject(project, locale));
 }
 
-export function getFeaturedProjects(locale: Locale, limit = 3): Project[] {
-  return getAllProjects(locale).filter((project) => project.featured).slice(0, limit);
+export function getFeaturedProjects(locale: Locale, limit?: number): Project[] {
+  const featured = getAllProjects(locale).filter((project) => project.featured);
+  const safeLimit = typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : null;
+
+  return safeLimit ? featured.slice(0, safeLimit) : featured;
 }
 
 export function getProjectBySlug(slug: string, locale: Locale): Project | undefined {
