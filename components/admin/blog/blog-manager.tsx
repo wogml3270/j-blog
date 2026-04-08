@@ -15,7 +15,7 @@ import { ToastMarkdownViewer } from "@/components/ui/toast-markdown-viewer";
 import { cn } from "@/lib/utils/cn";
 import { useAdminDetailStore } from "@/stores/admin-detail";
 import { useAdminListUiStore } from "@/stores/admin-list-ui";
-import type { PaginatedResult } from "@/types/admin";
+import type { AdminListFilter, PaginatedResult } from "@/types/admin";
 import type { AdminPost } from "@/types/blog";
 import type { PublishStatus } from "@/types/db";
 import type { BlogManagerProps, PostFormState, ThumbnailInputMode } from "@/types/ui";
@@ -97,7 +97,28 @@ function toStatusLabel(status: PublishStatus): string {
   return status === "published" ? "공개" : "비공개";
 }
 
-export function BlogManager({ initialPage, initialSelectedId = null }: BlogManagerProps) {
+// 게시일 입력의 기본값으로 사용할 오늘 날짜(YYYY-MM-DD)를 만든다.
+function getTodayDateInputValue(): string {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+const BLOG_FILTER_OPTIONS: Array<{ value: AdminListFilter; label: string }> = [
+  { value: "all", label: "전체" },
+  { value: "main", label: "메인 노출" },
+  { value: "general", label: "일반" },
+  { value: "published", label: "공개" },
+  { value: "draft", label: "비공개" },
+];
+
+export function BlogManager({
+  initialPage,
+  initialSelectedId = null,
+  initialFilter = "all",
+}: BlogManagerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -107,6 +128,7 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
   const [pageSize, setPageSize] = useState(initialPage.pageSize);
   const [total, setTotal] = useState(initialPage.total);
   const [totalPages, setTotalPages] = useState(initialPage.totalPages);
+  const [filter, setFilter] = useState<AdminListFilter>(initialFilter);
   const [form, setForm] = useState<PostFormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [thumbnailMode, setThumbnailMode] = useState<ThumbnailInputMode>("url");
@@ -124,10 +146,11 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
   const setSavedPageSize = useAdminListUiStore((state) => state.setPageSize);
 
   // 상세 패널 상태와 페이지 상태를 URL 쿼리와 일치시킨다.
-  const syncQuery = useCallback((next: { id?: string | null; page?: number; pageSize?: number }) => {
+  const syncQuery = useCallback((next: { id?: string | null; page?: number; pageSize?: number; filter?: AdminListFilter }) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", String(next.page ?? page));
     params.set("pageSize", String(next.pageSize ?? pageSize));
+    const nextFilter = next.filter ?? filter;
 
     if (next.id) {
       params.set("id", next.id);
@@ -135,9 +158,15 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
       params.delete("id");
     }
 
+    if (nextFilter === "all") {
+      params.delete("filter");
+    } else {
+      params.set("filter", nextFilter);
+    }
+
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }, [page, pageSize, pathname, router, searchParams]);
+  }, [filter, page, pageSize, pathname, router, searchParams]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -170,8 +199,8 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
   };
 
   // 목록 재조회 시 page 메타를 함께 갱신해 페이징 상태를 보정한다.
-  const loadPosts = useCallback(async (nextPage = page, nextPageSize = pageSize) => {
-    const response = await fetch(`/api/admin/posts?page=${nextPage}&pageSize=${nextPageSize}`, {
+  const loadPosts = useCallback(async (nextPage = page, nextPageSize = pageSize, nextFilter = filter) => {
+    const response = await fetch(`/api/admin/posts?page=${nextPage}&pageSize=${nextPageSize}&filter=${nextFilter}`, {
       method: "GET",
     });
 
@@ -191,8 +220,8 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
       return;
     }
 
-    syncQuery({ id: null, page: payload.page, pageSize: payload.pageSize });
-  }, [page, pageSize, syncQuery]);
+    syncQuery({ id: null, page: payload.page, pageSize: payload.pageSize, filter: nextFilter });
+  }, [filter, page, pageSize, syncQuery]);
 
   // 태그 입력은 기술스택과 같은 칩 UX로 통일한다.
   const addTag = () => {
@@ -274,7 +303,7 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
         title: form.title,
         description: form.description,
         thumbnail: form.thumbnail.trim() || null,
-        featured: form.featured,
+        featured: form.status === "published" ? form.featured : false,
         status: form.status,
         publishedAt: form.publishedAt || null,
         tags: normalizeTagList(form.tags),
@@ -353,7 +382,7 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
     setDrawerOpen(false);
     setEditingId(null);
     closeDetail("blog");
-    await loadPosts(nextPage, pageSize);
+    await loadPosts(nextPage, pageSize, filter);
   };
 
   const onChangePageSize = async (nextPageSize: number) => {
@@ -365,7 +394,19 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
     setDrawerOpen(false);
     setEditingId(null);
     closeDetail("blog");
-    await loadPosts(1, nextPageSize);
+    await loadPosts(1, nextPageSize, filter);
+  };
+
+  const onChangeFilter = async (nextFilter: AdminListFilter) => {
+    if (nextFilter === filter) {
+      return;
+    }
+
+    setFilter(nextFilter);
+    setDrawerOpen(false);
+    setEditingId(null);
+    closeDetail("blog");
+    await loadPosts(1, pageSize, nextFilter);
   };
 
   useEffect(() => {
@@ -378,8 +419,8 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
       return;
     }
 
-    void loadPosts(1, savedPageSize);
-  }, [loadPosts, pageSize, savedPageSize, searchParams]);
+    void loadPosts(1, savedPageSize, filter);
+  }, [filter, loadPosts, pageSize, savedPageSize, searchParams]);
 
   useEffect(() => {
     // 대시보드 딥링크(id 쿼리) 진입 시 초기 대상 글을 자동으로 연다.
@@ -405,9 +446,25 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
         summary={`전체 게시글 ${total}개`}
         detail="행을 클릭하면 오른쪽에서 편집 패널이 열립니다."
         action={
-          <Button type="button" onClick={openCreate}>
-            새 게시글
-          </Button>
+          <div className="flex items-center gap-2">
+            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+              <span className="text-xs text-muted">필터</span>
+              <select
+                className="bg-transparent text-sm outline-none"
+                value={filter}
+                onChange={(event) => void onChangeFilter(event.target.value as AdminListFilter)}
+              >
+                {BLOG_FILTER_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button type="button" onClick={openCreate}>
+              새 게시글
+            </Button>
+          </div>
         }
         message={message}
       >
@@ -426,7 +483,7 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
                     썸네일
                   </span>
                 ) : null}
-                {post.featured ? (
+                {post.status === "published" && post.featured ? (
                   <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
                     메인 노출
                   </span>
@@ -455,24 +512,33 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
         description="저장 즉시 Supabase 데이터가 갱신됩니다."
       >
         <form className="space-y-3" onSubmit={onSubmit}>
-          <Input
-            value={form.slug}
-            onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
-            placeholder="slug"
-            required
-          />
-          <Input
-            value={form.title}
-            onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-            placeholder="제목"
-            required
-          />
-          <Input
-            value={form.description}
-            onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-            placeholder="설명"
-            required
-          />
+          <div className="space-y-1">
+            <label className="text-xs font-medium uppercase tracking-wide text-muted">슬러그</label>
+            <Input
+              value={form.slug}
+              onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
+              placeholder="slug"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium uppercase tracking-wide text-muted">제목</label>
+            <Input
+              value={form.title}
+              onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+              placeholder="제목"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium uppercase tracking-wide text-muted">설명</label>
+            <Input
+              value={form.description}
+              onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+              placeholder="설명"
+              required
+            />
+          </div>
 
           <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">썸네일 (선택)</p>
@@ -521,6 +587,14 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
             <p className="truncate text-xs text-muted">
               현재 썸네일: {form.thumbnail || "설정 안 함"}
             </p>
+            {form.thumbnail ? (
+              <div className="overflow-hidden rounded-md border border-border bg-surface">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={form.thumbnail} alt="썸네일 미리보기" className="h-40 w-full object-cover" />
+              </div>
+            ) : (
+              <p className="text-xs text-muted">썸네일 미리보기가 없습니다.</p>
+            )}
           </SurfaceCard>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -532,24 +606,47 @@ export function BlogManager({ initialPage, initialSelectedId = null }: BlogManag
                 { value: "published", label: "공개" },
                 { value: "draft", label: "비공개" },
               ]}
-              onChange={(value) => setForm((prev) => ({ ...prev, status: value as PublishStatus }))}
+              onChange={(value) =>
+                setForm((prev) => {
+                  const nextStatus = value as PublishStatus;
+
+                  if (nextStatus === "draft") {
+                    return { ...prev, status: nextStatus, featured: false };
+                  }
+
+                  return {
+                    ...prev,
+                    status: nextStatus,
+                    publishedAt: prev.publishedAt || getTodayDateInputValue(),
+                  };
+                })
+              }
               className="rounded-md px-3 py-2"
             />
-            <Input
-              type="date"
-              value={form.publishedAt}
-              onChange={(event) => setForm((prev) => ({ ...prev, publishedAt: event.target.value }))}
-            />
+            <div className="space-y-1">
+              <label className="text-xs font-medium uppercase tracking-wide text-muted">게시일</label>
+              <Input
+                type="date"
+                value={form.publishedAt}
+                onChange={(event) => setForm((prev) => ({ ...prev, publishedAt: event.target.value }))}
+                disabled={form.status !== "published"}
+              />
+              <p className="text-[11px] text-muted">
+                비공개 상태에서는 게시일이 반영되지 않습니다.
+              </p>
+            </div>
           </div>
 
-          <label className="inline-flex h-12 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-            <input
-              type="checkbox"
-              checked={form.featured}
-              onChange={(event) => setForm((prev) => ({ ...prev, featured: event.target.checked }))}
-            />
-            메인 페이지 노출
-          </label>
+          {form.status === "published" ? (
+            <label className="inline-flex h-12 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+              <input
+                type="checkbox"
+                checked={form.featured}
+                onChange={(event) => setForm((prev) => ({ ...prev, featured: event.target.checked }))}
+              />
+              메인 페이지 노출
+            </label>
+          ) : null}
 
           <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">태그</p>

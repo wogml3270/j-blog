@@ -1,4 +1,4 @@
-import type { PaginatedResult } from "@/types/admin";
+import type { AdminListFilter, PaginatedResult } from "@/types/admin";
 import type { PublishStatus } from "@/types/db";
 import type {
   AdminProject,
@@ -358,6 +358,7 @@ export async function getAdminProjects(): Promise<AdminProject[]> {
   const { data, error } = await service
     .from("projects")
     .select(PROJECT_SELECT_FIELDS)
+    .order("featured", { ascending: false })
     .order("updated_at", { ascending: false });
 
   if (error || !data) {
@@ -370,6 +371,7 @@ export async function getAdminProjects(): Promise<AdminProject[]> {
 export async function getAdminProjectsPaginated(
   page = 1,
   pageSize = 10,
+  filter: AdminListFilter = "all",
 ): Promise<PaginatedResult<AdminProject>> {
   const service = createSupabaseServiceClient();
 
@@ -385,9 +387,22 @@ export async function getAdminProjectsPaginated(
   const from = (safePage - 1) * safePageSize;
   const to = from + safePageSize - 1;
 
-  const { data, error, count } = await service
+  let query = service
     .from("projects")
-    .select(PROJECT_SELECT_FIELDS, { count: "exact" })
+    .select(PROJECT_SELECT_FIELDS, { count: "exact" });
+
+  if (filter === "main") {
+    query = query.eq("featured", true);
+  } else if (filter === "general") {
+    query = query.eq("featured", false);
+  } else if (filter === "published") {
+    query = query.eq("status", "published");
+  } else if (filter === "draft") {
+    query = query.eq("status", "draft");
+  }
+
+  const { data, error, count } = await query
+    .order("featured", { ascending: false })
     .order("updated_at", { ascending: false })
     .range(from, to);
 

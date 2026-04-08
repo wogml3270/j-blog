@@ -4,7 +4,7 @@ import type {
   BlogPostDetail,
   BlogPostSummary,
 } from "@/types/blog";
-import type { PaginatedResult } from "@/types/admin";
+import type { AdminListFilter, PaginatedResult } from "@/types/admin";
 import type { PublishStatus } from "@/types/db";
 import {
   getAllPosts as getFallbackPosts,
@@ -350,6 +350,7 @@ export async function getAdminPosts(): Promise<AdminPost[]> {
   const { data, error } = await service
     .from("posts")
     .select(POST_SELECT_FIELDS)
+    .order("featured", { ascending: false })
     .order("updated_at", { ascending: false });
 
   if (error || !data) {
@@ -362,6 +363,7 @@ export async function getAdminPosts(): Promise<AdminPost[]> {
 export async function getAdminPostsPaginated(
   page = 1,
   pageSize = 10,
+  filter: AdminListFilter = "all",
 ): Promise<PaginatedResult<AdminPost>> {
   const service = createSupabaseServiceClient();
 
@@ -377,9 +379,22 @@ export async function getAdminPostsPaginated(
   const from = (safePage - 1) * safePageSize;
   const to = from + safePageSize - 1;
 
-  const { data, error, count } = await service
+  let query = service
     .from("posts")
-    .select(POST_SELECT_FIELDS, { count: "exact" })
+    .select(POST_SELECT_FIELDS, { count: "exact" });
+
+  if (filter === "main") {
+    query = query.eq("featured", true);
+  } else if (filter === "general") {
+    query = query.eq("featured", false);
+  } else if (filter === "published") {
+    query = query.eq("status", "published");
+  } else if (filter === "draft") {
+    query = query.eq("status", "draft");
+  }
+
+  const { data, error, count } = await query
+    .order("featured", { ascending: false })
     .order("updated_at", { ascending: false })
     .range(from, to);
 

@@ -6,6 +6,7 @@ import {
 } from "@/lib/blog/repository";
 import { revalidateBlogPaths } from "@/lib/cache/revalidate";
 import { normalizePagination } from "@/lib/utils/pagination";
+import { normalizeAdminListFilter } from "@/lib/utils/search-params";
 import type { AdminPostInput } from "@/types/blog";
 
 function parseBody(body: unknown): AdminPostInput | null {
@@ -57,7 +58,8 @@ export async function GET(request: Request) {
     url.searchParams.get("page"),
     url.searchParams.get("pageSize"),
   );
-  const result = await getAdminPostsPaginated(page, pageSize);
+  const filter = normalizeAdminListFilter(url.searchParams.get("filter"));
+  const result = await getAdminPostsPaginated(page, pageSize, filter);
 
   return NextResponse.json(result);
 }

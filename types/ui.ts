@@ -1,5 +1,6 @@
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/config";
+import type { AdminListFilter } from "@/types/admin";
 import type { AdminPost } from "@/types/blog";
 import type { ContactMessage } from "@/types/contact";
 import type { PublishStatus } from "@/types/db";
@@ -55,6 +56,7 @@ export type AdminSidebarProps = {
 export type BlogManagerProps = {
   initialPage: import("@/types/admin").PaginatedResult<AdminPost>;
   initialSelectedId?: string | null;
+  initialFilter?: AdminListFilter;
 };
 
 export type ContactManagerProps = {
@@ -65,6 +67,7 @@ export type ContactManagerProps = {
 export type ProjectsManagerProps = {
   initialPage: import("@/types/admin").PaginatedResult<AdminProject>;
   initialSelectedId?: string | null;
+  initialFilter?: AdminListFilter;
 };
 
 export type StatusOption<TValue extends string = string> = {

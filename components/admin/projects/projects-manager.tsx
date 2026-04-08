@@ -31,7 +31,7 @@ import { SurfaceCard } from "@/components/ui/surface-card";
 import { cn } from "@/lib/utils/cn";
 import { useAdminDetailStore } from "@/stores/admin-detail";
 import { useAdminListUiStore } from "@/stores/admin-list-ui";
-import type { PaginatedResult } from "@/types/admin";
+import type { AdminListFilter, PaginatedResult } from "@/types/admin";
 import type { PublishStatus } from "@/types/db";
 import type { AdminProject, ProjectLinkItem, ProjectLinks } from "@/types/projects";
 import type {
@@ -189,6 +189,14 @@ function toStatusLabel(status: PublishStatus): string {
   return status === "published" ? "공개" : "비공개";
 }
 
+const PROJECT_FILTER_OPTIONS: Array<{ value: AdminListFilter; label: string }> = [
+  { value: "all", label: "전체" },
+  { value: "main", label: "메인 노출" },
+  { value: "general", label: "일반" },
+  { value: "published", label: "공개" },
+  { value: "draft", label: "비공개" },
+];
+
 function reorderById<T extends { id: string }>(items: T[], event: DragEndEvent): T[] {
   const { active, over } = event;
 
@@ -245,6 +253,7 @@ function SortableRow({ id, children, onRemove }: SortableRowProps) {
 export function ProjectsManager({
   initialPage,
   initialSelectedId = null,
+  initialFilter = "all",
 }: ProjectsManagerProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -255,6 +264,7 @@ export function ProjectsManager({
   const [pageSize, setPageSize] = useState(initialPage.pageSize);
   const [total, setTotal] = useState(initialPage.total);
   const [totalPages, setTotalPages] = useState(initialPage.totalPages);
+  const [filter, setFilter] = useState<AdminListFilter>(initialFilter);
   const [form, setForm] = useState<ProjectFormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [thumbnailMode, setThumbnailMode] = useState<ThumbnailInputMode>("url");
@@ -280,10 +290,11 @@ export function ProjectsManager({
   );
 
   // 상세 선택 상태와 현재 페이지를 URL query와 일치시킨다.
-  const syncQuery = useCallback((next: { id?: string | null; page?: number; pageSize?: number }) => {
+  const syncQuery = useCallback((next: { id?: string | null; page?: number; pageSize?: number; filter?: AdminListFilter }) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", String(next.page ?? page));
     params.set("pageSize", String(next.pageSize ?? pageSize));
+    const nextFilter = next.filter ?? filter;
 
     if (next.id) {
       params.set("id", next.id);
@@ -291,9 +302,15 @@ export function ProjectsManager({
       params.delete("id");
     }
 
+    if (nextFilter === "all") {
+      params.delete("filter");
+    } else {
+      params.set("filter", nextFilter);
+    }
+
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }, [page, pageSize, pathname, router, searchParams]);
+  }, [filter, page, pageSize, pathname, router, searchParams]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -326,8 +343,8 @@ export function ProjectsManager({
   };
 
   // 저장/삭제 직후 목록 상태를 서버 기준으로 동기화한다.
-  const loadProjects = useCallback(async (nextPage = page, nextPageSize = pageSize) => {
-    const response = await fetch(`/api/admin/projects?page=${nextPage}&pageSize=${nextPageSize}`, { method: "GET" });
+  const loadProjects = useCallback(async (nextPage = page, nextPageSize = pageSize, nextFilter = filter) => {
+    const response = await fetch(`/api/admin/projects?page=${nextPage}&pageSize=${nextPageSize}&filter=${nextFilter}`, { method: "GET" });
 
     if (!response.ok) {
       throw new Error("프로젝트 목록을 불러오지 못했습니다.");
@@ -345,8 +362,8 @@ export function ProjectsManager({
       return;
     }
 
-    syncQuery({ id: null, page: payload.page, pageSize: payload.pageSize });
-  }, [page, pageSize, syncQuery]);
+    syncQuery({ id: null, page: payload.page, pageSize: payload.pageSize, filter: nextFilter });
+  }, [filter, page, pageSize, syncQuery]);
 
   const onUploadThumbnail = async () => {
     if (!thumbnailFile) {
@@ -501,7 +518,7 @@ export function ProjectsManager({
         startDate: form.startDate || null,
         endDate: form.endDate || null,
         status: form.status,
-        featured: form.featured,
+        featured: form.status === "published" ? form.featured : false,
         techStack: uniqueStringList(form.techStack),
         achievements: uniqueStringList(form.achievements.map((item) => item.value)),
         contributions: uniqueStringList(form.contributions.map((item) => item.value)),
@@ -598,7 +615,7 @@ export function ProjectsManager({
     setDrawerOpen(false);
     setEditingId(null);
     closeDetail("projects");
-    await loadProjects(nextPage, pageSize);
+    await loadProjects(nextPage, pageSize, filter);
   };
 
   const onChangePageSize = async (nextPageSize: number) => {
@@ -610,7 +627,19 @@ export function ProjectsManager({
     setDrawerOpen(false);
     setEditingId(null);
     closeDetail("projects");
-    await loadProjects(1, nextPageSize);
+    await loadProjects(1, nextPageSize, filter);
+  };
+
+  const onChangeFilter = async (nextFilter: AdminListFilter) => {
+    if (nextFilter === filter) {
+      return;
+    }
+
+    setFilter(nextFilter);
+    setDrawerOpen(false);
+    setEditingId(null);
+    closeDetail("projects");
+    await loadProjects(1, pageSize, nextFilter);
   };
 
   useEffect(() => {
@@ -623,8 +652,8 @@ export function ProjectsManager({
       return;
     }
 
-    void loadProjects(1, savedPageSize);
-  }, [loadProjects, pageSize, savedPageSize, searchParams]);
+    void loadProjects(1, savedPageSize, filter);
+  }, [filter, loadProjects, pageSize, savedPageSize, searchParams]);
 
   return (
     <>
@@ -633,9 +662,25 @@ export function ProjectsManager({
         summary={`전체 프로젝트 ${total}개`}
         detail="프로젝트를 클릭하면 오른쪽 패널에서 수정할 수 있습니다."
         action={
-          <Button type="button" onClick={openCreate}>
-            새 프로젝트
-          </Button>
+          <div className="flex items-center gap-2">
+            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+              <span className="text-xs text-muted">필터</span>
+              <select
+                className="bg-transparent text-sm outline-none"
+                value={filter}
+                onChange={(event) => void onChangeFilter(event.target.value as AdminListFilter)}
+              >
+                {PROJECT_FILTER_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button type="button" onClick={openCreate}>
+              새 프로젝트
+            </Button>
+          </div>
         }
         message={message}
       >
@@ -653,8 +698,8 @@ export function ProjectsManager({
                   <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                     {project.title}
                   </span>
-                  <span className="hidden text-xs text-muted sm:inline">{project.slug}</span>
-                  {project.featured ? (
+                <span className="hidden text-xs text-muted sm:inline">{project.slug}</span>
+                  {project.status === "published" && project.featured ? (
                     <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
                       메인 노출
                     </span>
@@ -680,18 +725,24 @@ export function ProjectsManager({
         description="필수 필드를 채운 뒤 저장하면 공개 페이지와 동기화됩니다."
       >
         <form className="space-y-3.5" onSubmit={onSubmit}>
-          <Input
-            value={form.slug}
-            onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
-            placeholder="slug"
-            required
-          />
-          <Input
-            value={form.title}
-            onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-            placeholder="제목"
-            required
-          />
+          <div className="space-y-1">
+            <label className="text-xs font-medium uppercase tracking-wide text-muted">슬러그</label>
+            <Input
+              value={form.slug}
+              onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
+              placeholder="slug"
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium uppercase tracking-wide text-muted">제목</label>
+            <Input
+              value={form.title}
+              onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+              placeholder="제목"
+              required
+            />
+          </div>
           <MarkdownField
             label="요약"
             value={form.summary}
@@ -752,28 +803,42 @@ export function ProjectsManager({
             <p className="truncate text-xs text-muted">
               현재 썸네일: {form.thumbnail || "설정되지 않음"}
             </p>
+            {form.thumbnail ? (
+              <div className="overflow-hidden rounded-md border border-border bg-surface">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={form.thumbnail} alt="썸네일 미리보기" className="h-40 w-full object-cover" />
+              </div>
+            ) : (
+              <p className="text-xs text-muted">썸네일 미리보기가 없습니다.</p>
+            )}
           </SurfaceCard>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Input
-              value={form.role}
-              onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value }))}
-              placeholder="역할"
-              required
-            />
-            <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label className="text-xs font-medium uppercase tracking-wide text-muted">역할</label>
               <Input
-                type="date"
-                value={form.startDate}
-                onChange={(event) => setForm((prev) => ({ ...prev, startDate: event.target.value }))}
-                placeholder="시작일"
+                value={form.role}
+                onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value }))}
+                placeholder="역할"
+                required
               />
-              <Input
-                type="date"
-                value={form.endDate}
-                onChange={(event) => setForm((prev) => ({ ...prev, endDate: event.target.value }))}
-                placeholder="종료일"
-              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium uppercase tracking-wide text-muted">기간</label>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  type="date"
+                  value={form.startDate}
+                  onChange={(event) => setForm((prev) => ({ ...prev, startDate: event.target.value }))}
+                  placeholder="시작일"
+                />
+                <Input
+                  type="date"
+                  value={form.endDate}
+                  onChange={(event) => setForm((prev) => ({ ...prev, endDate: event.target.value }))}
+                  placeholder="종료일"
+                />
+              </div>
             </div>
           </div>
 
@@ -786,17 +851,33 @@ export function ProjectsManager({
                 { value: "published", label: "공개" },
                 { value: "draft", label: "비공개" },
               ]}
-              onChange={(value) => setForm((prev) => ({ ...prev, status: value as PublishStatus }))}
+              onChange={(value) =>
+                setForm((prev) => {
+                  const nextStatus = value as PublishStatus;
+
+                  if (nextStatus === "draft") {
+                    return { ...prev, status: nextStatus, featured: false };
+                  }
+
+                  return { ...prev, status: nextStatus };
+                })
+              }
               className="rounded-md px-3 py-2"
             />
-            <label className="inline-flex h-12 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-              <input
-                type="checkbox"
-                checked={form.featured}
-                onChange={(event) => setForm((prev) => ({ ...prev, featured: event.target.checked }))}
-              />
-              메인 페이지 노출
-            </label>
+            {form.status === "published" ? (
+              <label className="inline-flex h-12 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.featured}
+                  onChange={(event) => setForm((prev) => ({ ...prev, featured: event.target.checked }))}
+                />
+                메인 페이지 노출
+              </label>
+            ) : (
+              <div className="inline-flex h-12 items-center rounded-md border border-border/60 bg-background/50 px-3 text-xs text-muted">
+                비공개 상태에서는 메인 페이지 노출 설정을 할 수 없습니다.
+              </div>
+            )}
           </div>
 
           <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
