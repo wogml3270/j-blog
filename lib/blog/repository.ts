@@ -6,6 +6,7 @@ import {
   getPostBySlug as getFallbackPostBySlug,
 } from "@/lib/blog/registry";
 import { extractTocFromMarkdown } from "@/lib/blog/markdown";
+import { removeHomeHighlightSource, syncHomeHighlightSource } from "@/lib/home/sync";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
   ADMIN_PAGE_SIZE_OPTIONS,
@@ -366,6 +367,7 @@ export async function getAdminPostsPaginated(
   page = 1,
   pageSize = 10,
   filter: AdminListFilter = "all",
+  statusScope: PublishStatus | null = null,
 ): Promise<PaginatedResult<AdminPost>> {
   const service = createSupabaseServiceClient();
 
@@ -382,6 +384,10 @@ export async function getAdminPostsPaginated(
   const to = from + safePageSize - 1;
 
   let query = service.from("posts").select(POST_SELECT_FIELDS, { count: "exact" });
+
+  if (statusScope) {
+    query = query.eq("status", statusScope);
+  }
 
   if (filter === "main") {
     query = query.eq("featured", true);
@@ -450,6 +456,12 @@ export async function createAdminPost(
   }
 
   await syncPostTags(data.id, input.tags);
+  await syncHomeHighlightSource({
+    sourceType: "post",
+    sourceId: data.id,
+    featured: Boolean(input.featured),
+    status: normalizedStatus,
+  });
 
   return {
     data: await getAdminPostById(data.id),
@@ -495,6 +507,12 @@ export async function updateAdminPost(
   }
 
   await syncPostTags(id, input.tags);
+  await syncHomeHighlightSource({
+    sourceType: "post",
+    sourceId: id,
+    featured: Boolean(input.featured),
+    status: normalizedStatus,
+  });
 
   return {
     data: await getAdminPostById(id),
@@ -520,6 +538,8 @@ export async function deleteAdminPost(id: string): Promise<RepoResult<{ id: stri
       error: error.message,
     };
   }
+
+  await removeHomeHighlightSource("post", id);
 
   return {
     data: { id },

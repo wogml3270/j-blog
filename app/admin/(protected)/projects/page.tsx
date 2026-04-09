@@ -4,25 +4,33 @@ import { normalizePagination } from "@/lib/utils/pagination";
 import { normalizeAdminListFilter, pickSingleQueryValue } from "@/lib/utils/search-params";
 import type { AdminSearchParams } from "@/types/admin";
 
+function normalizeSectionPage(raw: string | null): number {
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+}
+
 export default async function AdminProjectsPage({
   searchParams,
 }: {
   searchParams: AdminSearchParams;
 }) {
   const query = await searchParams;
-  const { page, pageSize } = normalizePagination(
-    pickSingleQueryValue(query.page),
-    pickSingleQueryValue(query.pageSize),
-  );
+  const { pageSize } = normalizePagination(null, pickSingleQueryValue(query.pageSize));
   const initialFilter = normalizeAdminListFilter(pickSingleQueryValue(query.filter));
-  const initialPage = await getAdminProjectsPaginated(page, pageSize, initialFilter);
+  const mainPage = normalizeSectionPage(pickSingleQueryValue(query.mainPage));
+  const privatePage = normalizeSectionPage(pickSingleQueryValue(query.privatePage));
+  const [initialMainPage, initialPrivatePage] = await Promise.all([
+    getAdminProjectsPaginated(mainPage, pageSize, initialFilter, "published"),
+    getAdminProjectsPaginated(privatePage, pageSize, initialFilter, "draft"),
+  ]);
   const initialSelectedId = pickSingleQueryValue(query.id);
 
   return (
     <main className="space-y-5">
       <h1 className="text-2xl font-semibold tracking-tight">프로젝트 관리</h1>
       <ProjectsManager
-        initialPage={initialPage}
+        initialMainPage={initialMainPage}
+        initialPrivatePage={initialPrivatePage}
         initialSelectedId={initialSelectedId}
         initialFilter={initialFilter}
       />

@@ -10,10 +10,12 @@ import { AdminPagination } from "@/components/admin/common/pagination";
 import { StatusRadioGroup } from "@/components/admin/common/status-radio-group";
 import { Button } from "@/components/ui/button";
 import { FilterIcon } from "@/components/ui/icons/filter-icon";
+import { RowsIcon } from "@/components/ui/icons/rows-icon";
 import { TrashIcon } from "@/components/ui/icons/trash-icon";
 import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { ToastMarkdownViewer } from "@/components/ui/toast-markdown-viewer";
+import { ADMIN_PAGE_SIZE_OPTIONS } from "@/lib/utils/pagination";
 import { cn } from "@/lib/utils/cn";
 import { normalizeSlug } from "@/lib/utils/slug";
 import { useAdminDetailStore } from "@/stores/admin-detail";
@@ -118,19 +120,24 @@ const BLOG_FILTER_OPTIONS: Array<{ value: AdminListFilter; label: string }> = [
 ];
 
 export function BlogManager({
-  initialPage,
-  initialSelectedId = null,
+  initialMainPage,
+  initialPrivatePage,
   initialFilter = "all",
+  initialSelectedId = null,
 }: BlogManagerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [posts, setPosts] = useState<AdminPost[]>(initialPage.items);
-  const [page, setPage] = useState(initialPage.page);
-  const [pageSize, setPageSize] = useState(initialPage.pageSize);
-  const [total, setTotal] = useState(initialPage.total);
-  const [totalPages, setTotalPages] = useState(initialPage.totalPages);
+  const [mainPosts, setMainPosts] = useState<AdminPost[]>(initialMainPage.items);
+  const [mainPage, setMainPage] = useState(initialMainPage.page);
+  const [mainTotal, setMainTotal] = useState(initialMainPage.total);
+  const [mainTotalPages, setMainTotalPages] = useState(initialMainPage.totalPages);
+  const [privatePosts, setPrivatePosts] = useState<AdminPost[]>(initialPrivatePage.items);
+  const [privatePage, setPrivatePage] = useState(initialPrivatePage.page);
+  const [privateTotal, setPrivateTotal] = useState(initialPrivatePage.total);
+  const [privateTotalPages, setPrivateTotalPages] = useState(initialPrivatePage.totalPages);
+  const [pageSize, setPageSize] = useState(initialMainPage.pageSize);
   const [filter, setFilter] = useState<AdminListFilter>(initialFilter);
   const [form, setForm] = useState<PostFormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -151,11 +158,24 @@ export function BlogManager({
 
   // 상세 패널 상태와 페이지 상태를 URL 쿼리와 일치시킨다.
   const syncQuery = useCallback(
-    (next: { id?: string | null; page?: number; pageSize?: number; filter?: AdminListFilter }) => {
+    (next: {
+      id?: string | null;
+      mainPage?: number;
+      privatePage?: number;
+      pageSize?: number;
+      filter?: AdminListFilter;
+    }) => {
       const params = new URLSearchParams(searchParams.toString());
-      params.set("page", String(next.page ?? page));
+      params.delete("page");
+      params.set("mainPage", String(next.mainPage ?? mainPage));
+      params.set("privatePage", String(next.privatePage ?? privatePage));
       params.set("pageSize", String(next.pageSize ?? pageSize));
       const nextFilter = next.filter ?? filter;
+      if (nextFilter === "all") {
+        params.delete("filter");
+      } else {
+        params.set("filter", nextFilter);
+      }
 
       if (next.id) {
         params.set("id", next.id);
@@ -163,18 +183,12 @@ export function BlogManager({
         params.delete("id");
       }
 
-      if (nextFilter === "all") {
-        params.delete("filter");
-      } else {
-        params.set("filter", nextFilter);
-      }
-
       const query = params.toString();
       router.replace(query ? `${pathname}?${query}` : pathname, {
         scroll: false,
       });
     },
-    [filter, page, pageSize, pathname, router, searchParams],
+    [filter, mainPage, pageSize, pathname, privatePage, router, searchParams],
   );
 
   const openCreate = () => {
@@ -214,38 +228,52 @@ export function BlogManager({
 
   // 목록 재조회 시 page 메타를 함께 갱신해 페이징 상태를 보정한다.
   const loadPosts = useCallback(
-    async (nextPage = page, nextPageSize = pageSize, nextFilter = filter) => {
-      const response = await fetch(
-        `/api/admin/posts?page=${nextPage}&pageSize=${nextPageSize}&filter=${nextFilter}`,
-        {
-          method: "GET",
-        },
-      );
+    async (
+      nextMainPage = mainPage,
+      nextPrivatePage = privatePage,
+      nextPageSize = pageSize,
+      nextFilter = filter,
+    ) => {
+      const [mainResponse, privateResponse] = await Promise.all([
+        fetch(
+          `/api/admin/posts?page=${nextMainPage}&pageSize=${nextPageSize}&filter=${nextFilter}&statusScope=published`,
+          { method: "GET" },
+        ),
+        fetch(
+          `/api/admin/posts?page=${nextPrivatePage}&pageSize=${nextPageSize}&filter=${nextFilter}&statusScope=draft`,
+          { method: "GET" },
+        ),
+      ]);
 
-      if (!response.ok) {
+      if (!mainResponse.ok || !privateResponse.ok) {
         throw new Error("게시글 목록을 불러오지 못했습니다.");
       }
 
-      const payload = (await response.json()) as PaginatedResult<AdminPost>;
-      setPosts(payload.items ?? []);
-      setPage(payload.page);
-      setPageSize(payload.pageSize);
-      setTotal(payload.total);
-      setTotalPages(payload.totalPages);
+      const [mainPayload, privatePayload] = (await Promise.all([
+        mainResponse.json(),
+        privateResponse.json(),
+      ])) as [PaginatedResult<AdminPost>, PaginatedResult<AdminPost>];
 
-      if ((payload.items?.length ?? 0) === 0 && payload.total > 0 && nextPage > 1) {
-        await loadPosts(nextPage - 1, nextPageSize);
-        return;
-      }
+      setMainPosts(mainPayload.items ?? []);
+      setMainPage(mainPayload.page);
+      setMainTotal(mainPayload.total);
+      setMainTotalPages(mainPayload.totalPages);
+      setPrivatePosts(privatePayload.items ?? []);
+      setPrivatePage(privatePayload.page);
+      setPrivateTotal(privatePayload.total);
+      setPrivateTotalPages(privatePayload.totalPages);
+      setPageSize(mainPayload.pageSize);
+      setFilter(nextFilter);
 
       syncQuery({
         id: null,
-        page: payload.page,
-        pageSize: payload.pageSize,
+        mainPage: mainPayload.page,
+        privatePage: privatePayload.page,
+        pageSize: mainPayload.pageSize,
         filter: nextFilter,
       });
     },
-    [filter, page, pageSize, syncQuery],
+    [filter, mainPage, pageSize, privatePage, syncQuery],
   );
 
   // 태그 입력은 기술스택과 같은 칩 UX로 통일한다.
@@ -355,7 +383,7 @@ export function BlogManager({
         throw new Error(payload.error ?? "저장에 실패했습니다.");
       }
 
-      await loadPosts(page);
+      await loadPosts(mainPage, privatePage);
       setMessage(editingId ? "게시글을 수정했습니다." : "게시글을 생성했습니다.");
       setDrawerOpen(false);
       setEditingId(null);
@@ -391,7 +419,7 @@ export function BlogManager({
         throw new Error(payload.error ?? "삭제에 실패했습니다.");
       }
 
-      await loadPosts(page);
+      await loadPosts(mainPage, privatePage);
       if (editingId === id) {
         setDrawerOpen(false);
         setEditingId(null);
@@ -408,15 +436,15 @@ export function BlogManager({
     }
   };
 
-  const onChangePage = async (nextPage: number) => {
-    if (nextPage === page || nextPage < 1 || nextPage > totalPages) {
+  const onChangeMainPage = async (nextPage: number) => {
+    if (nextPage === mainPage || nextPage < 1 || nextPage > mainTotalPages) {
       return;
     }
 
     setDrawerOpen(false);
     setEditingId(null);
     closeDetail("blog");
-    await loadPosts(nextPage, pageSize, filter);
+    await loadPosts(nextPage, privatePage, pageSize, filter);
   };
 
   const onChangePageSize = async (nextPageSize: number) => {
@@ -428,7 +456,18 @@ export function BlogManager({
     setDrawerOpen(false);
     setEditingId(null);
     closeDetail("blog");
-    await loadPosts(1, nextPageSize, filter);
+    await loadPosts(1, 1, nextPageSize, filter);
+  };
+
+  const onChangePrivatePage = async (nextPage: number) => {
+    if (nextPage === privatePage || nextPage < 1 || nextPage > privateTotalPages) {
+      return;
+    }
+
+    setDrawerOpen(false);
+    setEditingId(null);
+    closeDetail("blog");
+    await loadPosts(mainPage, nextPage, pageSize, filter);
   };
 
   const onChangeFilter = async (nextFilter: AdminListFilter) => {
@@ -436,11 +475,10 @@ export function BlogManager({
       return;
     }
 
-    setFilter(nextFilter);
     setDrawerOpen(false);
     setEditingId(null);
     closeDetail("blog");
-    await loadPosts(1, pageSize, nextFilter);
+    await loadPosts(1, 1, pageSize, nextFilter);
   };
 
   useEffect(() => {
@@ -453,7 +491,7 @@ export function BlogManager({
       return;
     }
 
-    void loadPosts(1, savedPageSize, filter);
+    void loadPosts(1, 1, savedPageSize, filter);
   }, [filter, loadPosts, pageSize, savedPageSize, searchParams]);
 
   useEffect(() => {
@@ -462,7 +500,7 @@ export function BlogManager({
       return;
     }
 
-    const target = posts.find((item) => item.id === initialSelectedId);
+    const target = [...mainPosts, ...privatePosts].find((item) => item.id === initialSelectedId);
 
     if (!target) {
       syncQuery({ id: null });
@@ -472,7 +510,7 @@ export function BlogManager({
 
     openEdit(target);
     hasAppliedInitialSelection.current = true;
-  }, [initialSelectedId, openEdit, posts, syncQuery]);
+  }, [initialSelectedId, mainPosts, openEdit, privatePosts, syncQuery]);
 
   useEffect(() => {
     // 제목-슬러그 자동 동기화가 켜져 있으면 title 변경을 slug에 즉시 반영한다.
@@ -494,24 +532,42 @@ export function BlogManager({
     });
   }, [form.title, syncSlugWithTitle]);
 
+  const total = mainTotal + privateTotal;
+
   return (
     <>
       <ManagerShell
         summary={`전체 게시글 ${total}개`}
-        detail="행을 클릭하면 오른쪽에서 편집 패널이 열립니다."
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
               <FilterIcon className="h-3.5 w-3.5 text-muted" />
-              <span className="sr-only">필터</span>
+              <span className="sr-only">상태 필터</span>
               <select
                 className="bg-transparent text-sm outline-none"
                 value={filter}
+                aria-label="상태 필터"
                 onChange={(event) => void onChangeFilter(event.target.value as AdminListFilter)}
               >
                 {BLOG_FILTER_OPTIONS.map((item) => (
                   <option key={item.value} value={item.value}>
                     {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+              <RowsIcon className="h-3.5 w-3.5 text-muted" />
+              <span className="sr-only">표시 개수</span>
+              <select
+                className="bg-transparent text-sm outline-none"
+                value={String(pageSize)}
+                aria-label="페이지 표시 개수"
+                onChange={(event) => void onChangePageSize(Number(event.target.value))}
+              >
+                {ADMIN_PAGE_SIZE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}줄씩 보기
                   </option>
                 ))}
               </select>
@@ -523,45 +579,88 @@ export function BlogManager({
         }
         message={message}
       >
-        <ManagerList hasItems={posts.length > 0} emptyLabel="아직 게시글이 없습니다.">
-          {posts.map((post) => (
-            <ManagerListRow key={post.id} onClick={() => openEdit(post)}>
-              <>
-                <span
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-xs font-semibold",
-                    statusBadge(post.status),
-                  )}
-                >
-                  {toStatusLabel(post.status)}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                  {post.title}
-                </span>
-                {post.thumbnail ? (
-                  <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs text-foreground">
-                    썸네일
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">공개</h2>
+          <ManagerList hasItems={mainPosts.length > 0} emptyLabel="공개 상태의 게시글이 없습니다.">
+            {mainPosts.map((post) => (
+              <ManagerListRow key={post.id} onClick={() => openEdit(post)}>
+                <>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-semibold",
+                      statusBadge(post.status),
+                    )}
+                  >
+                    {toStatusLabel(post.status)}
                   </span>
-                ) : null}
-                {post.status === "published" && post.featured ? (
-                  <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
-                    메인 노출
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                    {post.title}
                   </span>
-                ) : null}
-                <span className="hidden text-xs text-muted sm:inline">{post.slug}</span>
-                <span className="text-xs text-muted">{toDisplayDate(post.publishedAt)}</span>
-              </>
-            </ManagerListRow>
-          ))}
-        </ManagerList>
+                  {post.thumbnail ? (
+                    <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs text-foreground">
+                      썸네일
+                    </span>
+                  ) : null}
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-medium",
+                      post.featured
+                        ? "bg-accent/15 text-accent"
+                        : "bg-foreground/10 text-foreground",
+                    )}
+                  >
+                    {post.featured ? "메인 노출" : "일반 공개"}
+                  </span>
+                  <span className="hidden text-xs text-muted sm:inline">{post.slug}</span>
+                  <span className="text-xs text-muted">{toDisplayDate(post.publishedAt)}</span>
+                </>
+              </ManagerListRow>
+            ))}
+          </ManagerList>
+        </section>
 
         <AdminPagination
-          page={page}
-          totalPages={totalPages}
-          total={total}
-          pageSize={pageSize}
-          onPageChange={onChangePage}
-          onPageSizeChange={onChangePageSize}
+          page={mainPage}
+          totalPages={mainTotalPages}
+          total={mainTotal}
+          onPageChange={onChangeMainPage}
+        />
+
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">비공개</h2>
+          <ManagerList hasItems={privatePosts.length > 0} emptyLabel="비공개 게시글이 없습니다.">
+            {privatePosts.map((post) => (
+              <ManagerListRow key={post.id} onClick={() => openEdit(post)}>
+                <>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-semibold",
+                      statusBadge(post.status),
+                    )}
+                  >
+                    {toStatusLabel(post.status)}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                    {post.title}
+                  </span>
+                  {post.thumbnail ? (
+                    <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs text-foreground">
+                      썸네일
+                    </span>
+                  ) : null}
+                  <span className="hidden text-xs text-muted sm:inline">{post.slug}</span>
+                  <span className="text-xs text-muted">비공개</span>
+                </>
+              </ManagerListRow>
+            ))}
+          </ManagerList>
+        </section>
+
+        <AdminPagination
+          page={privatePage}
+          totalPages={privateTotalPages}
+          total={privateTotal}
+          onPageChange={onChangePrivatePage}
         />
       </ManagerShell>
 

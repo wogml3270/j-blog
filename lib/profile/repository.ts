@@ -1,7 +1,13 @@
 import type { ProfileContent } from "@/types/profile";
 import type { PublishStatus } from "@/types/db";
 import type { Locale } from "@/lib/i18n/config";
-import { TECH_STACK, getAboutSummary, getHomeIntro } from "@/lib/site/profile";
+import {
+  DEFAULT_ABOUT_PHOTO_URL,
+  DEFAULT_ABOUT_TECH_ITEMS,
+  TECH_STACK,
+  getAboutSummary,
+  getHomeIntro,
+} from "@/lib/site/profile";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import koAbout from "@/locales/ko/about.json";
 
@@ -11,6 +17,8 @@ interface ProfileRow {
   title: string;
   summary: string;
   tech_stack: unknown;
+  about_photo_url: string | null;
+  about_tech_items: unknown;
   about_intro_description_ko: string | null;
   about_experience: string;
   strengths: unknown;
@@ -19,15 +27,18 @@ interface ProfileRow {
   updated_at: string;
 }
 
-export type AdminHomeInput = {
+export type AdminAboutInput = {
   name: string;
   title: string;
   summary: string;
   techStack: string[];
-};
-
-export type AdminAboutInput = {
   introDescription: string;
+  aboutPhotoUrl: string;
+  aboutTechItems: Array<{
+    name: string;
+    description: string;
+    logoUrl: string;
+  }>;
   aboutExperience: string;
   strengths: string[];
   workStyle: string;
@@ -40,7 +51,7 @@ type RepoResult<T> = {
 };
 
 const PROFILE_SELECT_FIELDS =
-  "id,name,title,summary,tech_stack,about_intro_description_ko,about_experience,strengths,work_style,status,updated_at";
+  "id,name,title,summary,tech_stack,about_photo_url,about_tech_items,about_intro_description_ko,about_experience,strengths,work_style,status,updated_at";
 
 function toStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) {
@@ -50,13 +61,54 @@ function toStringArray(value: unknown): string[] {
   return value.map((item) => String(item).trim()).filter(Boolean);
 }
 
+function toAboutTechItems(
+  value: unknown,
+): Array<{ name: string; description: string; logoUrl: string }> {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const items: Array<{ name: string; description: string; logoUrl: string }> = [];
+
+  for (const item of value) {
+    if (!item || typeof item !== "object") {
+      continue;
+    }
+
+    const raw = item as Record<string, unknown>;
+    const name = typeof raw.name === "string" ? raw.name.trim() : "";
+    const description = typeof raw.description === "string" ? raw.description.trim() : "";
+    const logoUrl = typeof raw.logoUrl === "string" ? raw.logoUrl.trim() : "";
+
+    if (!name || !description || !logoUrl) {
+      continue;
+    }
+
+    const key = `${name}::${logoUrl}`;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    items.push({ name, description, logoUrl });
+  }
+
+  return items;
+}
+
 function rowToProfile(row: ProfileRow): ProfileContent {
+  const aboutTechItems = toAboutTechItems(row.about_tech_items);
+
   return {
     id: row.id,
     name: row.name,
     title: row.title,
     summary: row.summary,
     techStack: toStringArray(row.tech_stack),
+    aboutPhotoUrl: row.about_photo_url?.trim() || DEFAULT_ABOUT_PHOTO_URL,
+    aboutTechItems: aboutTechItems.length > 0 ? aboutTechItems : DEFAULT_ABOUT_TECH_ITEMS,
     aboutIntroDescriptionKo: row.about_intro_description_ko ?? "",
     aboutExperience: row.about_experience,
     strengths: toStringArray(row.strengths),
@@ -80,6 +132,8 @@ function fallbackProfile(locale: Locale): ProfileContent {
     title: home.title,
     summary: home.summary,
     techStack: TECH_STACK,
+    aboutPhotoUrl: DEFAULT_ABOUT_PHOTO_URL,
+    aboutTechItems: DEFAULT_ABOUT_TECH_ITEMS,
     aboutIntroDescriptionKo: koAbout.introDescription,
     aboutExperience: about.experience,
     strengths: about.strengths,
@@ -130,95 +184,6 @@ export async function getAdminProfileContent(locale: Locale = "ko"): Promise<Pro
   return rowToProfile(data);
 }
 
-async function getPersistedProfileForWrite(
-  locale: Locale = "ko",
-): Promise<RepoResult<ProfileContent>> {
-  const service = createSupabaseServiceClient();
-
-  if (!service) {
-    return {
-      data: null,
-      error: "Supabase service role key is not configured.",
-    };
-  }
-
-  const { data, error } = await service
-    .from("profile_content")
-    .select(PROFILE_SELECT_FIELDS)
-    .eq("id", 1)
-    .maybeSingle<ProfileRow>();
-
-  if (error) {
-    return {
-      data: null,
-      error: error.message,
-    };
-  }
-
-  if (!data) {
-    return {
-      data: fallbackProfile(locale),
-      error: null,
-    };
-  }
-
-  return {
-    data: rowToProfile(data),
-    error: null,
-  };
-}
-
-export async function upsertAdminHomeContent(
-  input: AdminHomeInput,
-): Promise<RepoResult<ProfileContent>> {
-  const service = createSupabaseServiceClient();
-
-  if (!service) {
-    return {
-      data: null,
-      error: "Supabase service role key is not configured.",
-    };
-  }
-
-  const baseResult = await getPersistedProfileForWrite("ko");
-
-  if (baseResult.error || !baseResult.data) {
-    return {
-      data: null,
-      error: baseResult.error ?? "Failed to load profile data.",
-    };
-  }
-
-  const base = baseResult.data;
-  const { error } = await service.from("profile_content").upsert(
-    {
-      id: 1,
-      name: input.name,
-      title: input.title,
-      summary: input.summary,
-      tech_stack: input.techStack,
-      about_intro_description_ko: base.aboutIntroDescriptionKo,
-      about_experience: base.aboutExperience,
-      strengths: base.strengths,
-      work_style: base.workStyle,
-      status: normalizeStatus(base.status),
-    },
-    { onConflict: "id" },
-  );
-
-  if (error) {
-    return {
-      data: null,
-      error: error.message,
-    };
-  }
-
-  return {
-    data: await getAdminProfileContent("ko"),
-    error: null,
-  };
-}
-
 export async function upsertAdminAboutContent(
   input: AdminAboutInput,
 ): Promise<RepoResult<ProfileContent>> {
@@ -231,23 +196,15 @@ export async function upsertAdminAboutContent(
     };
   }
 
-  const baseResult = await getPersistedProfileForWrite("ko");
-
-  if (baseResult.error || !baseResult.data) {
-    return {
-      data: null,
-      error: baseResult.error ?? "Failed to load profile data.",
-    };
-  }
-
-  const base = baseResult.data;
   const { error } = await service.from("profile_content").upsert(
     {
       id: 1,
-      name: base.name,
-      title: base.title,
-      summary: base.summary,
-      tech_stack: base.techStack,
+      name: input.name,
+      title: input.title,
+      summary: input.summary,
+      tech_stack: input.techStack,
+      about_photo_url: input.aboutPhotoUrl,
+      about_tech_items: input.aboutTechItems,
       about_intro_description_ko: input.introDescription,
       about_experience: input.aboutExperience,
       strengths: input.strengths,

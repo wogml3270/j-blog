@@ -27,9 +27,11 @@ import { AdminPagination } from "@/components/admin/common/pagination";
 import { StatusRadioGroup } from "@/components/admin/common/status-radio-group";
 import { Button } from "@/components/ui/button";
 import { FilterIcon } from "@/components/ui/icons/filter-icon";
+import { RowsIcon } from "@/components/ui/icons/rows-icon";
 import { TrashIcon } from "@/components/ui/icons/trash-icon";
 import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { ADMIN_PAGE_SIZE_OPTIONS } from "@/lib/utils/pagination";
 import { cn } from "@/lib/utils/cn";
 import { normalizeSlug } from "@/lib/utils/slug";
 import { useAdminDetailStore } from "@/stores/admin-detail";
@@ -258,19 +260,24 @@ function SortableRow({ id, children, onRemove }: SortableRowProps) {
 }
 
 export function ProjectsManager({
-  initialPage,
-  initialSelectedId = null,
+  initialMainPage,
+  initialPrivatePage,
   initialFilter = "all",
+  initialSelectedId = null,
 }: ProjectsManagerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [projects, setProjects] = useState<AdminProject[]>(initialPage.items);
-  const [page, setPage] = useState(initialPage.page);
-  const [pageSize, setPageSize] = useState(initialPage.pageSize);
-  const [total, setTotal] = useState(initialPage.total);
-  const [totalPages, setTotalPages] = useState(initialPage.totalPages);
+  const [mainProjects, setMainProjects] = useState<AdminProject[]>(initialMainPage.items);
+  const [mainPage, setMainPage] = useState(initialMainPage.page);
+  const [mainTotal, setMainTotal] = useState(initialMainPage.total);
+  const [mainTotalPages, setMainTotalPages] = useState(initialMainPage.totalPages);
+  const [privateProjects, setPrivateProjects] = useState<AdminProject[]>(initialPrivatePage.items);
+  const [privatePage, setPrivatePage] = useState(initialPrivatePage.page);
+  const [privateTotal, setPrivateTotal] = useState(initialPrivatePage.total);
+  const [privateTotalPages, setPrivateTotalPages] = useState(initialPrivatePage.totalPages);
+  const [pageSize, setPageSize] = useState(initialMainPage.pageSize);
   const [filter, setFilter] = useState<AdminListFilter>(initialFilter);
   const [form, setForm] = useState<ProjectFormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -299,11 +306,24 @@ export function ProjectsManager({
 
   // 상세 선택 상태와 현재 페이지를 URL query와 일치시킨다.
   const syncQuery = useCallback(
-    (next: { id?: string | null; page?: number; pageSize?: number; filter?: AdminListFilter }) => {
+    (next: {
+      id?: string | null;
+      mainPage?: number;
+      privatePage?: number;
+      pageSize?: number;
+      filter?: AdminListFilter;
+    }) => {
       const params = new URLSearchParams(searchParams.toString());
-      params.set("page", String(next.page ?? page));
+      params.delete("page");
+      params.set("mainPage", String(next.mainPage ?? mainPage));
+      params.set("privatePage", String(next.privatePage ?? privatePage));
       params.set("pageSize", String(next.pageSize ?? pageSize));
       const nextFilter = next.filter ?? filter;
+      if (nextFilter === "all") {
+        params.delete("filter");
+      } else {
+        params.set("filter", nextFilter);
+      }
 
       if (next.id) {
         params.set("id", next.id);
@@ -311,18 +331,12 @@ export function ProjectsManager({
         params.delete("id");
       }
 
-      if (nextFilter === "all") {
-        params.delete("filter");
-      } else {
-        params.set("filter", nextFilter);
-      }
-
       const query = params.toString();
       router.replace(query ? `${pathname}?${query}` : pathname, {
         scroll: false,
       });
     },
-    [filter, page, pageSize, pathname, router, searchParams],
+    [filter, mainPage, pageSize, pathname, privatePage, router, searchParams],
   );
 
   const openCreate = () => {
@@ -362,36 +376,51 @@ export function ProjectsManager({
 
   // 저장/삭제 직후 목록 상태를 서버 기준으로 동기화한다.
   const loadProjects = useCallback(
-    async (nextPage = page, nextPageSize = pageSize, nextFilter = filter) => {
-      const response = await fetch(
-        `/api/admin/projects?page=${nextPage}&pageSize=${nextPageSize}&filter=${nextFilter}`,
-        { method: "GET" },
-      );
+    async (
+      nextMainPage = mainPage,
+      nextPrivatePage = privatePage,
+      nextPageSize = pageSize,
+      nextFilter = filter,
+    ) => {
+      const [mainResponse, privateResponse] = await Promise.all([
+        fetch(
+          `/api/admin/projects?page=${nextMainPage}&pageSize=${nextPageSize}&filter=${nextFilter}&statusScope=published`,
+          { method: "GET" },
+        ),
+        fetch(
+          `/api/admin/projects?page=${nextPrivatePage}&pageSize=${nextPageSize}&filter=${nextFilter}&statusScope=draft`,
+          { method: "GET" },
+        ),
+      ]);
 
-      if (!response.ok) {
+      if (!mainResponse.ok || !privateResponse.ok) {
         throw new Error("프로젝트 목록을 불러오지 못했습니다.");
       }
 
-      const payload = (await response.json()) as PaginatedResult<AdminProject>;
-      setProjects(payload.items ?? []);
-      setPage(payload.page);
-      setPageSize(payload.pageSize);
-      setTotal(payload.total);
-      setTotalPages(payload.totalPages);
+      const [mainPayload, privatePayload] = (await Promise.all([
+        mainResponse.json(),
+        privateResponse.json(),
+      ])) as [PaginatedResult<AdminProject>, PaginatedResult<AdminProject>];
 
-      if ((payload.items?.length ?? 0) === 0 && payload.total > 0 && nextPage > 1) {
-        await loadProjects(nextPage - 1, nextPageSize);
-        return;
-      }
-
+      setMainProjects(mainPayload.items ?? []);
+      setMainPage(mainPayload.page);
+      setMainTotal(mainPayload.total);
+      setMainTotalPages(mainPayload.totalPages);
+      setPrivateProjects(privatePayload.items ?? []);
+      setPrivatePage(privatePayload.page);
+      setPrivateTotal(privatePayload.total);
+      setPrivateTotalPages(privatePayload.totalPages);
+      setPageSize(mainPayload.pageSize);
+      setFilter(nextFilter);
       syncQuery({
         id: null,
-        page: payload.page,
-        pageSize: payload.pageSize,
+        mainPage: mainPayload.page,
+        privatePage: privatePayload.page,
+        pageSize: mainPayload.pageSize,
         filter: nextFilter,
       });
     },
-    [filter, page, pageSize, syncQuery],
+    [filter, mainPage, pageSize, privatePage, syncQuery],
   );
 
   const onUploadThumbnail = async () => {
@@ -574,7 +603,7 @@ export function ProjectsManager({
         throw new Error(payload.error ?? "저장에 실패했습니다.");
       }
 
-      await loadProjects(page);
+      await loadProjects(mainPage, privatePage);
       setMessage(editingId ? "프로젝트를 수정했습니다." : "프로젝트를 생성했습니다.");
       setDrawerOpen(false);
       setEditingId(null);
@@ -610,7 +639,7 @@ export function ProjectsManager({
         throw new Error(payload.error ?? "삭제에 실패했습니다.");
       }
 
-      await loadProjects(page);
+      await loadProjects(mainPage, privatePage);
       if (editingId === id) {
         setDrawerOpen(false);
         setEditingId(null);
@@ -633,7 +662,9 @@ export function ProjectsManager({
       return;
     }
 
-    const target = projects.find((item) => item.id === initialSelectedId);
+    const target = [...mainProjects, ...privateProjects].find(
+      (item) => item.id === initialSelectedId,
+    );
 
     if (!target) {
       syncQuery({ id: null });
@@ -643,17 +674,17 @@ export function ProjectsManager({
 
     openEdit(target);
     hasAppliedInitialSelection.current = true;
-  }, [initialSelectedId, openEdit, projects, syncQuery]);
+  }, [initialSelectedId, mainProjects, openEdit, privateProjects, syncQuery]);
 
-  const onChangePage = async (nextPage: number) => {
-    if (nextPage === page || nextPage < 1 || nextPage > totalPages) {
+  const onChangeMainPage = async (nextPage: number) => {
+    if (nextPage === mainPage || nextPage < 1 || nextPage > mainTotalPages) {
       return;
     }
 
     setDrawerOpen(false);
     setEditingId(null);
     closeDetail("projects");
-    await loadProjects(nextPage, pageSize, filter);
+    await loadProjects(nextPage, privatePage, pageSize, filter);
   };
 
   const onChangePageSize = async (nextPageSize: number) => {
@@ -665,7 +696,18 @@ export function ProjectsManager({
     setDrawerOpen(false);
     setEditingId(null);
     closeDetail("projects");
-    await loadProjects(1, nextPageSize, filter);
+    await loadProjects(1, 1, nextPageSize, filter);
+  };
+
+  const onChangePrivatePage = async (nextPage: number) => {
+    if (nextPage === privatePage || nextPage < 1 || nextPage > privateTotalPages) {
+      return;
+    }
+
+    setDrawerOpen(false);
+    setEditingId(null);
+    closeDetail("projects");
+    await loadProjects(mainPage, nextPage, pageSize, filter);
   };
 
   const onChangeFilter = async (nextFilter: AdminListFilter) => {
@@ -673,11 +715,10 @@ export function ProjectsManager({
       return;
     }
 
-    setFilter(nextFilter);
     setDrawerOpen(false);
     setEditingId(null);
     closeDetail("projects");
-    await loadProjects(1, pageSize, nextFilter);
+    await loadProjects(1, 1, pageSize, nextFilter);
   };
 
   useEffect(() => {
@@ -690,7 +731,7 @@ export function ProjectsManager({
       return;
     }
 
-    void loadProjects(1, savedPageSize, filter);
+    void loadProjects(1, 1, savedPageSize, filter);
   }, [filter, loadProjects, pageSize, savedPageSize, searchParams]);
 
   useEffect(() => {
@@ -713,25 +754,43 @@ export function ProjectsManager({
     });
   }, [form.title, syncSlugWithTitle]);
 
+  const total = mainTotal + privateTotal;
+
   return (
     <>
       <ManagerShell
         motion
         summary={`전체 프로젝트 ${total}개`}
-        detail="프로젝트를 클릭하면 오른쪽 패널에서 수정할 수 있습니다."
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
               <FilterIcon className="h-3.5 w-3.5 text-muted" />
-              <span className="sr-only">필터</span>
+              <span className="sr-only">상태 필터</span>
               <select
                 className="bg-transparent text-sm outline-none"
                 value={filter}
+                aria-label="상태 필터"
                 onChange={(event) => void onChangeFilter(event.target.value as AdminListFilter)}
               >
                 {PROJECT_FILTER_OPTIONS.map((item) => (
                   <option key={item.value} value={item.value}>
                     {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+              <RowsIcon className="h-3.5 w-3.5 text-muted" />
+              <span className="sr-only">표시 개수</span>
+              <select
+                className="bg-transparent text-sm outline-none"
+                value={String(pageSize)}
+                aria-label="페이지 표시 개수"
+                onChange={(event) => void onChangePageSize(Number(event.target.value))}
+              >
+                {ADMIN_PAGE_SIZE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}줄씩 보기
                   </option>
                 ))}
               </select>
@@ -743,42 +802,90 @@ export function ProjectsManager({
         }
         message={message}
       >
-        <ManagerList hasItems={projects.length > 0} emptyLabel="아직 프로젝트가 없습니다.">
-          {projects.map((project) => (
-            <ManagerListRow
-              key={project.id}
-              onClick={() => openEdit(project)}
-              className="transition-all duration-300 hover:-translate-y-0.5"
-            >
-              <>
-                <span
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-xs font-semibold",
-                    statusBadge(project.status),
-                  )}
-                >
-                  {toStatusLabel(project.status)}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                  {project.title}
-                </span>
-                <span className="hidden text-xs text-muted sm:inline">{project.slug}</span>
-                {project.status === "published" && project.featured ? (
-                  <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
-                    메인 노출
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">공개</h2>
+          <ManagerList
+            hasItems={mainProjects.length > 0}
+            emptyLabel="공개 상태의 프로젝트가 없습니다."
+          >
+            {mainProjects.map((project) => (
+              <ManagerListRow
+                key={project.id}
+                onClick={() => openEdit(project)}
+                className="transition-all duration-300 hover:-translate-y-0.5"
+              >
+                <>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-semibold",
+                      statusBadge(project.status),
+                    )}
+                  >
+                    {toStatusLabel(project.status)}
                   </span>
-                ) : null}
-              </>
-            </ManagerListRow>
-          ))}
-        </ManagerList>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                    {project.title}
+                  </span>
+                  <span className="hidden text-xs text-muted sm:inline">{project.slug}</span>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-medium",
+                      project.featured
+                        ? "bg-accent/15 text-accent"
+                        : "bg-foreground/10 text-foreground",
+                    )}
+                  >
+                    {project.featured ? "메인 노출" : "일반 공개"}
+                  </span>
+                </>
+              </ManagerListRow>
+            ))}
+          </ManagerList>
+        </section>
+
         <AdminPagination
-          page={page}
-          totalPages={totalPages}
-          total={total}
-          pageSize={pageSize}
-          onPageChange={onChangePage}
-          onPageSizeChange={onChangePageSize}
+          page={mainPage}
+          totalPages={mainTotalPages}
+          total={mainTotal}
+          onPageChange={onChangeMainPage}
+        />
+
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">비공개</h2>
+          <ManagerList
+            hasItems={privateProjects.length > 0}
+            emptyLabel="비공개 프로젝트가 없습니다."
+          >
+            {privateProjects.map((project) => (
+              <ManagerListRow
+                key={project.id}
+                onClick={() => openEdit(project)}
+                className="transition-all duration-300 hover:-translate-y-0.5"
+              >
+                <>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-semibold",
+                      statusBadge(project.status),
+                    )}
+                  >
+                    {toStatusLabel(project.status)}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                    {project.title}
+                  </span>
+                  <span className="hidden text-xs text-muted sm:inline">{project.slug}</span>
+                  <span className="text-xs text-muted">비공개</span>
+                </>
+              </ManagerListRow>
+            ))}
+          </ManagerList>
+        </section>
+        <AdminPagination
+          page={privatePage}
+          totalPages={privateTotalPages}
+          total={privateTotal}
+          onPageChange={onChangePrivatePage}
         />
       </ManagerShell>
 

@@ -278,7 +278,10 @@ export function Header({ locale, dictionary }: HeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 shadow-sm backdrop-blur-md">
+      <header
+        id="site-header"
+        className="sticky top-0 z-40 border-b border-border/70 bg-background/80 shadow-sm backdrop-blur-md"
+      >
         <Container className="flex h-16 items-center justify-between gap-3 sm:gap-4">
           <BrandLogo
             href={withLocalePath(locale, "/")}
@@ -353,7 +356,7 @@ export function Header({ locale, dictionary }: HeaderProps) {
                 setIsMobileMenuOpen(false);
                 openAuthModal();
               }}
-              className="h-9 w-9 px-0"
+              className={cn("h-9", user ? "w-9 px-0! border-0" : "px-3")}
             >
               {user ? (
                 avatarUrl ? (
@@ -361,7 +364,7 @@ export function Header({ locale, dictionary }: HeaderProps) {
                   <img
                     src={avatarUrl}
                     alt={nickname || "user"}
-                    className="h-7 w-7 rounded-full object-cover"
+                    className="h-full w-full rounded-full object-cover"
                   />
                 ) : (
                   <span className="text-xs font-semibold">

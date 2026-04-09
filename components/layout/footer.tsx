@@ -13,7 +13,7 @@ export function Footer({ locale, dictionary }: FooterProps) {
   const site = getSiteCopy(locale);
 
   return (
-    <footer className="border-t border-border/70 bg-surface">
+    <footer id="site-footer" className="border-t border-border/70 bg-surface">
       <Container className="flex flex-col gap-2 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
         <p>
           © {new Date().getFullYear()} {site.siteName}. {dictionary.footer.rightsReserved}

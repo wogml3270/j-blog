@@ -3,8 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon } from "@/components/ui/icons/chevron-left-icon";
 import { ChevronRightIcon } from "@/components/ui/icons/chevron-right-icon";
-import { FilterIcon } from "@/components/ui/icons/filter-icon";
-import { ADMIN_PAGE_SIZE_OPTIONS } from "@/lib/utils/pagination";
 import { cn } from "@/lib/utils/cn";
 import type { AdminPaginationProps } from "@/types/ui";
 
@@ -38,20 +36,11 @@ function buildPageItems(page: number, totalPages: number): Array<number | "ellip
   return result;
 }
 
-const PAGE_SIZE_LABELS: Record<number, string> = {
-  3: "3줄씩 보기",
-  5: "5줄씩 보기",
-  10: "10줄씩 보기",
-};
-
 export function AdminPagination({
   page,
   totalPages,
   total,
-  pageSize,
-  pageSizeOptions = ADMIN_PAGE_SIZE_OPTIONS,
   onPageChange,
-  onPageSizeChange,
 }: AdminPaginationProps) {
   const hasPrev = page > 1;
   const hasNext = page < totalPages;
@@ -63,22 +52,6 @@ export function AdminPagination({
         <p className="text-xs text-muted">
           총 {total}개 · {page} / {totalPages} 페이지
         </p>
-        <label className="ml-auto inline-flex items-center gap-2 text-xs text-muted lg:ml-0">
-          <FilterIcon className="h-3.5 w-3.5" />
-          <span className="sr-only">표시 개수</span>
-          <select
-            value={String(pageSize)}
-            onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            className="h-8 rounded-md border border-border bg-background px-2.5 text-xs text-foreground"
-            aria-label="페이지 표시 개수"
-          >
-            {pageSizeOptions.map((option) => (
-              <option key={option} value={option}>
-                {PAGE_SIZE_LABELS[option] ?? `${option}개 보기`}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
 
       <nav className="flex flex-wrap items-center gap-1" aria-label="페이지 이동">

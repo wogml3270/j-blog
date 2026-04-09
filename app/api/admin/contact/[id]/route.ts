@@ -8,7 +8,7 @@ type RouteContext = {
 };
 
 function parseStatus(value: unknown): ContactMessageStatus | null {
-  if (value === "new" || value === "read" || value === "replied") {
+  if (value === "new" || value === "replied") {
     return value;
   }
 

@@ -3,7 +3,7 @@ import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { createAdminPost, getAdminPostsPaginated } from "@/lib/blog/repository";
 import { revalidateBlogPaths } from "@/lib/cache/revalidate";
 import { normalizePagination } from "@/lib/utils/pagination";
-import { normalizeAdminListFilter } from "@/lib/utils/search-params";
+import { normalizeAdminListFilter, normalizeStatusScope } from "@/lib/utils/search-params";
 import { normalizeSlug } from "@/lib/utils/slug";
 import type { AdminPostInput } from "@/types/blog";
 
@@ -48,6 +48,15 @@ function parseBody(body: unknown): AdminPostInput | null {
   };
 }
 
+// 비공개 상태에서 메인 노출을 막아 상태 정책을 서버에서 강제한다.
+function validateFeaturedPolicy(payload: AdminPostInput): string | null {
+  if (payload.status === "draft" && payload.featured) {
+    return "비공개 상태에서는 메인 페이지 노출을 설정할 수 없습니다.";
+  }
+
+  return null;
+}
+
 // 관리자 게시글 목록은 page/pageSize 기반 응답으로 통일한다.
 export async function GET(request: Request) {
   const guard = await getAdminGuardForApi();
@@ -62,7 +71,8 @@ export async function GET(request: Request) {
     url.searchParams.get("pageSize"),
   );
   const filter = normalizeAdminListFilter(url.searchParams.get("filter"));
-  const result = await getAdminPostsPaginated(page, pageSize, filter);
+  const statusScope = normalizeStatusScope(url.searchParams.get("statusScope"));
+  const result = await getAdminPostsPaginated(page, pageSize, filter, statusScope);
 
   return NextResponse.json(result);
 }
@@ -78,6 +88,12 @@ export async function POST(request: Request) {
 
   if (!payload) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  const policyError = validateFeaturedPolicy(payload);
+
+  if (policyError) {
+    return NextResponse.json({ error: policyError }, { status: 400 });
   }
 
   const result = await createAdminPost(payload, guard.user.id);

@@ -4,14 +4,10 @@ import { revalidateProfilePaths } from "@/lib/cache/revalidate";
 import {
   getAdminProfileContent,
   type AdminAboutInput,
-  type AdminHomeInput,
   upsertAdminAboutContent,
-  upsertAdminHomeContent,
 } from "@/lib/profile/repository";
 
-type LegacyAdminProfileInput = AdminHomeInput & AdminAboutInput;
-
-function parseBody(body: unknown): LegacyAdminProfileInput | null {
+function parseBody(body: unknown): AdminAboutInput | null {
   if (!body || typeof body !== "object") {
     return null;
   }
@@ -36,6 +32,29 @@ function parseBody(body: unknown): LegacyAdminProfileInput | null {
     summary: source.summary.trim(),
     techStack: source.techStack.map((item) => String(item).trim()).filter(Boolean),
     introDescription: source.introDescription.trim(),
+    aboutPhotoUrl: typeof source.aboutPhotoUrl === "string" ? source.aboutPhotoUrl.trim() : "",
+    aboutTechItems: Array.isArray(source.aboutTechItems)
+      ? source.aboutTechItems
+          .map((item) => {
+            if (!item || typeof item !== "object") {
+              return null;
+            }
+
+            const raw = item as Record<string, unknown>;
+            const name = typeof raw.name === "string" ? raw.name.trim() : "";
+            const description = typeof raw.description === "string" ? raw.description.trim() : "";
+            const logoUrl = typeof raw.logoUrl === "string" ? raw.logoUrl.trim() : "";
+
+            if (!name || !description || !logoUrl) {
+              return null;
+            }
+
+            return { name, description, logoUrl };
+          })
+          .filter(
+            (item): item is { name: string; description: string; logoUrl: string } => item !== null,
+          )
+      : [],
     aboutExperience: source.aboutExperience.trim(),
     strengths: Array.isArray(source.strengths)
       ? source.strengths.map((item) => String(item).trim()).filter(Boolean)
@@ -67,15 +86,6 @@ export async function PUT(request: Request) {
 
   if (!payload) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
-  }
-
-  const homeResult = await upsertAdminHomeContent(payload);
-
-  if (homeResult.error || !homeResult.data) {
-    return NextResponse.json(
-      { error: homeResult.error ?? "Failed to update profile(home)." },
-      { status: 400 },
-    );
   }
 
   const aboutResult = await upsertAdminAboutContent(payload);

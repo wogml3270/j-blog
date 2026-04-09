@@ -11,7 +11,7 @@ import type { AdminSidebarProps } from "@/types/ui";
 
 const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "대시보드" },
-  { href: "/admin/home", label: "홈" },
+  { href: "/admin/highlight", label: "홈" },
   { href: "/admin/about", label: "소개" },
   { href: "/admin/projects", label: "프로젝트" },
   { href: "/admin/blog", label: "블로그" },

@@ -4,6 +4,11 @@ import type { AdminListFilter } from "@/types/admin";
 import type { AdminPost } from "@/types/blog";
 import type { ContactMessage } from "@/types/contact";
 import type { PublishStatus } from "@/types/db";
+import type {
+  HomeHighlight,
+  HomeHighlightResolvedSlide,
+  HomeHighlightSourceOption,
+} from "@/types/home";
 import type { AdminProject } from "@/types/projects";
 
 export type HeaderProps = {
@@ -55,20 +60,29 @@ export type AdminSidebarProps = {
 };
 
 export type BlogManagerProps = {
-  initialPage: import("@/types/admin").PaginatedResult<AdminPost>;
-  initialSelectedId?: string | null;
+  initialMainPage: import("@/types/admin").PaginatedResult<AdminPost>;
+  initialPrivatePage: import("@/types/admin").PaginatedResult<AdminPost>;
   initialFilter?: AdminListFilter;
+  initialSelectedId?: string | null;
 };
 
 export type ContactManagerProps = {
-  initialPage: import("@/types/admin").PaginatedResult<ContactMessage>;
+  initialNewPage: import("@/types/admin").PaginatedResult<ContactMessage>;
+  initialRepliedPage: import("@/types/admin").PaginatedResult<ContactMessage>;
+  initialStatusFilter?: "all" | "new" | "replied";
   initialSelectedId?: string | null;
 };
 
 export type ProjectsManagerProps = {
-  initialPage: import("@/types/admin").PaginatedResult<AdminProject>;
-  initialSelectedId?: string | null;
+  initialMainPage: import("@/types/admin").PaginatedResult<AdminProject>;
+  initialPrivatePage: import("@/types/admin").PaginatedResult<AdminProject>;
   initialFilter?: AdminListFilter;
+  initialSelectedId?: string | null;
+};
+
+export type HomeHighlightManagerProps = {
+  initialHighlights: HomeHighlight[];
+  initialSources: HomeHighlightSourceOption[];
 };
 
 export type StatusOption<TValue extends string = string> = {
@@ -119,10 +133,7 @@ export type AdminPaginationProps = {
   page: number;
   totalPages: number;
   total: number;
-  pageSize: number;
-  pageSizeOptions?: readonly number[];
   onPageChange: (page: number) => void;
-  onPageSizeChange: (pageSize: number) => void;
 };
 
 export type PostFormState = {
@@ -192,4 +203,10 @@ export type FeaturedProjectsProps = {
   title: string;
   description: string;
   allProjectsLabel: string;
+};
+
+export type HomeHeroSliderProps = {
+  slides: HomeHighlightResolvedSlide[];
+  viewProjectsLabel: string;
+  viewBlogLabel: string;
 };

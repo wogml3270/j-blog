@@ -13,6 +13,7 @@ import {
   getFeaturedProjects as getFallbackFeaturedProjects,
   getProjectBySlug as getFallbackProjectBySlug,
 } from "@/lib/projects/data";
+import { removeHomeHighlightSource, syncHomeHighlightSource } from "@/lib/home/sync";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
   ADMIN_PAGE_SIZE_OPTIONS,
@@ -372,6 +373,7 @@ export async function getAdminProjectsPaginated(
   page = 1,
   pageSize = 10,
   filter: AdminListFilter = "all",
+  statusScope: PublishStatus | null = null,
 ): Promise<PaginatedResult<AdminProject>> {
   const service = createSupabaseServiceClient();
 
@@ -388,6 +390,10 @@ export async function getAdminProjectsPaginated(
   const to = from + safePageSize - 1;
 
   let query = service.from("projects").select(PROJECT_SELECT_FIELDS, { count: "exact" });
+
+  if (statusScope) {
+    query = query.eq("status", statusScope);
+  }
 
   if (filter === "main") {
     query = query.eq("featured", true);
@@ -481,6 +487,13 @@ export async function createAdminProject(
     };
   }
 
+  await syncHomeHighlightSource({
+    sourceType: "project",
+    sourceId: data.id,
+    featured: Boolean(input.featured),
+    status: normalizeStatus(input.status),
+  });
+
   return {
     data: await getAdminProjectById(data.id),
     error: null,
@@ -532,6 +545,13 @@ export async function updateAdminProject(
     };
   }
 
+  await syncHomeHighlightSource({
+    sourceType: "project",
+    sourceId: id,
+    featured: Boolean(input.featured),
+    status: normalizeStatus(input.status),
+  });
+
   return {
     data: await getAdminProjectById(id),
     error: null,
@@ -556,6 +576,8 @@ export async function deleteAdminProject(id: string): Promise<RepoResult<{ id: s
       error: error.message,
     };
   }
+
+  await removeHomeHighlightSource("project", id);
 
   return {
     data: { id },

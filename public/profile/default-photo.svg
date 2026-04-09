@@ -1,0 +1,21 @@
+<svg width="1200" height="1400" viewBox="0 0 1200 1400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="80" x2="980" y2="1220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2C3B50" />
+      <stop offset="1" stop-color="#1C2533" />
+    </linearGradient>
+    <linearGradient id="accent" x1="190" y1="200" x2="940" y2="1040" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5EEAD4" stop-opacity="0.42" />
+      <stop offset="1" stop-color="#22D3EE" stop-opacity="0.14" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1400" rx="56" fill="url(#bg)" />
+  <rect x="84" y="90" width="1032" height="1220" rx="44" stroke="#6C829D" stroke-opacity="0.45" />
+  <circle cx="600" cy="520" r="230" fill="#E5E7EB" fill-opacity="0.1" />
+  <path d="M380 1068C380 928.48 478.48 830 600 830C721.52 830 820 928.48 820 1068V1098H380V1068Z" fill="#E5E7EB" fill-opacity="0.1" />
+  <circle cx="600" cy="490" r="126" fill="#E5E7EB" fill-opacity="0.3" />
+  <rect x="236" y="210" width="728" height="920" rx="40" fill="url(#accent)" />
+  <text x="600" y="1240" text-anchor="middle" fill="#C9D4E4" font-size="44" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+    Upload your profile photo in Admin
+  </text>
+</svg>

@@ -12,6 +12,9 @@
   --accent: #0f766e;
   --theme-transition-duration: 420ms;
   --theme-transition-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --site-header-height: 64px;
+  --site-footer-height: 96px;
+  --home-hero-height: calc(100dvh - var(--site-header-height) - var(--site-footer-height));
 }
 
 .dark {
@@ -84,6 +87,39 @@ html[data-theme-transition="active"] .locale-root * {
 @keyframes ui-skeleton-shimmer {
   100% {
     transform: translateX(100%);
+  }
+}
+
+@keyframes home-hero-image-reveal {
+  from {
+    clip-path: circle(0% at 50% 50%);
+    transform: scale(1.12);
+  }
+  to {
+    clip-path: circle(150% at 50% 50%);
+    transform: scale(1);
+  }
+}
+
+@keyframes home-hero-circle-reveal {
+  from {
+    opacity: 0.6;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+@keyframes home-hero-copy-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -295,6 +331,44 @@ a {
 
 .home-card-swiper .swiper-slide > * {
   width: 100%;
+}
+
+.home-immersive-main,
+.home-immersive-main .swiper-wrapper,
+.home-immersive-main .swiper-slide {
+  height: 100%;
+}
+
+.home-hero-bg-image {
+  clip-path: circle(0% at 50% 50%);
+}
+
+.home-immersive-main .swiper-slide-active .home-hero-bg-image {
+  animation: home-hero-image-reveal 1500ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.home-hero-bg-reveal {
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.42) 0%, transparent 65%);
+  opacity: 0;
+  transform: scale(0.2);
+}
+
+.home-immersive-main .swiper-slide-active .home-hero-bg-reveal {
+  animation: home-hero-circle-reveal 1200ms ease-out forwards;
+}
+
+.home-hero-copy > * {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+}
+
+.home-immersive-main .swiper-slide-active .home-hero-copy > * {
+  animation: home-hero-copy-in 980ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--copy-delay, 0ms);
+}
+
+.home-immersive-thumbs .swiper-slide {
+  opacity: 1;
 }
 
 .ui-clamp-3 {

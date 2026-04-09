@@ -11,7 +11,7 @@
 
 ### 1) 주석 정책 문서 추가
 
-- 파일: `docs/refactor-commenting-guideline.md`
+- 파일: `docs/refector/2026-04-08/리팩터링-주석-가이드.md`
 - 한국어 기준의 핵심 로직 주석 대상과 작성 규칙을 정의
 
 ### 2) 관리자 공통 UI 컴포넌트 추가

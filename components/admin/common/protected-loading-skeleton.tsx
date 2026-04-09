@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SurfaceCard } from "@/components/ui/surface-card";
 
 function dashboardCardSkeleton(index: number) {
-  const widthMap = ["34%", "26%", "31%", "29%"] as const;
+  const widthMap = ["34%", "26%", "31%", "29%", "33%"] as const;
 
   return (
     <SurfaceCard
@@ -98,8 +98,8 @@ export function AdminDashboardLoadingSkeleton() {
   return (
     <main className="space-y-6">
       {pageTitleSkeleton(188)}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => dashboardCardSkeleton(index))}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, index) => dashboardCardSkeleton(index))}
       </div>
 
       <SurfaceCard tone="surface" padding="md" className="space-y-2.5">
@@ -129,27 +129,6 @@ export function AdminListManagerLoadingSkeleton({
       {pageTitleSkeleton(titleWidth)}
       {managerHeaderSkeleton(hasAction)}
       {managerListSkeleton()}
-    </main>
-  );
-}
-
-export function AdminHomeLoadingSkeleton() {
-  return (
-    <main className="space-y-5">
-      {pageTitleSkeleton(124)}
-      {managerHeaderSkeleton(false)}
-      <SurfaceCard tone="surface" radius="2xl" padding="md" className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Skeleton className="w-full" height={40} rounded="0.55rem" />
-          <Skeleton className="w-full" height={40} rounded="0.55rem" />
-        </div>
-        <Skeleton className="w-full" height={40} rounded="0.55rem" />
-        <Skeleton className="w-full" height={112} rounded="0.7rem" />
-        <div className="flex items-center justify-between gap-2">
-          <Skeleton width={88} height={28} rounded="999px" />
-          <Skeleton width={94} height={36} rounded="0.6rem" />
-        </div>
-      </SurfaceCard>
     </main>
   );
 }

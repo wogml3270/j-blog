@@ -8,18 +8,26 @@ import { ManagerShell } from "@/components/admin/common/manager-shell";
 import { AdminPagination } from "@/components/admin/common/pagination";
 import { StatusRadioGroup } from "@/components/admin/common/status-radio-group";
 import { Button } from "@/components/ui/button";
+import { FilterIcon } from "@/components/ui/icons/filter-icon";
+import { RowsIcon } from "@/components/ui/icons/rows-icon";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { ADMIN_PAGE_SIZE_OPTIONS } from "@/lib/utils/pagination";
 import { cn } from "@/lib/utils/cn";
 import { useAdminDetailStore } from "@/stores/admin-detail";
 import { useAdminListUiStore } from "@/stores/admin-list-ui";
-import type { PaginatedResult } from "@/types/admin";
+import type { ContactListFilter, PaginatedResult } from "@/types/admin";
 import type { ContactMessage } from "@/types/contact";
 import type { ContactMessageStatus } from "@/types/db";
 import type { ContactManagerProps, StatusOption } from "@/types/ui";
 
 const STATUS_OPTIONS: StatusOption<ContactMessageStatus>[] = [
   { value: "new", label: "신규" },
-  { value: "read", label: "확인함" },
+  { value: "replied", label: "답변완료" },
+];
+
+const CONTACT_FILTER_OPTIONS: Array<{ value: ContactListFilter; label: string }> = [
+  { value: "all", label: "전체" },
+  { value: "new", label: "신규" },
   { value: "replied", label: "답변완료" },
 ];
 
@@ -28,20 +36,12 @@ function statusBadge(status: ContactMessageStatus): string {
     return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300";
   }
 
-  if (status === "read") {
-    return "bg-sky-500/15 text-sky-700 dark:text-sky-300";
-  }
-
   return "bg-amber-500/15 text-amber-700 dark:text-amber-300";
 }
 
 function toStatusLabel(status: ContactMessageStatus): string {
   if (status === "replied") {
     return "답변완료";
-  }
-
-  if (status === "read") {
-    return "확인함";
   }
 
   return "신규";
@@ -64,16 +64,46 @@ function toDisplayDate(value: string): string {
   }).format(date);
 }
 
-export function ContactManager({ initialPage, initialSelectedId = null }: ContactManagerProps) {
+// 문의 상태별 페이지 응답을 재사용 가능한 함수로 분리한다.
+async function fetchContactPage(
+  status: ContactMessageStatus,
+  page: number,
+  pageSize: number,
+): Promise<PaginatedResult<ContactMessage>> {
+  const response = await fetch(
+    `/api/admin/contact?page=${page}&pageSize=${pageSize}&status=${status}`,
+    { method: "GET" },
+  );
+
+  if (!response.ok) {
+    throw new Error("문의 목록을 불러오지 못했습니다.");
+  }
+
+  return (await response.json()) as PaginatedResult<ContactMessage>;
+}
+
+export function ContactManager({
+  initialNewPage,
+  initialRepliedPage,
+  initialStatusFilter = "all",
+  initialSelectedId = null,
+}: ContactManagerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [contacts, setContacts] = useState<ContactMessage[]>(initialPage.items);
-  const [page, setPage] = useState(initialPage.page);
-  const [pageSize, setPageSize] = useState(initialPage.pageSize);
-  const [total, setTotal] = useState(initialPage.total);
-  const [totalPages, setTotalPages] = useState(initialPage.totalPages);
+  const [newContacts, setNewContacts] = useState<ContactMessage[]>(initialNewPage.items);
+  const [newPage, setNewPage] = useState(initialNewPage.page);
+  const [newTotal, setNewTotal] = useState(initialNewPage.total);
+  const [newTotalPages, setNewTotalPages] = useState(initialNewPage.totalPages);
+  const [repliedContacts, setRepliedContacts] = useState<ContactMessage[]>(
+    initialRepliedPage.items,
+  );
+  const [repliedPage, setRepliedPage] = useState(initialRepliedPage.page);
+  const [repliedTotal, setRepliedTotal] = useState(initialRepliedPage.total);
+  const [repliedTotalPages, setRepliedTotalPages] = useState(initialRepliedPage.totalPages);
+  const [pageSize, setPageSize] = useState(initialNewPage.pageSize);
+  const [statusFilter, setStatusFilter] = useState<ContactListFilter>(initialStatusFilter);
   const [selected, setSelected] = useState<ContactMessage | null>(null);
   const [nextStatus, setNextStatus] = useState<ContactMessageStatus>("new");
   const [adminNote, setAdminNote] = useState("");
@@ -86,12 +116,27 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
   const savedPageSize = useAdminListUiStore((state) => state.pageSizeByScope.contact);
   const setSavedPageSize = useAdminListUiStore((state) => state.setPageSize);
 
-  // URL 쿼리(page/id)와 현재 리스트/상세 상태를 항상 맞춘다.
+  // URL 쿼리(newPage/repliedPage/pageSize/id)와 현재 리스트/상세 상태를 항상 맞춘다.
   const syncQuery = useCallback(
-    (next: { id?: string | null; page?: number; pageSize?: number }) => {
+    (next: {
+      id?: string | null;
+      newPage?: number;
+      repliedPage?: number;
+      pageSize?: number;
+      status?: ContactListFilter;
+    }) => {
       const params = new URLSearchParams(searchParams.toString());
-      params.set("page", String(next.page ?? page));
+      params.delete("page");
+      params.set("newPage", String(next.newPage ?? newPage));
+      params.set("repliedPage", String(next.repliedPage ?? repliedPage));
       params.set("pageSize", String(next.pageSize ?? pageSize));
+      const nextStatus = next.status ?? statusFilter;
+
+      if (nextStatus === "all") {
+        params.delete("status");
+      } else {
+        params.set("status", nextStatus);
+      }
 
       if (next.id) {
         params.set("id", next.id);
@@ -104,7 +149,7 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
         scroll: false,
       });
     },
-    [page, pageSize, pathname, router, searchParams],
+    [newPage, pageSize, pathname, repliedPage, router, searchParams, statusFilter],
   );
 
   // 상세 패널을 열 때 상태/메모의 기준값을 동기화해 dirty 판단 기준을 고정한다.
@@ -128,32 +173,57 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
     syncQuery({ id: null });
   };
 
-  // 저장 직후 목록 상태(배지/정렬/updatedAt)를 정확히 반영하기 위해 서버 목록을 재조회한다.
+  // 상태별 리스트를 각각 조회해 섹션별 페이지네이션 상태를 독립적으로 유지한다.
   const loadContacts = useCallback(
-    async (nextPage = page, nextPageSize = pageSize) => {
-      const response = await fetch(`/api/admin/contact?page=${nextPage}&pageSize=${nextPageSize}`, {
-        method: "GET",
-      });
+    async (
+      nextNewPage = newPage,
+      nextRepliedPage = repliedPage,
+      nextPageSize = pageSize,
+      nextStatusFilter: ContactListFilter = statusFilter,
+    ) => {
+      const [newPayload, repliedPayload] = await Promise.all([
+        fetchContactPage("new", nextNewPage, nextPageSize),
+        fetchContactPage("replied", nextRepliedPage, nextPageSize),
+      ]);
 
-      if (!response.ok) {
-        throw new Error("문의 목록을 불러오지 못했습니다.");
-      }
+      if (
+        (newPayload.items.length === 0 && newPayload.total > 0 && nextNewPage > 1) ||
+        (repliedPayload.items.length === 0 && repliedPayload.total > 0 && nextRepliedPage > 1)
+      ) {
+        const adjustedNewPage =
+          newPayload.items.length === 0 && newPayload.total > 0 && nextNewPage > 1
+            ? nextNewPage - 1
+            : nextNewPage;
+        const adjustedRepliedPage =
+          repliedPayload.items.length === 0 && repliedPayload.total > 0 && nextRepliedPage > 1
+            ? nextRepliedPage - 1
+            : nextRepliedPage;
 
-      const payload = (await response.json()) as PaginatedResult<ContactMessage>;
-      setContacts(payload.items ?? []);
-      setPage(payload.page);
-      setPageSize(payload.pageSize);
-      setTotal(payload.total);
-      setTotalPages(payload.totalPages);
-
-      if ((payload.items?.length ?? 0) === 0 && payload.total > 0 && nextPage > 1) {
-        await loadContacts(nextPage - 1, nextPageSize);
+        await loadContacts(adjustedNewPage, adjustedRepliedPage, nextPageSize, nextStatusFilter);
         return;
       }
 
-      syncQuery({ id: null, page: payload.page, pageSize: payload.pageSize });
+      setNewContacts(newPayload.items ?? []);
+      setNewPage(newPayload.page);
+      setNewTotal(newPayload.total);
+      setNewTotalPages(newPayload.totalPages);
+
+      setRepliedContacts(repliedPayload.items ?? []);
+      setRepliedPage(repliedPayload.page);
+      setRepliedTotal(repliedPayload.total);
+      setRepliedTotalPages(repliedPayload.totalPages);
+
+      setPageSize(newPayload.pageSize);
+      setStatusFilter(nextStatusFilter);
+      syncQuery({
+        id: null,
+        newPage: newPayload.page,
+        repliedPage: repliedPayload.page,
+        pageSize: newPayload.pageSize,
+        status: nextStatusFilter,
+      });
     },
-    [page, pageSize, syncQuery],
+    [newPage, pageSize, repliedPage, statusFilter, syncQuery],
   );
 
   // 문의 상세에서 상태/메모를 한 번에 저장해 운영 기록이 분리되지 않도록 한다.
@@ -188,7 +258,7 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
         setAdminNote(payload.contact.adminNote);
       }
 
-      await loadContacts(page);
+      await loadContacts(newPage, repliedPage, pageSize, statusFilter);
       setMessage("문의 상태와 관리자 메모를 저장했습니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "요청 중 오류가 발생했습니다.");
@@ -197,14 +267,24 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
     }
   };
 
-  const onChangePage = async (nextPage: number) => {
-    if (nextPage === page || nextPage < 1 || nextPage > totalPages) {
+  const onChangeNewPage = async (nextPage: number) => {
+    if (nextPage === newPage || nextPage < 1 || nextPage > newTotalPages) {
       return;
     }
 
     closeDetailStore("contact");
     setSelected(null);
-    await loadContacts(nextPage, pageSize);
+    await loadContacts(nextPage, repliedPage, pageSize, statusFilter);
+  };
+
+  const onChangeRepliedPage = async (nextPage: number) => {
+    if (nextPage === repliedPage || nextPage < 1 || nextPage > repliedTotalPages) {
+      return;
+    }
+
+    closeDetailStore("contact");
+    setSelected(null);
+    await loadContacts(newPage, nextPage, pageSize, statusFilter);
   };
 
   const onChangePageSize = async (nextPageSize: number) => {
@@ -215,7 +295,17 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
     setSavedPageSize("contact", nextPageSize);
     closeDetailStore("contact");
     setSelected(null);
-    await loadContacts(1, nextPageSize);
+    await loadContacts(1, 1, nextPageSize, statusFilter);
+  };
+
+  const onChangeStatusFilter = async (nextStatusFilter: ContactListFilter) => {
+    if (nextStatusFilter === statusFilter) {
+      return;
+    }
+
+    closeDetailStore("contact");
+    setSelected(null);
+    await loadContacts(1, 1, pageSize, nextStatusFilter);
   };
 
   useEffect(() => {
@@ -228,8 +318,8 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
       return;
     }
 
-    void loadContacts(1, savedPageSize);
-  }, [loadContacts, pageSize, savedPageSize, searchParams]);
+    void loadContacts(1, 1, savedPageSize, statusFilter);
+  }, [loadContacts, pageSize, savedPageSize, searchParams, statusFilter]);
 
   useEffect(() => {
     // 딥링크(id 쿼리) 진입 시 최초 한 번만 해당 항목을 자동 오픈한다.
@@ -237,7 +327,9 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
       return;
     }
 
-    const target = contacts.find((item) => item.id === initialSelectedId);
+    const target = [...newContacts, ...repliedContacts].find(
+      (item) => item.id === initialSelectedId,
+    );
 
     if (!target) {
       syncQuery({ id: null });
@@ -247,55 +339,155 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
 
     openDetail(target);
     hasAppliedInitialSelection.current = true;
-  }, [contacts, initialSelectedId, openDetail, syncQuery]);
+  }, [initialSelectedId, newContacts, openDetail, repliedContacts, syncQuery]);
 
   const isDirty =
     selected !== null && (selected.status !== nextStatus || selected.adminNote !== adminNote);
+  const showNewSection = statusFilter !== "replied";
+  const showRepliedSection = statusFilter !== "new";
+  const summaryTotal =
+    statusFilter === "new"
+      ? newTotal
+      : statusFilter === "replied"
+        ? repliedTotal
+        : newTotal + repliedTotal;
 
   return (
     <>
       <ManagerShell
         motion
-        summary={`문의함 ${total}건`}
-        detail="항목을 클릭하면 상세 패널에서 상태/메모를 함께 관리할 수 있습니다."
+        summary={`문의함 ${summaryTotal}건`}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+              <FilterIcon className="h-3.5 w-3.5 text-muted" />
+              <span className="sr-only">상태 필터</span>
+              <select
+                className="bg-transparent text-sm outline-none"
+                value={statusFilter}
+                aria-label="상태 필터"
+                onChange={(event) =>
+                  void onChangeStatusFilter(event.target.value as ContactListFilter)
+                }
+              >
+                {CONTACT_FILTER_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+              <RowsIcon className="h-3.5 w-3.5 text-muted" />
+              <span className="sr-only">표시 개수</span>
+              <select
+                className="bg-transparent text-sm outline-none"
+                value={String(pageSize)}
+                aria-label="페이지 표시 개수"
+                onChange={(event) => void onChangePageSize(Number(event.target.value))}
+              >
+                {ADMIN_PAGE_SIZE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}줄씩 보기
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        }
       >
-        <ManagerList hasItems={contacts.length > 0} emptyLabel="아직 문의가 없습니다.">
-          {contacts.map((contact) => (
-            <ManagerListRow key={contact.id} onClick={() => openDetail(contact)}>
-              <>
-                <span
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-xs font-semibold",
-                    statusBadge(contact.status),
-                  )}
-                >
-                  {toStatusLabel(contact.status)}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                  {contact.subject}
-                </span>
-                {contact.adminNote.trim() ? (
-                  <span className="hidden rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted sm:inline">
-                    메모 있음
-                  </span>
-                ) : null}
-                <span className="hidden max-w-[180px] truncate text-xs text-muted sm:inline">
-                  {contact.email}
-                </span>
-                <span className="text-xs text-muted">{toDisplayDate(contact.createdAt)}</span>
-              </>
-            </ManagerListRow>
-          ))}
-        </ManagerList>
+        {showNewSection ? (
+          <>
+            <section className="space-y-2">
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                신규 ({newTotal})
+              </h2>
+              <ManagerList hasItems={newContacts.length > 0} emptyLabel="신규 문의가 없습니다.">
+                {newContacts.map((contact) => (
+                  <ManagerListRow key={contact.id} onClick={() => openDetail(contact)}>
+                    <>
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-xs font-semibold",
+                          statusBadge(contact.status),
+                        )}
+                      >
+                        {toStatusLabel(contact.status)}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                        {contact.subject}
+                      </span>
+                      {contact.adminNote.trim() ? (
+                        <span className="hidden rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted sm:inline">
+                          메모 있음
+                        </span>
+                      ) : null}
+                      <span className="hidden max-w-[180px] truncate text-xs text-muted sm:inline">
+                        {contact.email}
+                      </span>
+                      <span className="text-xs text-muted">{toDisplayDate(contact.createdAt)}</span>
+                    </>
+                  </ManagerListRow>
+                ))}
+              </ManagerList>
+            </section>
 
-        <AdminPagination
-          page={page}
-          totalPages={totalPages}
-          total={total}
-          pageSize={pageSize}
-          onPageChange={onChangePage}
-          onPageSizeChange={onChangePageSize}
-        />
+            <AdminPagination
+              page={newPage}
+              totalPages={newTotalPages}
+              total={newTotal}
+              onPageChange={onChangeNewPage}
+            />
+          </>
+        ) : null}
+
+        {showRepliedSection ? (
+          <>
+            <section className="space-y-2">
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                답변완료 ({repliedTotal})
+              </h2>
+              <ManagerList
+                hasItems={repliedContacts.length > 0}
+                emptyLabel="답변완료 상태의 문의가 없습니다."
+              >
+                {repliedContacts.map((contact) => (
+                  <ManagerListRow key={contact.id} onClick={() => openDetail(contact)}>
+                    <>
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-xs font-semibold",
+                          statusBadge(contact.status),
+                        )}
+                      >
+                        {toStatusLabel(contact.status)}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                        {contact.subject}
+                      </span>
+                      {contact.adminNote.trim() ? (
+                        <span className="hidden rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted sm:inline">
+                          메모 있음
+                        </span>
+                      ) : null}
+                      <span className="hidden max-w-[180px] truncate text-xs text-muted sm:inline">
+                        {contact.email}
+                      </span>
+                      <span className="text-xs text-muted">{toDisplayDate(contact.createdAt)}</span>
+                    </>
+                  </ManagerListRow>
+                ))}
+              </ManagerList>
+            </section>
+
+            <AdminPagination
+              page={repliedPage}
+              totalPages={repliedTotalPages}
+              total={repliedTotal}
+              onPageChange={onChangeRepliedPage}
+            />
+          </>
+        ) : null}
       </ManagerShell>
 
       <EditorDrawer

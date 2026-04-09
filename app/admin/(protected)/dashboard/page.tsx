@@ -3,6 +3,7 @@ import { ShortcutIcon } from "@/components/ui/icons/shortcut-icon";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { getAdminPosts } from "@/lib/blog/repository";
 import { getAdminContactMessages } from "@/lib/contact/repository";
+import { getAdminHomeHighlights } from "@/lib/home/repository";
 import { getAdminProfileContent } from "@/lib/profile/repository";
 import { getAdminProjects } from "@/lib/projects/repository";
 
@@ -26,11 +27,12 @@ function formatDate(value: string | null): string {
 
 export default async function AdminDashboardPage() {
   // 대시보드는 서로 독립적인 데이터 소스를 병렬 로딩해 초기 응답 시간을 줄인다.
-  const [posts, projects, profile, contacts] = await Promise.all([
+  const [posts, projects, profile, contacts, highlights] = await Promise.all([
     getAdminPosts(),
     getAdminProjects(),
     getAdminProfileContent("ko"),
     getAdminContactMessages(),
+    getAdminHomeHighlights(),
   ]);
 
   const newContactsCount = contacts.filter((item) => item.status === "new").length;
@@ -38,6 +40,7 @@ export default async function AdminDashboardPage() {
   const draftProjectsCount = projects.filter((item) => item.status === "draft").length;
   const mainVisiblePostsCount = posts.filter((item) => item.featured).length;
   const mainVisibleProjectsCount = projects.filter((item) => item.featured).length;
+  const activeHighlightsCount = highlights.filter((item) => item.isActive).length;
   const recentPosts = posts.slice(0, 3);
   const recentProjects = projects.slice(0, 3);
   const recentContacts = contacts.slice(0, 3);
@@ -46,7 +49,7 @@ export default async function AdminDashboardPage() {
     <main className="space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight">관리자 대시보드</h1>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Link
           href="/admin/blog"
           className="group block rounded-xl border border-border bg-surface p-4 transition hover:border-foreground/35"
@@ -101,6 +104,19 @@ export default async function AdminDashboardPage() {
           </p>
           <p className="mt-1 text-xs text-muted">마지막 변경 {formatDate(profile.updatedAt)}</p>
         </Link>
+
+        <Link
+          href="/admin/highlight"
+          className="group block rounded-xl border border-border bg-surface p-4 transition hover:border-foreground/35"
+        >
+          <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">
+            홈 하이라이트
+          </p>
+          <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">
+            {activeHighlightsCount}
+          </p>
+          <p className="mt-1 text-xs text-muted">전체 {highlights.length}개</p>
+        </Link>
       </div>
 
       <SurfaceCard tone="surface" padding="md">
@@ -136,10 +152,18 @@ export default async function AdminDashboardPage() {
               </Link>
             </li>
           ) : null}
+          {activeHighlightsCount === 0 ? (
+            <li>
+              <Link href="/admin/highlight" className="text-foreground underline">
+                메인 히어로 하이라이트가 비어 있습니다. 항목 추가하기
+              </Link>
+            </li>
+          ) : null}
           {newContactsCount === 0 &&
           draftPostsCount === 0 &&
           draftProjectsCount === 0 &&
-          profile.status === "published" ? (
+          profile.status === "published" &&
+          activeHighlightsCount > 0 ? (
             <li className="text-muted">지금 즉시 처리할 항목이 없습니다.</li>
           ) : null}
         </ul>
@@ -166,7 +190,7 @@ export default async function AdminDashboardPage() {
               recentPosts.map((post) => (
                 <li key={post.id}>
                   <Link
-                    href={`/admin/blog?page=1&id=${post.id}`}
+                    href={`/admin/blog?mainPage=1&privatePage=1&id=${post.id}`}
                     className="block rounded-md border border-border bg-background px-3 py-2 transition hover:border-foreground/35"
                   >
                     <p className="truncate text-sm font-medium text-foreground hover:underline">
@@ -205,7 +229,7 @@ export default async function AdminDashboardPage() {
               recentProjects.map((project) => (
                 <li key={project.id}>
                   <Link
-                    href={`/admin/projects?page=1&id=${project.id}`}
+                    href={`/admin/projects?mainPage=1&privatePage=1&id=${project.id}`}
                     className="block rounded-md border border-border bg-background px-3 py-2 transition hover:border-foreground/35"
                   >
                     <p className="truncate text-sm font-medium text-foreground hover:underline">
@@ -249,12 +273,8 @@ export default async function AdminDashboardPage() {
                       {contact.subject}
                     </p>
                     <p className="text-xs text-muted">
-                      {contact.status === "new"
-                        ? "신규"
-                        : contact.status === "read"
-                          ? "확인함"
-                          : "답변완료"}{" "}
-                      · {formatDate(contact.createdAt)}
+                      {contact.status === "new" ? "신규" : "답변완료"} ·{" "}
+                      {formatDate(contact.createdAt)}
                     </p>
                   </Link>
                 </li>

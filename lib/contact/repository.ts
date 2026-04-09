@@ -1,4 +1,4 @@
-import type { PaginatedResult } from "@/types/admin";
+import type { ContactListFilter, PaginatedResult } from "@/types/admin";
 import type { ContactMessage } from "@/types/contact";
 import type { ContactMessageStatus } from "@/types/db";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
@@ -15,7 +15,7 @@ type ContactMessageRow = {
   subject: string;
   message: string;
   admin_note: string;
-  status: ContactMessageStatus;
+  status: string;
   created_at: string;
   updated_at: string;
 };
@@ -25,6 +25,14 @@ type RepoResult<T> = {
   error: string | null;
 };
 
+function normalizeContactStatus(status: string): ContactMessageStatus {
+  if (status === "replied") {
+    return "replied";
+  }
+
+  return "new";
+}
+
 function rowToContactMessage(row: ContactMessageRow): ContactMessage {
   return {
     id: row.id,
@@ -33,7 +41,7 @@ function rowToContactMessage(row: ContactMessageRow): ContactMessage {
     subject: row.subject,
     message: row.message,
     adminNote: row.admin_note,
-    status: row.status,
+    status: normalizeContactStatus(row.status),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -61,6 +69,7 @@ export async function getAdminContactMessages(): Promise<ContactMessage[]> {
 export async function getAdminContactMessagesPaginated(
   page = 1,
   pageSize = 10,
+  statusFilter: ContactListFilter = "all",
 ): Promise<PaginatedResult<ContactMessage>> {
   const service = createSupabaseServiceClient();
 
@@ -76,13 +85,18 @@ export async function getAdminContactMessagesPaginated(
   const from = (safePage - 1) * safePageSize;
   const to = from + safePageSize - 1;
 
-  const { data, error, count } = await service
+  let query = service
     .from("contact_messages")
     .select("id,name,email,subject,message,admin_note,status,created_at,updated_at", {
       count: "exact",
     })
-    .order("created_at", { ascending: false })
-    .range(from, to);
+    .order("created_at", { ascending: false });
+
+  if (statusFilter === "new" || statusFilter === "replied") {
+    query = query.eq("status", statusFilter);
+  }
+
+  const { data, error, count } = await query.range(from, to);
 
   if (error || !data) {
     return buildPaginatedResult([], safePage, safePageSize, 0);

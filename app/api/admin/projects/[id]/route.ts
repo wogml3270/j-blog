@@ -137,6 +137,15 @@ function parseBody(body: unknown): AdminProjectInput | null {
   };
 }
 
+// 비공개 상태에서는 메인 노출을 허용하지 않는다.
+function validateFeaturedPolicy(payload: AdminProjectInput): string | null {
+  if (payload.status === "draft" && payload.featured) {
+    return "비공개 상태에서는 메인 페이지 노출을 설정할 수 없습니다.";
+  }
+
+  return null;
+}
+
 export async function PUT(request: Request, context: RouteContext) {
   const guard = await getAdminGuardForApi();
 
@@ -149,6 +158,12 @@ export async function PUT(request: Request, context: RouteContext) {
 
   if (!payload) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  const policyError = validateFeaturedPolicy(payload);
+
+  if (policyError) {
+    return NextResponse.json({ error: policyError }, { status: 400 });
   }
 
   const result = await updateAdminProject(id, payload);

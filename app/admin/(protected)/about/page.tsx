@@ -6,7 +6,7 @@ export default async function AdminAboutPage() {
 
   return (
     <main className="space-y-5">
-      <h1 className="text-2xl font-semibold tracking-tight">About 관리</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">소개 관리</h1>
       <AboutManager initialAbout={profile} />
     </main>
   );
