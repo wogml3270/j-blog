@@ -123,18 +123,9 @@ const projectSeeds: ProjectSeed[] = [
     period: "2024.08 - 2025.01",
     techStack: ["Next.js", "MDX", "TypeScript", "Vercel"],
     achievements: {
-      ko: [
-        "블로그 유입 검색 노출 수 35% 증가",
-        "콘텐츠 배포 리드타임 50% 단축",
-      ],
-      en: [
-        "Increased blog search impressions by 35%",
-        "Reduced content release lead time by 50%",
-      ],
-      ja: [
-        "ブログ流入の検索表示回数を35%増加",
-        "コンテンツ公開リードタイムを50%短縮",
-      ],
+      ko: ["블로그 유입 검색 노출 수 35% 증가", "콘텐츠 배포 리드타임 50% 단축"],
+      en: ["Increased blog search impressions by 35%", "Reduced content release lead time by 50%"],
+      ja: ["ブログ流入の検索表示回数を35%増加", "コンテンツ公開リードタイムを50%短縮"],
     },
     contributions: {
       ko: [
@@ -181,18 +172,12 @@ const projectSeeds: ProjectSeed[] = [
     period: "2023.11 - 2024.05",
     techStack: ["React", "TypeScript", "Zustand", "ECharts"],
     achievements: {
-      ko: [
-        "대시보드 상호작용 속도 체감 개선",
-        "신규 지표 카드 개발 생산성 향상",
-      ],
+      ko: ["대시보드 상호작용 속도 체감 개선", "신규 지표 카드 개발 생산성 향상"],
       en: [
         "Improved perceived dashboard interaction speed",
         "Increased development productivity for new metric cards",
       ],
-      ja: [
-        "ダッシュボード操作の体感速度を改善",
-        "新規指標カード開発の生産性を向上",
-      ],
+      ja: ["ダッシュボード操作の体感速度を改善", "新規指標カード開発の生産性を向上"],
     },
     contributions: {
       ko: [
@@ -244,10 +229,7 @@ const projectSeeds: ProjectSeed[] = [
       ja: ["UI不一致の課題を削減", "新規画面開発の所要時間を短縮"],
     },
     contributions: {
-      ko: [
-        "버튼/폼/레이아웃 등 기반 컴포넌트 설계",
-        "접근성 체크리스트와 QA 기준 수립",
-      ],
+      ko: ["버튼/폼/레이아웃 등 기반 컴포넌트 설계", "접근성 체크리스트와 QA 기준 수립"],
       en: [
         "Designed foundational components including buttons, forms, and layouts",
         "Established accessibility checklist and QA criteria",
@@ -287,7 +269,8 @@ export function getAllProjects(locale: Locale): Project[] {
 
 export function getFeaturedProjects(locale: Locale, limit?: number): Project[] {
   const featured = getAllProjects(locale).filter((project) => project.featured);
-  const safeLimit = typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : null;
+  const safeLimit =
+    typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : null;
 
   return safeLimit ? featured.slice(0, safeLimit) : featured;
 }

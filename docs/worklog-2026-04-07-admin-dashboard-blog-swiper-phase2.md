@@ -1,6 +1,7 @@
 # 작업일지 - 2026-04-07 (Dashboard canonical + Blog 썸네일 + Home Swiper)
 
 ## 1) 관리자 대시보드 경로/UX 개편
+
 - 신규 canonical 경로: `/admin/dashboard`
 - `/admin`은 `/admin/dashboard`로 리다이렉트 처리.
 - 사이드바 대시보드 탭/로고 이동 경로를 `/admin/dashboard`로 통일.
@@ -15,6 +16,7 @@
   - 각 매니저 진입 시 해당 항목 패널 자동 오픈
 
 ## 2) 프로젝트 관리 입력 UX 개선
+
 - 기술 스택 입력을 `Enter 추가 + X 삭제` 태그형으로 변경.
 - 기간 입력을 `startDate`, `endDate`(date input) 방식으로 변경.
 - 데이터 모델 확장:
@@ -25,6 +27,7 @@
   - 공개 렌더는 start/end 우선, 없으면 기존 period fallback
 
 ## 3) 블로그 썸네일 optional 도입
+
 - 스키마 확장:
   - `posts.thumbnail text` (nullable)
 - 타입/리포지토리/API 반영:
@@ -35,6 +38,7 @@
   - 파일 업로드(선택)
 
 ## 4) 업로드 경로 공통화
+
 - 공통 업로드 API 추가:
   - `POST /api/admin/media/upload`
   - scope(`posts`/`projects`) 기반 경로 분기
@@ -43,6 +47,7 @@
   - 내부적으로 공통 업로드 로직 사용
 
 ## 5) 카드 전체 링크 정책 적용
+
 - 공개 사이트:
   - `ProjectCard` 카드 전체 링크화
   - `BlogCard` 카드 전체 링크화
@@ -51,12 +56,14 @@
   - 없으면 텍스트 중심 카드 유지
 
 ## 6) Contact 성공 UX 개선
+
 - 문의 전송 성공 시:
   - 모달 내 성공 문구(`✓`)를 1.2초 표시
   - 이후 자동 닫힘
   - 닫힌 뒤 FAB 근처에 짧은 성공 확인 문구 표시
 
 ## 7) Home Swiper 적용
+
 - `swiper` 패키지 설치.
 - 홈의 대표 프로젝트/최근 블로그 섹션을 Swiper로 전환:
   - 모바일 1장
@@ -65,6 +72,7 @@
 - keyboard/pagination 활성화.
 
 ## 8) 검증
+
 - `npm run lint` 통과
 - `npx tsc --noEmit` 통과
 - `npm run build` 실패 (현 환경 DNS 제한으로 `fonts.googleapis.com` 접근 불가)

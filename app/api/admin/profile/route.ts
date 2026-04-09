@@ -72,13 +72,19 @@ export async function PUT(request: Request) {
   const homeResult = await upsertAdminHomeContent(payload);
 
   if (homeResult.error || !homeResult.data) {
-    return NextResponse.json({ error: homeResult.error ?? "Failed to update profile(home)." }, { status: 400 });
+    return NextResponse.json(
+      { error: homeResult.error ?? "Failed to update profile(home)." },
+      { status: 400 },
+    );
   }
 
   const aboutResult = await upsertAdminAboutContent(payload);
 
   if (aboutResult.error || !aboutResult.data) {
-    return NextResponse.json({ error: aboutResult.error ?? "Failed to update profile(about)." }, { status: 400 });
+    return NextResponse.json(
+      { error: aboutResult.error ?? "Failed to update profile(about)." },
+      { status: 400 },
+    );
   }
 
   revalidateProfilePaths();

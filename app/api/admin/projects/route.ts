@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { revalidateProjectPaths } from "@/lib/cache/revalidate";
-import {
-  createAdminProject,
-  getAdminProjectsPaginated,
-} from "@/lib/projects/repository";
+import { createAdminProject, getAdminProjectsPaginated } from "@/lib/projects/repository";
 import { normalizePagination } from "@/lib/utils/pagination";
 import { normalizeAdminListFilter } from "@/lib/utils/search-params";
 import type { AdminProjectInput, ProjectLinkItem, ProjectLinks } from "@/types/projects";
@@ -69,7 +66,13 @@ function toLinks(value: unknown): ProjectLinks {
     }
 
     const label =
-      key === "live" ? "Live" : key === "repo" ? "Repository" : key === "detail" ? "Case Study" : key;
+      key === "live"
+        ? "Live"
+        : key === "repo"
+          ? "Repository"
+          : key === "detail"
+            ? "Case Study"
+            : key;
 
     legacy.push({ label, url });
   }
@@ -109,9 +112,7 @@ function parseBody(body: unknown): AdminProjectInput | null {
         ? source.startDate.trim()
         : null,
     endDate:
-      typeof source.endDate === "string" && source.endDate.trim()
-        ? source.endDate.trim()
-        : null,
+      typeof source.endDate === "string" && source.endDate.trim() ? source.endDate.trim() : null,
     techStack: Array.isArray(source.techStack)
       ? source.techStack.map((item) => String(item).trim()).filter(Boolean)
       : [],
@@ -162,7 +163,10 @@ export async function POST(request: Request) {
   const result = await createAdminProject(payload);
 
   if (result.error || !result.data) {
-    return NextResponse.json({ error: result.error ?? "Failed to create project." }, { status: 400 });
+    return NextResponse.json(
+      { error: result.error ?? "Failed to create project." },
+      { status: 400 },
+    );
   }
 
   revalidateProjectPaths(result.data.slug);

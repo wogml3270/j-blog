@@ -15,10 +15,7 @@ const reasonMessage: Record<string, string> = {
   supabase_not_configured: "Supabase 환경변수가 설정되지 않았습니다.",
 };
 
-function readSearchParam(
-  value: string | string[] | undefined,
-  fallback = "",
-): string {
+function readSearchParam(value: string | string[] | undefined, fallback = ""): string {
   if (typeof value === "string") {
     return value;
   }

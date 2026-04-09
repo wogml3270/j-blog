@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
-import {
-  createAdminPost,
-  getAdminPostsPaginated,
-} from "@/lib/blog/repository";
+import { createAdminPost, getAdminPostsPaginated } from "@/lib/blog/repository";
 import { revalidateBlogPaths } from "@/lib/cache/revalidate";
 import { normalizePagination } from "@/lib/utils/pagination";
 import { normalizeAdminListFilter } from "@/lib/utils/search-params";
@@ -34,8 +31,7 @@ function parseBody(body: unknown): AdminPostInput | null {
     slug: source.slug.trim(),
     title: source.title.trim(),
     description: source.description.trim(),
-    thumbnail:
-      typeof source.thumbnail === "string" ? source.thumbnail.trim() || null : null,
+    thumbnail: typeof source.thumbnail === "string" ? source.thumbnail.trim() || null : null,
     featured: Boolean(source.featured),
     bodyMarkdown: source.bodyMarkdown,
     useMarkdownEditor: Boolean(source.useMarkdownEditor),

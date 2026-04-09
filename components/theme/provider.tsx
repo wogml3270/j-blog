@@ -33,9 +33,7 @@ function getSystemTheme(): ResolvedTheme {
   if (typeof window === "undefined") {
     return "light";
   }
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 export function ThemeProvider({
@@ -47,9 +45,7 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   // 서버/클라이언트의 첫 렌더를 일치시키기 위해 초기값은 항상 defaultTheme로 고정한다.
   const [theme, setThemeState] = useState<Theme>(defaultTheme);
-  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() =>
-    getSystemTheme(),
-  );
+  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,

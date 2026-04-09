@@ -48,7 +48,10 @@ export async function PUT(request: Request, context: RouteContext) {
   const result = await updateAdminContactMessage(id, { status, adminNote });
 
   if (result.error || !result.data) {
-    return NextResponse.json({ error: result.error ?? "Failed to update contact." }, { status: 400 });
+    return NextResponse.json(
+      { error: result.error ?? "Failed to update contact." },
+      { status: 400 },
+    );
   }
 
   return NextResponse.json({ contact: result.data });

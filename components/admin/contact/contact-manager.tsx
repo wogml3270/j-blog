@@ -87,30 +87,38 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
   const setSavedPageSize = useAdminListUiStore((state) => state.setPageSize);
 
   // URL 쿼리(page/id)와 현재 리스트/상세 상태를 항상 맞춘다.
-  const syncQuery = useCallback((next: { id?: string | null; page?: number; pageSize?: number }) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", String(next.page ?? page));
-    params.set("pageSize", String(next.pageSize ?? pageSize));
+  const syncQuery = useCallback(
+    (next: { id?: string | null; page?: number; pageSize?: number }) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", String(next.page ?? page));
+      params.set("pageSize", String(next.pageSize ?? pageSize));
 
-    if (next.id) {
-      params.set("id", next.id);
-    } else {
-      params.delete("id");
-    }
+      if (next.id) {
+        params.set("id", next.id);
+      } else {
+        params.delete("id");
+      }
 
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }, [page, pageSize, pathname, router, searchParams]);
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
+    },
+    [page, pageSize, pathname, router, searchParams],
+  );
 
   // 상세 패널을 열 때 상태/메모의 기준값을 동기화해 dirty 판단 기준을 고정한다.
-  const openDetail = useCallback((contact: ContactMessage) => {
-    setSelected(contact);
-    setNextStatus(contact.status);
-    setAdminNote(contact.adminNote);
-    setMessage(null);
-    openDetailStore("contact", contact.id);
-    syncQuery({ id: contact.id });
-  }, [openDetailStore, syncQuery]);
+  const openDetail = useCallback(
+    (contact: ContactMessage) => {
+      setSelected(contact);
+      setNextStatus(contact.status);
+      setAdminNote(contact.adminNote);
+      setMessage(null);
+      openDetailStore("contact", contact.id);
+      syncQuery({ id: contact.id });
+    },
+    [openDetailStore, syncQuery],
+  );
 
   const closeDetail = () => {
     setSelected(null);
@@ -121,27 +129,32 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
   };
 
   // 저장 직후 목록 상태(배지/정렬/updatedAt)를 정확히 반영하기 위해 서버 목록을 재조회한다.
-  const loadContacts = useCallback(async (nextPage = page, nextPageSize = pageSize) => {
-    const response = await fetch(`/api/admin/contact?page=${nextPage}&pageSize=${nextPageSize}`, { method: "GET" });
+  const loadContacts = useCallback(
+    async (nextPage = page, nextPageSize = pageSize) => {
+      const response = await fetch(`/api/admin/contact?page=${nextPage}&pageSize=${nextPageSize}`, {
+        method: "GET",
+      });
 
-    if (!response.ok) {
-      throw new Error("문의 목록을 불러오지 못했습니다.");
-    }
+      if (!response.ok) {
+        throw new Error("문의 목록을 불러오지 못했습니다.");
+      }
 
-    const payload = (await response.json()) as PaginatedResult<ContactMessage>;
-    setContacts(payload.items ?? []);
-    setPage(payload.page);
-    setPageSize(payload.pageSize);
-    setTotal(payload.total);
-    setTotalPages(payload.totalPages);
+      const payload = (await response.json()) as PaginatedResult<ContactMessage>;
+      setContacts(payload.items ?? []);
+      setPage(payload.page);
+      setPageSize(payload.pageSize);
+      setTotal(payload.total);
+      setTotalPages(payload.totalPages);
 
-    if ((payload.items?.length ?? 0) === 0 && payload.total > 0 && nextPage > 1) {
-      await loadContacts(nextPage - 1, nextPageSize);
-      return;
-    }
+      if ((payload.items?.length ?? 0) === 0 && payload.total > 0 && nextPage > 1) {
+        await loadContacts(nextPage - 1, nextPageSize);
+        return;
+      }
 
-    syncQuery({ id: null, page: payload.page, pageSize: payload.pageSize });
-  }, [page, pageSize, syncQuery]);
+      syncQuery({ id: null, page: payload.page, pageSize: payload.pageSize });
+    },
+    [page, pageSize, syncQuery],
+  );
 
   // 문의 상세에서 상태/메모를 한 번에 저장해 운영 기록이 분리되지 않도록 한다.
   const saveContact = async () => {
@@ -237,8 +250,7 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
   }, [contacts, initialSelectedId, openDetail, syncQuery]);
 
   const isDirty =
-    selected !== null &&
-    (selected.status !== nextStatus || selected.adminNote !== adminNote);
+    selected !== null && (selected.status !== nextStatus || selected.adminNote !== adminNote);
 
   return (
     <>
@@ -251,7 +263,12 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
           {contacts.map((contact) => (
             <ManagerListRow key={contact.id} onClick={() => openDetail(contact)}>
               <>
-                <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", statusBadge(contact.status))}>
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-xs font-semibold",
+                    statusBadge(contact.status),
+                  )}
+                >
                   {toStatusLabel(contact.status)}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
@@ -262,7 +279,9 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
                     메모 있음
                   </span>
                 ) : null}
-                <span className="hidden max-w-[180px] truncate text-xs text-muted sm:inline">{contact.email}</span>
+                <span className="hidden max-w-[180px] truncate text-xs text-muted sm:inline">
+                  {contact.email}
+                </span>
                 <span className="text-xs text-muted">{toDisplayDate(contact.createdAt)}</span>
               </>
             </ManagerListRow>
@@ -288,7 +307,9 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
         {selected ? (
           <div className="space-y-4">
             <SurfaceCard tone="background" padding="sm">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">문의자 정보</p>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
+                문의자 정보
+              </p>
               <div className="space-y-1.5 text-sm text-foreground">
                 <p>
                   <span className="text-muted">이름:</span> {selected.name}
@@ -306,8 +327,12 @@ export function ContactManager({ initialPage, initialSelectedId = null }: Contac
             </SurfaceCard>
 
             <SurfaceCard tone="background" padding="sm">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">문의 내용</p>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{selected.message}</p>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
+                문의 내용
+              </p>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {selected.message}
+              </p>
             </SurfaceCard>
 
             <SurfaceCard tone="background" padding="sm" className="space-y-2">

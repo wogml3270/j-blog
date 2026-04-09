@@ -20,7 +20,10 @@ export function ContactFab({ labels }: ContactFabProps) {
   const closeContactModal = usePublicUiStore((state) => state.closeContactModal);
   const [form, setForm] = useState<ContactFormState>(EMPTY_FORM);
   const [isPending, setIsPending] = useState(false);
-  const [notice, setNotice] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [notice, setNotice] = useState<{
+    kind: "success" | "error";
+    text: string;
+  } | null>(null);
   const [floatingSuccess, setFloatingSuccess] = useState<string | null>(null);
 
   const closeTimerRef = useRef<number | null>(null);
@@ -147,11 +150,11 @@ export function ContactFab({ labels }: ContactFabProps) {
         role="dialog"
         aria-modal="true"
         aria-label={labels.title}
-          className={cn(
-            "fixed bottom-5 right-5 z-60 w-[min(92vw,26rem)] rounded-2xl border border-border bg-surface p-4 shadow-2xl transition-all duration-300 sm:bottom-6 sm:right-6",
-            open
-              ? "pointer-events-auto translate-y-0 opacity-100"
-              : "pointer-events-none translate-y-6 opacity-0",
+        className={cn(
+          "fixed bottom-5 right-5 z-60 w-[min(92vw,26rem)] rounded-2xl border border-border bg-surface p-4 shadow-2xl transition-all duration-300 sm:bottom-6 sm:right-6",
+          open
+            ? "pointer-events-auto translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-6 opacity-0",
         )}
       >
         <div className="mb-3 flex items-start justify-between gap-2">
@@ -172,7 +175,9 @@ export function ContactFab({ labels }: ContactFabProps) {
 
         <form className="space-y-3" onSubmit={onSubmit}>
           <label className="space-y-1">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted">{labels.nameLabel}</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted">
+              {labels.nameLabel}
+            </span>
             <Input
               value={form.name}
               onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
@@ -182,7 +187,9 @@ export function ContactFab({ labels }: ContactFabProps) {
           </label>
 
           <label className="space-y-1">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted">{labels.emailLabel}</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted">
+              {labels.emailLabel}
+            </span>
             <Input
               type="email"
               value={form.email}
@@ -193,7 +200,9 @@ export function ContactFab({ labels }: ContactFabProps) {
           </label>
 
           <label className="space-y-1">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted">{labels.subjectLabel}</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted">
+              {labels.subjectLabel}
+            </span>
             <Input
               value={form.subject}
               onChange={(event) => setForm((prev) => ({ ...prev, subject: event.target.value }))}
@@ -203,7 +212,9 @@ export function ContactFab({ labels }: ContactFabProps) {
           </label>
 
           <label className="space-y-1">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted">{labels.messageLabel}</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted">
+              {labels.messageLabel}
+            </span>
             <textarea
               value={form.message}
               onChange={(event) => setForm((prev) => ({ ...prev, message: event.target.value }))}
@@ -219,7 +230,12 @@ export function ContactFab({ labels }: ContactFabProps) {
         </form>
 
         {notice ? (
-          <p className={cn("mt-3 text-sm", notice.kind === "success" ? "text-emerald-600" : "text-red-500")}>
+          <p
+            className={cn(
+              "mt-3 text-sm",
+              notice.kind === "success" ? "text-emerald-600" : "text-red-500",
+            )}
+          >
             {notice.kind === "success" ? `✓ ${notice.text}` : notice.text}
           </p>
         ) : null}

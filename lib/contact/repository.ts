@@ -78,7 +78,9 @@ export async function getAdminContactMessagesPaginated(
 
   const { data, error, count } = await service
     .from("contact_messages")
-    .select("id,name,email,subject,message,admin_note,status,created_at,updated_at", { count: "exact" })
+    .select("id,name,email,subject,message,admin_note,status,created_at,updated_at", {
+      count: "exact",
+    })
     .order("created_at", { ascending: false })
     .range(from, to);
 

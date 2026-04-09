@@ -44,7 +44,9 @@ export function MediaCard({
       {media ?? null}
       <MediaCardBody className={bodyClassName}>
         {meta ?? null}
-        <h3 className="text-lg font-semibold tracking-tight text-foreground group-hover:underline">{title}</h3>
+        <h3 className="text-lg font-semibold tracking-tight text-foreground group-hover:underline">
+          {title}
+        </h3>
         {description ? <p className="text-sm text-muted">{description}</p> : null}
         {tags ?? null}
         {footer ?? null}

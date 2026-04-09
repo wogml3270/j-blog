@@ -17,7 +17,7 @@ interface ProfileRow {
   work_style: string;
   status: PublishStatus;
   updated_at: string;
-};
+}
 
 export type AdminHomeInput = {
   name: string;

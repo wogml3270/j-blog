@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import {
-  defaultLocale,
-  isLocale,
-  withLocaleRoutePath,
-} from "@/lib/i18n/config";
+import { defaultLocale, isLocale, withLocaleRoutePath } from "@/lib/i18n/config";
 import { updateSupabaseSession } from "@/lib/supabase/proxy";
 
 const PUBLIC_FILE = /\.[^/]+$/;
 
 function isLocaleRedirectBypassed(pathname: string) {
   return (
-    pathname.startsWith("/api") ||
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/auth")
+    pathname.startsWith("/api") || pathname.startsWith("/admin") || pathname.startsWith("/auth")
   );
 }
 

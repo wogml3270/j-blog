@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { revalidateProjectPaths } from "@/lib/cache/revalidate";
-import {
-  deleteAdminProject,
-  updateAdminProject,
-} from "@/lib/projects/repository";
+import { deleteAdminProject, updateAdminProject } from "@/lib/projects/repository";
 import type { AdminProjectInput, ProjectLinkItem, ProjectLinks } from "@/types/projects";
 
 type RouteContext = {
@@ -71,7 +68,13 @@ function toLinks(value: unknown): ProjectLinks {
     }
 
     const label =
-      key === "live" ? "Live" : key === "repo" ? "Repository" : key === "detail" ? "Case Study" : key;
+      key === "live"
+        ? "Live"
+        : key === "repo"
+          ? "Repository"
+          : key === "detail"
+            ? "Case Study"
+            : key;
 
     legacy.push({ label, url });
   }
@@ -111,9 +114,7 @@ function parseBody(body: unknown): AdminProjectInput | null {
         ? source.startDate.trim()
         : null,
     endDate:
-      typeof source.endDate === "string" && source.endDate.trim()
-        ? source.endDate.trim()
-        : null,
+      typeof source.endDate === "string" && source.endDate.trim() ? source.endDate.trim() : null,
     techStack: Array.isArray(source.techStack)
       ? source.techStack.map((item) => String(item).trim()).filter(Boolean)
       : [],
@@ -146,7 +147,10 @@ export async function PUT(request: Request, context: RouteContext) {
   const result = await updateAdminProject(id, payload);
 
   if (result.error || !result.data) {
-    return NextResponse.json({ error: result.error ?? "Failed to update project." }, { status: 400 });
+    return NextResponse.json(
+      { error: result.error ?? "Failed to update project." },
+      { status: 400 },
+    );
   }
 
   revalidateProjectPaths(result.data.slug);

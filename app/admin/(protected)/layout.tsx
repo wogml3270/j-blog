@@ -3,11 +3,7 @@ import { AdminSidebar } from "@/components/admin/common/sidebar";
 import { getAdminState } from "@/lib/auth/admin";
 import { Container } from "@/components/layout/container";
 
-export default async function AdminProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
   const state = await getAdminState();
 
   if (!state.user || !state.isAdmin) {

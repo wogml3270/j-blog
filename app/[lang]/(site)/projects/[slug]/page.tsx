@@ -15,9 +15,7 @@ type ProjectDetailPageProps = {
   params: Promise<{ lang: string; slug: string }>;
 };
 
-export async function generateMetadata({
-  params,
-}: ProjectDetailPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: ProjectDetailPageProps): Promise<Metadata> {
   const { lang, slug } = await params;
 
   if (!isLocale(lang)) {
@@ -58,7 +56,10 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   return (
     <article className="space-y-8">
       <div className="space-y-3">
-        <Link href={withLocalePath(lang, "/projects")} className="inline-flex text-sm text-muted underline">
+        <Link
+          href={withLocalePath(lang, "/projects")}
+          className="inline-flex text-sm text-muted underline"
+        >
           {dictionary.projects.backToList}
         </Link>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">{project.title}</h1>
@@ -99,7 +100,10 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           <SectionTitle title={dictionary.projects.achievements} />
           <ul className="space-y-2">
             {project.achievements.map((item) => (
-              <li key={item} className="rounded-lg border border-border bg-surface px-4 py-3 text-sm text-foreground">
+              <li
+                key={item}
+                className="rounded-lg border border-border bg-surface px-4 py-3 text-sm text-foreground"
+              >
                 {item}
               </li>
             ))}
@@ -110,7 +114,10 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           <SectionTitle title={dictionary.projects.contributions} />
           <ul className="space-y-2">
             {project.contributions.map((item) => (
-              <li key={item} className="rounded-lg border border-border bg-surface px-4 py-3 text-sm text-foreground">
+              <li
+                key={item}
+                className="rounded-lg border border-border bg-surface px-4 py-3 text-sm text-foreground"
+              >
                 {item}
               </li>
             ))}

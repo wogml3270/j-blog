@@ -215,7 +215,9 @@ function reorderById<T extends { id: string }>(items: T[], event: DragEndEvent):
 }
 
 function SortableRow({ id, children, onRemove }: SortableRowProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
 
   return (
     <li
@@ -290,27 +292,32 @@ export function ProjectsManager({
   );
 
   // 상세 선택 상태와 현재 페이지를 URL query와 일치시킨다.
-  const syncQuery = useCallback((next: { id?: string | null; page?: number; pageSize?: number; filter?: AdminListFilter }) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", String(next.page ?? page));
-    params.set("pageSize", String(next.pageSize ?? pageSize));
-    const nextFilter = next.filter ?? filter;
+  const syncQuery = useCallback(
+    (next: { id?: string | null; page?: number; pageSize?: number; filter?: AdminListFilter }) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", String(next.page ?? page));
+      params.set("pageSize", String(next.pageSize ?? pageSize));
+      const nextFilter = next.filter ?? filter;
 
-    if (next.id) {
-      params.set("id", next.id);
-    } else {
-      params.delete("id");
-    }
+      if (next.id) {
+        params.set("id", next.id);
+      } else {
+        params.delete("id");
+      }
 
-    if (nextFilter === "all") {
-      params.delete("filter");
-    } else {
-      params.set("filter", nextFilter);
-    }
+      if (nextFilter === "all") {
+        params.delete("filter");
+      } else {
+        params.set("filter", nextFilter);
+      }
 
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }, [filter, page, pageSize, pathname, router, searchParams]);
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
+    },
+    [filter, page, pageSize, pathname, router, searchParams],
+  );
 
   const openCreate = () => {
     setEditingId(null);
@@ -324,17 +331,20 @@ export function ProjectsManager({
     syncQuery({ id: null });
   };
 
-  const openEdit = useCallback((project: AdminProject) => {
-    setEditingId(project.id);
-    setForm(toFormState(project));
-    setUseSummaryEditor(project.useSummaryEditor);
-    setThumbnailMode("url");
-    setThumbnailFile(null);
-    setMessage(null);
-    setDrawerOpen(true);
-    openDetail("projects", project.id);
-    syncQuery({ id: project.id });
-  }, [openDetail, syncQuery]);
+  const openEdit = useCallback(
+    (project: AdminProject) => {
+      setEditingId(project.id);
+      setForm(toFormState(project));
+      setUseSummaryEditor(project.useSummaryEditor);
+      setThumbnailMode("url");
+      setThumbnailFile(null);
+      setMessage(null);
+      setDrawerOpen(true);
+      openDetail("projects", project.id);
+      syncQuery({ id: project.id });
+    },
+    [openDetail, syncQuery],
+  );
 
   const closeDrawer = () => {
     setDrawerOpen(false);
@@ -343,27 +353,38 @@ export function ProjectsManager({
   };
 
   // 저장/삭제 직후 목록 상태를 서버 기준으로 동기화한다.
-  const loadProjects = useCallback(async (nextPage = page, nextPageSize = pageSize, nextFilter = filter) => {
-    const response = await fetch(`/api/admin/projects?page=${nextPage}&pageSize=${nextPageSize}&filter=${nextFilter}`, { method: "GET" });
+  const loadProjects = useCallback(
+    async (nextPage = page, nextPageSize = pageSize, nextFilter = filter) => {
+      const response = await fetch(
+        `/api/admin/projects?page=${nextPage}&pageSize=${nextPageSize}&filter=${nextFilter}`,
+        { method: "GET" },
+      );
 
-    if (!response.ok) {
-      throw new Error("프로젝트 목록을 불러오지 못했습니다.");
-    }
+      if (!response.ok) {
+        throw new Error("프로젝트 목록을 불러오지 못했습니다.");
+      }
 
-    const payload = (await response.json()) as PaginatedResult<AdminProject>;
-    setProjects(payload.items ?? []);
-    setPage(payload.page);
-    setPageSize(payload.pageSize);
-    setTotal(payload.total);
-    setTotalPages(payload.totalPages);
+      const payload = (await response.json()) as PaginatedResult<AdminProject>;
+      setProjects(payload.items ?? []);
+      setPage(payload.page);
+      setPageSize(payload.pageSize);
+      setTotal(payload.total);
+      setTotalPages(payload.totalPages);
 
-    if ((payload.items?.length ?? 0) === 0 && payload.total > 0 && nextPage > 1) {
-      await loadProjects(nextPage - 1, nextPageSize);
-      return;
-    }
+      if ((payload.items?.length ?? 0) === 0 && payload.total > 0 && nextPage > 1) {
+        await loadProjects(nextPage - 1, nextPageSize);
+        return;
+      }
 
-    syncQuery({ id: null, page: payload.page, pageSize: payload.pageSize, filter: nextFilter });
-  }, [filter, page, pageSize, syncQuery]);
+      syncQuery({
+        id: null,
+        page: payload.page,
+        pageSize: payload.pageSize,
+        filter: nextFilter,
+      });
+    },
+    [filter, page, pageSize, syncQuery],
+  );
 
   const onUploadThumbnail = async () => {
     if (!thumbnailFile) {
@@ -565,7 +586,9 @@ export function ProjectsManager({
     setMessage(null);
 
     try {
-      const response = await fetch(`/api/admin/projects/${id}`, { method: "DELETE" });
+      const response = await fetch(`/api/admin/projects/${id}`, {
+        method: "DELETE",
+      });
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
@@ -692,18 +715,23 @@ export function ProjectsManager({
               className="transition-all duration-300 hover:-translate-y-0.5"
             >
               <>
-                  <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", statusBadge(project.status))}>
-                    {toStatusLabel(project.status)}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                    {project.title}
-                  </span>
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-xs font-semibold",
+                    statusBadge(project.status),
+                  )}
+                >
+                  {toStatusLabel(project.status)}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                  {project.title}
+                </span>
                 <span className="hidden text-xs text-muted sm:inline">{project.slug}</span>
-                  {project.status === "published" && project.featured ? (
-                    <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
-                      메인 노출
-                    </span>
-                  ) : null}
+                {project.status === "published" && project.featured ? (
+                  <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
+                    메인 노출
+                  </span>
+                ) : null}
               </>
             </ManagerListRow>
           ))}
@@ -755,7 +783,9 @@ export function ProjectsManager({
           />
 
           <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">썸네일 입력 방식</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">
+              썸네일 입력 방식
+            </p>
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -778,7 +808,12 @@ export function ProjectsManager({
             {thumbnailMode === "url" ? (
               <Input
                 value={form.thumbnail}
-                onChange={(event) => setForm((prev) => ({ ...prev, thumbnail: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    thumbnail: event.target.value,
+                  }))
+                }
                 placeholder="https://... 또는 /images/..."
                 required
               />
@@ -806,7 +841,11 @@ export function ProjectsManager({
             {form.thumbnail ? (
               <div className="overflow-hidden rounded-md border border-border bg-surface">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={form.thumbnail} alt="썸네일 미리보기" className="h-40 w-full object-cover" />
+                <img
+                  src={form.thumbnail}
+                  alt="썸네일 미리보기"
+                  className="h-40 w-full object-cover"
+                />
               </div>
             ) : (
               <p className="text-xs text-muted">썸네일 미리보기가 없습니다.</p>
@@ -829,13 +868,23 @@ export function ProjectsManager({
                 <Input
                   type="date"
                   value={form.startDate}
-                  onChange={(event) => setForm((prev) => ({ ...prev, startDate: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      startDate: event.target.value,
+                    }))
+                  }
                   placeholder="시작일"
                 />
                 <Input
                   type="date"
                   value={form.endDate}
-                  onChange={(event) => setForm((prev) => ({ ...prev, endDate: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      endDate: event.target.value,
+                    }))
+                  }
                   placeholder="종료일"
                 />
               </div>
@@ -869,7 +918,12 @@ export function ProjectsManager({
                 <input
                   type="checkbox"
                   checked={form.featured}
-                  onChange={(event) => setForm((prev) => ({ ...prev, featured: event.target.checked }))}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      featured: event.target.checked,
+                    }))
+                  }
                 />
                 메인 페이지 노출
               </label>
@@ -886,7 +940,12 @@ export function ProjectsManager({
               <Input
                 className="min-w-0 flex-1"
                 value={form.techStackInput}
-                onChange={(event) => setForm((prev) => ({ ...prev, techStackInput: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    techStackInput: event.target.value,
+                  }))
+                }
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
@@ -929,7 +988,12 @@ export function ProjectsManager({
               <Input
                 className="min-w-0 flex-1"
                 value={form.achievementInput}
-                onChange={(event) => setForm((prev) => ({ ...prev, achievementInput: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    achievementInput: event.target.value,
+                  }))
+                }
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
@@ -946,7 +1010,10 @@ export function ProjectsManager({
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={(event) =>
-                setForm((prev) => ({ ...prev, achievements: reorderById(prev.achievements, event) }))
+                setForm((prev) => ({
+                  ...prev,
+                  achievements: reorderById(prev.achievements, event),
+                }))
               }
             >
               <SortableContext
@@ -956,7 +1023,11 @@ export function ProjectsManager({
                 <ul className="space-y-2">
                   {form.achievements.length > 0 ? (
                     form.achievements.map((item) => (
-                      <SortableRow key={item.id} id={item.id} onRemove={() => removeAchievement(item.id)}>
+                      <SortableRow
+                        key={item.id}
+                        id={item.id}
+                        onRemove={() => removeAchievement(item.id)}
+                      >
                         <p className="truncate">{item.value}</p>
                       </SortableRow>
                     ))
@@ -976,7 +1047,12 @@ export function ProjectsManager({
               <Input
                 className="min-w-0 flex-1"
                 value={form.contributionInput}
-                onChange={(event) => setForm((prev) => ({ ...prev, contributionInput: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    contributionInput: event.target.value,
+                  }))
+                }
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
@@ -993,7 +1069,10 @@ export function ProjectsManager({
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={(event) =>
-                setForm((prev) => ({ ...prev, contributions: reorderById(prev.contributions, event) }))
+                setForm((prev) => ({
+                  ...prev,
+                  contributions: reorderById(prev.contributions, event),
+                }))
               }
             >
               <SortableContext
@@ -1003,7 +1082,11 @@ export function ProjectsManager({
                 <ul className="space-y-2">
                   {form.contributions.length > 0 ? (
                     form.contributions.map((item) => (
-                      <SortableRow key={item.id} id={item.id} onRemove={() => removeContribution(item.id)}>
+                      <SortableRow
+                        key={item.id}
+                        id={item.id}
+                        onRemove={() => removeContribution(item.id)}
+                      >
                         <p className="truncate">{item.value}</p>
                       </SortableRow>
                     ))
@@ -1023,13 +1106,23 @@ export function ProjectsManager({
               <Input
                 className="min-w-0"
                 value={form.linkLabelInput}
-                onChange={(event) => setForm((prev) => ({ ...prev, linkLabelInput: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    linkLabelInput: event.target.value,
+                  }))
+                }
                 placeholder="라벨 (예: Demo)"
               />
               <Input
                 className="min-w-0"
                 value={form.linkUrlInput}
-                onChange={(event) => setForm((prev) => ({ ...prev, linkUrlInput: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    linkUrlInput: event.target.value,
+                  }))
+                }
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
@@ -1047,7 +1140,10 @@ export function ProjectsManager({
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={(event) =>
-                setForm((prev) => ({ ...prev, links: reorderById(prev.links, event) }))
+                setForm((prev) => ({
+                  ...prev,
+                  links: reorderById(prev.links, event),
+                }))
               }
             >
               <SortableContext
@@ -1077,7 +1173,12 @@ export function ProjectsManager({
               {isPending ? "저장 중..." : editingId ? "저장" : "프로젝트 생성"}
             </Button>
             {editingId ? (
-              <Button type="button" variant="ghost" onClick={() => onDelete(editingId)} disabled={isPending}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onDelete(editingId)}
+                disabled={isPending}
+              >
                 삭제
               </Button>
             ) : null}

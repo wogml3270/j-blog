@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { SocialProviderIcon, type SocialProviderKey } from "@/components/ui/icons/social-provider-icon";
+import {
+  SocialProviderIcon,
+  type SocialProviderKey,
+} from "@/components/ui/icons/social-provider-icon";
 import { cn } from "@/lib/utils/cn";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -47,7 +50,9 @@ export function SocialLoginButtons({
         setErrorMessage(error.message);
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "로그인 요청 중 오류가 발생했습니다.");
+      setErrorMessage(
+        error instanceof Error ? error.message : "로그인 요청 중 오류가 발생했습니다.",
+      );
     } finally {
       setLoadingProvider(null);
     }

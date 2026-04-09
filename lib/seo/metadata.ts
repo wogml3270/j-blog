@@ -1,10 +1,5 @@
 import type { Metadata } from "next";
-import {
-  localeInfo,
-  locales,
-  type Locale,
-  withLocalePath,
-} from "@/lib/i18n/config";
+import { localeInfo, locales, type Locale, withLocalePath } from "@/lib/i18n/config";
 import { SITE_CONFIG, getSiteCopy } from "@/lib/site/profile";
 
 type PageMetadataArgs = {
@@ -14,7 +9,10 @@ type PageMetadataArgs = {
   description: string;
 };
 
-export function buildAlternates(locale: Locale, pathname: string): NonNullable<Metadata["alternates"]> {
+export function buildAlternates(
+  locale: Locale,
+  pathname: string,
+): NonNullable<Metadata["alternates"]> {
   const canonical = `${SITE_CONFIG.siteUrl}${withLocalePath(locale, pathname)}`;
 
   const languages = Object.fromEntries(

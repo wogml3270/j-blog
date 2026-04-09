@@ -11,7 +11,7 @@ interface BlogCardProps {
   post: BlogPostSummary;
   locale: Locale;
   animationDelay?: number;
-};
+}
 
 export function BlogCard({ post, locale, animationDelay = 0 }: BlogCardProps) {
   // 블로그 목록/홈 카드가 동일한 링크/메타 구조를 쓰도록 공통 카드 컴포넌트를 사용한다.

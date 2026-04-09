@@ -57,7 +57,10 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
 
   return (
     <article className="space-y-8">
-      <Link href={withLocalePath(lang, "/blog")} className="inline-flex text-sm text-muted underline">
+      <Link
+        href={withLocalePath(lang, "/blog")}
+        className="inline-flex text-sm text-muted underline"
+      >
         {dictionary.blog.backToList}
       </Link>
 

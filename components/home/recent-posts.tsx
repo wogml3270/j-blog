@@ -55,7 +55,10 @@ export function RecentPosts({
         ))}
       </Swiper>
 
-      <Link href={withLocalePath(locale, "/blog")} className="inline-flex text-sm font-medium text-foreground underline sm:hidden">
+      <Link
+        href={withLocalePath(locale, "/blog")}
+        className="inline-flex text-sm font-medium text-foreground underline sm:hidden"
+      >
         {allPostsLabel}
       </Link>
     </section>

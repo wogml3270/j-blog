@@ -167,7 +167,8 @@ a {
   margin-top: 0.9rem;
 }
 
-.prose ul, .prose ol {
+.prose ul,
+.prose ol {
   margin-top: 0.8rem;
   padding-left: 1.25rem;
 }

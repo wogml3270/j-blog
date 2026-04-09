@@ -76,7 +76,11 @@ function recentPanelSkeleton(titleWidth: number) {
         {Array.from({ length: 3 }).map((_, index) => (
           <li key={`recent-panel-row-${titleWidth}-${index}`}>
             <div className="rounded-md border border-border bg-background px-3 py-2">
-              <Skeleton width={index === 0 ? "66%" : index === 1 ? "58%" : "49%"} height={14} rounded="0.35rem" />
+              <Skeleton
+                width={index === 0 ? "66%" : index === 1 ? "58%" : "49%"}
+                height={14}
+                rounded="0.35rem"
+              />
               <Skeleton className="mt-1" width={118} height={12} rounded="0.35rem" />
             </div>
           </li>

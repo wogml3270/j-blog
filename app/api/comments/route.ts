@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import {
-  createCommentForPost,
-  getApprovedCommentsByPostSlug,
-} from "@/lib/comments/repository";
+import { createCommentForPost, getApprovedCommentsByPostSlug } from "@/lib/comments/repository";
 
 type CommentPayload = {
   postSlug: string;
@@ -90,22 +87,34 @@ export async function POST(request: Request) {
   }
 
   if (payload.nickname.length < 2 || payload.nickname.length > 30) {
-    return NextResponse.json({ error: "Nickname must be between 2 and 30 characters." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Nickname must be between 2 and 30 characters." },
+      { status: 400 },
+    );
   }
 
   if (payload.content.length < 2 || payload.content.length > 1000) {
-    return NextResponse.json({ error: "Comment must be between 2 and 1000 characters." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Comment must be between 2 and 1000 characters." },
+      { status: 400 },
+    );
   }
 
   if (payload.avatarUrl && !isValidHttpUrl(payload.avatarUrl)) {
-    return NextResponse.json({ error: "Profile image URL must be http or https." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Profile image URL must be http or https." },
+      { status: 400 },
+    );
   }
 
   const userEmail = user.email?.trim().toLowerCase();
   const payloadEmail = payload.email.trim().toLowerCase();
 
   if (!userEmail || userEmail !== payloadEmail) {
-    return NextResponse.json({ error: "Email must match your signed-in account." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Email must match your signed-in account." },
+      { status: 400 },
+    );
   }
 
   const result = await createCommentForPost({
@@ -119,8 +128,14 @@ export async function POST(request: Request) {
   });
 
   if (result.error || !result.data) {
-    return NextResponse.json({ error: result.error ?? "Failed to create comment." }, { status: 400 });
+    return NextResponse.json(
+      { error: result.error ?? "Failed to create comment." },
+      { status: 400 },
+    );
   }
 
-  return NextResponse.json({ success: true, status: result.data.status, comment: result.data }, { status: 201 });
+  return NextResponse.json(
+    { success: true, status: result.data.status, comment: result.data },
+    { status: 201 },
+  );
 }

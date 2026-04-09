@@ -1,3 +1,5 @@
 {
-  "npm.workingDirectory": "./"
+  "npm.workingDirectory": "./",
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true
 }

@@ -55,7 +55,11 @@ export default async function LangLayout({ children, params }: LangLayoutProps) 
   const dictionary = getDictionary(lang);
 
   return (
-    <div data-locale={lang} lang={localeInfo[lang].htmlLang} className="locale-root min-h-dvh font-sans">
+    <div
+      data-locale={lang}
+      lang={localeInfo[lang].htmlLang}
+      className="locale-root min-h-dvh font-sans"
+    >
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-foreground focus:px-3 focus:py-2 focus:text-background"

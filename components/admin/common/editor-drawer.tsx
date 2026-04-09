@@ -5,13 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import type { EditorDrawerProps } from "@/types/ui";
 
-export function EditorDrawer({
-  open,
-  title,
-  description,
-  onClose,
-  children,
-}: EditorDrawerProps) {
+export function EditorDrawer({ open, title, description, onClose, children }: EditorDrawerProps) {
   // 드로어가 열린 동안 스크롤/ESC 닫기 동작을 공통 처리한다.
   useEffect(() => {
     if (!open) {

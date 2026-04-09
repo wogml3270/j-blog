@@ -23,17 +23,17 @@ interface CommentsLabels {
   empty: string;
   success: string;
   loginRequired: string;
-};
+}
 
 interface CommentsSectionProps {
   postSlug: string;
   labels: CommentsLabels;
   initialComments: BlogComment[];
-};
+}
 
 interface CommentFormState {
   content: string;
-};
+}
 
 const EMPTY_FORM: CommentFormState = {
   content: "",
@@ -99,11 +99,7 @@ function toDisplayDate(value: string): string {
   }).format(date);
 }
 
-export function CommentsSection({
-  postSlug,
-  labels,
-  initialComments,
-}: CommentsSectionProps) {
+export function CommentsSection({ postSlug, labels, initialComments }: CommentsSectionProps) {
   const [comments, setComments] = useState<BlogComment[]>(initialComments);
   const [user, setUser] = useState<User | null>(null);
   const [isAuthAvailable] = useState<boolean>(() => hasSupabasePublicEnv());
@@ -231,7 +227,11 @@ export function CommentsSection({
           <div className="flex min-w-0 items-center gap-2">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt={nickname || "user"} className="h-7 w-7 rounded-full object-cover" />
+              <img
+                src={avatarUrl}
+                alt={nickname || "user"}
+                className="h-7 w-7 rounded-full object-cover"
+              />
             ) : (
               <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-[11px] font-semibold text-foreground">
                 {(nickname || email || "U").slice(0, 1).toUpperCase()}
@@ -273,7 +273,12 @@ export function CommentsSection({
           />
         </label>
 
-        <Button type="submit" size="sm" className="w-full sm:w-auto" disabled={!user || !isAuthAvailable || isPending}>
+        <Button
+          type="submit"
+          size="sm"
+          className="w-full sm:w-auto"
+          disabled={!user || !isAuthAvailable || isPending}
+        >
           {isPending ? labels.submitting : labels.submit}
         </Button>
       </form>
@@ -284,7 +289,10 @@ export function CommentsSection({
       <div className="space-y-2.5">
         {comments.length > 0 ? (
           comments.map((comment) => (
-            <article key={comment.id} className="rounded-lg border border-border bg-background p-2.5">
+            <article
+              key={comment.id}
+              className="rounded-lg border border-border bg-background p-2.5"
+            >
               <div className="mb-1.5 flex items-center gap-2">
                 {comment.authorAvatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -304,7 +312,9 @@ export function CommentsSection({
                   <p className="text-[11px] text-muted">{toDisplayDate(comment.createdAt)}</p>
                 </div>
               </div>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{comment.content}</p>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {comment.content}
+              </p>
             </article>
           ))
         ) : (

@@ -92,13 +92,11 @@ export async function uploadAdminImageToStorage(
   const path = `${scope}/${datePrefix}/${unique}-${baseName}.${extension}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const { error: uploadError } = await service.storage
-    .from(THUMBNAIL_BUCKET)
-    .upload(path, buffer, {
-      contentType: file.type,
-      upsert: false,
-      cacheControl: "31536000",
-    });
+  const { error: uploadError } = await service.storage.from(THUMBNAIL_BUCKET).upload(path, buffer, {
+    contentType: file.type,
+    upsert: false,
+    cacheControl: "31536000",
+  });
 
   if (uploadError) {
     return {

@@ -1,10 +1,5 @@
 import type { Metadata } from "next";
-import {
-  JetBrains_Mono,
-  Noto_Sans_JP,
-  Noto_Sans_KR,
-  Plus_Jakarta_Sans,
-} from "next/font/google";
+import { JetBrains_Mono, Noto_Sans_JP, Noto_Sans_KR, Plus_Jakarta_Sans } from "next/font/google";
 import "@toast-ui/editor/dist/toastui-editor.css";
 import "swiper/css";
 import "swiper/css/pagination";

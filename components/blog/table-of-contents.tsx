@@ -3,7 +3,7 @@ import type { TocItem } from "@/types/blog";
 interface TableOfContentsProps {
   items: TocItem[];
   title: string;
-};
+}
 
 export function TableOfContents({ items, title }: TableOfContentsProps) {
   if (!items.length) {

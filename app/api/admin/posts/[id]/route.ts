@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
-import {
-  deleteAdminPost,
-  updateAdminPost,
-} from "@/lib/blog/repository";
+import { deleteAdminPost, updateAdminPost } from "@/lib/blog/repository";
 import { revalidateBlogPaths } from "@/lib/cache/revalidate";
 import type { AdminPostInput } from "@/types/blog";
 
@@ -36,8 +33,7 @@ function parseBody(body: unknown): AdminPostInput | null {
     slug: source.slug.trim(),
     title: source.title.trim(),
     description: source.description.trim(),
-    thumbnail:
-      typeof source.thumbnail === "string" ? source.thumbnail.trim() || null : null,
+    thumbnail: typeof source.thumbnail === "string" ? source.thumbnail.trim() || null : null,
     featured: Boolean(source.featured),
     bodyMarkdown: source.bodyMarkdown,
     useMarkdownEditor: Boolean(source.useMarkdownEditor),

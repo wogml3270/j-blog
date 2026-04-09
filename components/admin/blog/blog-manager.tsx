@@ -146,27 +146,32 @@ export function BlogManager({
   const setSavedPageSize = useAdminListUiStore((state) => state.setPageSize);
 
   // 상세 패널 상태와 페이지 상태를 URL 쿼리와 일치시킨다.
-  const syncQuery = useCallback((next: { id?: string | null; page?: number; pageSize?: number; filter?: AdminListFilter }) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", String(next.page ?? page));
-    params.set("pageSize", String(next.pageSize ?? pageSize));
-    const nextFilter = next.filter ?? filter;
+  const syncQuery = useCallback(
+    (next: { id?: string | null; page?: number; pageSize?: number; filter?: AdminListFilter }) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", String(next.page ?? page));
+      params.set("pageSize", String(next.pageSize ?? pageSize));
+      const nextFilter = next.filter ?? filter;
 
-    if (next.id) {
-      params.set("id", next.id);
-    } else {
-      params.delete("id");
-    }
+      if (next.id) {
+        params.set("id", next.id);
+      } else {
+        params.delete("id");
+      }
 
-    if (nextFilter === "all") {
-      params.delete("filter");
-    } else {
-      params.set("filter", nextFilter);
-    }
+      if (nextFilter === "all") {
+        params.delete("filter");
+      } else {
+        params.set("filter", nextFilter);
+      }
 
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }, [filter, page, pageSize, pathname, router, searchParams]);
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
+    },
+    [filter, page, pageSize, pathname, router, searchParams],
+  );
 
   const openCreate = () => {
     setEditingId(null);
@@ -180,17 +185,20 @@ export function BlogManager({
     syncQuery({ id: null });
   };
 
-  const openEdit = useCallback((post: AdminPost) => {
-    setEditingId(post.id);
-    setForm(toFormState(post));
-    setUseMarkdownEditor(post.useMarkdownEditor);
-    setThumbnailMode("url");
-    setThumbnailFile(null);
-    setMessage(null);
-    setDrawerOpen(true);
-    openDetail("blog", post.id);
-    syncQuery({ id: post.id });
-  }, [openDetail, syncQuery]);
+  const openEdit = useCallback(
+    (post: AdminPost) => {
+      setEditingId(post.id);
+      setForm(toFormState(post));
+      setUseMarkdownEditor(post.useMarkdownEditor);
+      setThumbnailMode("url");
+      setThumbnailFile(null);
+      setMessage(null);
+      setDrawerOpen(true);
+      openDetail("blog", post.id);
+      syncQuery({ id: post.id });
+    },
+    [openDetail, syncQuery],
+  );
 
   const closeDrawer = () => {
     setDrawerOpen(false);
@@ -199,29 +207,40 @@ export function BlogManager({
   };
 
   // 목록 재조회 시 page 메타를 함께 갱신해 페이징 상태를 보정한다.
-  const loadPosts = useCallback(async (nextPage = page, nextPageSize = pageSize, nextFilter = filter) => {
-    const response = await fetch(`/api/admin/posts?page=${nextPage}&pageSize=${nextPageSize}&filter=${nextFilter}`, {
-      method: "GET",
-    });
+  const loadPosts = useCallback(
+    async (nextPage = page, nextPageSize = pageSize, nextFilter = filter) => {
+      const response = await fetch(
+        `/api/admin/posts?page=${nextPage}&pageSize=${nextPageSize}&filter=${nextFilter}`,
+        {
+          method: "GET",
+        },
+      );
 
-    if (!response.ok) {
-      throw new Error("게시글 목록을 불러오지 못했습니다.");
-    }
+      if (!response.ok) {
+        throw new Error("게시글 목록을 불러오지 못했습니다.");
+      }
 
-    const payload = (await response.json()) as PaginatedResult<AdminPost>;
-    setPosts(payload.items ?? []);
-    setPage(payload.page);
-    setPageSize(payload.pageSize);
-    setTotal(payload.total);
-    setTotalPages(payload.totalPages);
+      const payload = (await response.json()) as PaginatedResult<AdminPost>;
+      setPosts(payload.items ?? []);
+      setPage(payload.page);
+      setPageSize(payload.pageSize);
+      setTotal(payload.total);
+      setTotalPages(payload.totalPages);
 
-    if ((payload.items?.length ?? 0) === 0 && payload.total > 0 && nextPage > 1) {
-      await loadPosts(nextPage - 1, nextPageSize);
-      return;
-    }
+      if ((payload.items?.length ?? 0) === 0 && payload.total > 0 && nextPage > 1) {
+        await loadPosts(nextPage - 1, nextPageSize);
+        return;
+      }
 
-    syncQuery({ id: null, page: payload.page, pageSize: payload.pageSize, filter: nextFilter });
-  }, [filter, page, pageSize, syncQuery]);
+      syncQuery({
+        id: null,
+        page: payload.page,
+        pageSize: payload.pageSize,
+        filter: nextFilter,
+      });
+    },
+    [filter, page, pageSize, syncQuery],
+  );
 
   // 태그 입력은 기술스택과 같은 칩 UX로 통일한다.
   const addTag = () => {
@@ -350,7 +369,9 @@ export function BlogManager({
     setMessage(null);
 
     try {
-      const response = await fetch(`/api/admin/posts/${id}`, { method: "DELETE" });
+      const response = await fetch(`/api/admin/posts/${id}`, {
+        method: "DELETE",
+      });
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
@@ -472,7 +493,12 @@ export function BlogManager({
           {posts.map((post) => (
             <ManagerListRow key={post.id} onClick={() => openEdit(post)}>
               <>
-                <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", statusBadge(post.status))}>
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-xs font-semibold",
+                    statusBadge(post.status),
+                  )}
+                >
                   {toStatusLabel(post.status)}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
@@ -534,7 +560,12 @@ export function BlogManager({
             <label className="text-xs font-medium uppercase tracking-wide text-muted">설명</label>
             <Input
               value={form.description}
-              onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  description: event.target.value,
+                }))
+              }
               placeholder="설명"
               required
             />
@@ -564,7 +595,12 @@ export function BlogManager({
             {thumbnailMode === "url" ? (
               <Input
                 value={form.thumbnail}
-                onChange={(event) => setForm((prev) => ({ ...prev, thumbnail: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    thumbnail: event.target.value,
+                  }))
+                }
                 placeholder="https://... 또는 비워두기"
               />
             ) : (
@@ -590,7 +626,11 @@ export function BlogManager({
             {form.thumbnail ? (
               <div className="overflow-hidden rounded-md border border-border bg-surface">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={form.thumbnail} alt="썸네일 미리보기" className="h-40 w-full object-cover" />
+                <img
+                  src={form.thumbnail}
+                  alt="썸네일 미리보기"
+                  className="h-40 w-full object-cover"
+                />
               </div>
             ) : (
               <p className="text-xs text-muted">썸네일 미리보기가 없습니다.</p>
@@ -624,11 +664,18 @@ export function BlogManager({
               className="rounded-md px-3 py-2"
             />
             <div className="space-y-1">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted">게시일</label>
+              <label className="text-xs font-medium uppercase tracking-wide text-muted">
+                게시일
+              </label>
               <Input
                 type="date"
                 value={form.publishedAt}
-                onChange={(event) => setForm((prev) => ({ ...prev, publishedAt: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    publishedAt: event.target.value,
+                  }))
+                }
                 disabled={form.status !== "published"}
               />
               <p className="text-[11px] text-muted">
@@ -642,7 +689,12 @@ export function BlogManager({
               <input
                 type="checkbox"
                 checked={form.featured}
-                onChange={(event) => setForm((prev) => ({ ...prev, featured: event.target.checked }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    featured: event.target.checked,
+                  }))
+                }
               />
               메인 페이지 노출
             </label>
@@ -708,8 +760,13 @@ export function BlogManager({
             </p>
           ) : (
             <div className="rounded-xl border border-border bg-background p-3">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">미리보기</p>
-              <ToastMarkdownViewer markdown={form.bodyMarkdown} className="max-h-[280px] overflow-auto" />
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
+                미리보기
+              </p>
+              <ToastMarkdownViewer
+                markdown={form.bodyMarkdown}
+                className="max-h-[280px] overflow-auto"
+              />
             </div>
           )}
 
@@ -718,7 +775,12 @@ export function BlogManager({
               {isPending ? "저장 중..." : editingId ? "저장" : "게시글 생성"}
             </Button>
             {editingId ? (
-              <Button type="button" variant="ghost" onClick={() => onDelete(editingId)} disabled={isPending}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onDelete(editingId)}
+                disabled={isPending}
+              >
                 삭제
               </Button>
             ) : null}

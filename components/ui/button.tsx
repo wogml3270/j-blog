@@ -13,8 +13,7 @@ type ButtonStyleOptions = {
 const variantStyles: Record<ButtonVariant, string> = {
   solid:
     "bg-foreground text-background hover:bg-foreground/90 dark:bg-foreground dark:text-background dark:hover:bg-foreground/90",
-  outline:
-    "border border-border bg-transparent text-foreground hover:bg-foreground/5",
+  outline: "border border-border bg-transparent text-foreground hover:bg-foreground/5",
   ghost: "bg-transparent text-foreground hover:bg-foreground/10",
 };
 

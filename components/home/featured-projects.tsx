@@ -41,11 +41,7 @@ export function FeaturedProjects({
       >
         {projects.map((project, index) => (
           <SwiperSlide key={project.slug} className="h-auto">
-            <ProjectCard
-              project={project}
-              locale={locale}
-              animationDelay={80 + index * 60}
-            />
+            <ProjectCard project={project} locale={locale} animationDelay={80 + index * 60} />
           </SwiperSlide>
         ))}
       </Swiper>

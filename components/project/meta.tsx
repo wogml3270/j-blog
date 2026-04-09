@@ -28,7 +28,9 @@ export function ProjectMeta({
         <dd className="text-sm text-foreground">{period}</dd>
       </div>
       <div className="space-y-2 sm:col-span-2">
-        <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{techStackLabel}</dt>
+        <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
+          {techStackLabel}
+        </dt>
         <dd className="flex flex-wrap gap-2">
           {techStack.map((tech) => (
             <Tag key={tech}>{tech}</Tag>

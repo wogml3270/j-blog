@@ -50,8 +50,12 @@ export default async function AdminDashboardPage() {
           href="/admin/blog"
           className="group block rounded-xl border border-border bg-surface p-4 transition hover:border-foreground/35"
         >
-          <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">블로그 글</p>
-          <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">{posts.length}</p>
+          <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">
+            블로그 글
+          </p>
+          <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">
+            {posts.length}
+          </p>
           <p className="mt-1 text-xs text-muted">메인 노출 {mainVisiblePostsCount}개</p>
         </Link>
 
@@ -59,8 +63,12 @@ export default async function AdminDashboardPage() {
           href="/admin/projects"
           className="group block rounded-xl border border-border bg-surface p-4 transition hover:border-foreground/35"
         >
-          <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">프로젝트</p>
-          <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">{projects.length}</p>
+          <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">
+            프로젝트
+          </p>
+          <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">
+            {projects.length}
+          </p>
           <p className="mt-1 text-xs text-muted">메인 노출 {mainVisibleProjectsCount}개</p>
         </Link>
 
@@ -74,7 +82,9 @@ export default async function AdminDashboardPage() {
               {newContactsCount > 0 ? ` (신규 ${newContactsCount}건)` : ""}
             </span>
           </p>
-          <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">{newContactsCount}</p>
+          <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">
+            {newContactsCount}
+          </p>
           <p className="mt-1 text-xs text-muted">전체 {contacts.length}건</p>
         </Link>
 
@@ -82,7 +92,9 @@ export default async function AdminDashboardPage() {
           href="/admin/about"
           className="group block rounded-xl border border-border bg-surface p-4 transition hover:border-foreground/35"
         >
-          <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">소개 공개 상태</p>
+          <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">
+            소개 공개 상태
+          </p>
           <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">
             {profile.status === "published" ? "공개" : "비공개"}
           </p>
@@ -91,7 +103,9 @@ export default async function AdminDashboardPage() {
       </div>
 
       <SurfaceCard tone="surface" padding="md">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">지금 확인할 항목</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+          지금 확인할 항목
+        </h2>
         <ul className="mt-3 space-y-2 text-sm">
           {newContactsCount > 0 ? (
             <li>
@@ -133,7 +147,9 @@ export default async function AdminDashboardPage() {
       <div className="grid gap-4 xl:grid-cols-3">
         <SurfaceCard tone="surface" padding="md">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">최근 블로그 변경</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+              최근 블로그 변경
+            </h2>
             <Link href="/admin/blog" className="text-xs text-foreground underline">
               바로가기
             </Link>
@@ -146,7 +162,9 @@ export default async function AdminDashboardPage() {
                     href={`/admin/blog?page=1&id=${post.id}`}
                     className="block rounded-md border border-border bg-background px-3 py-2 transition hover:border-foreground/35"
                   >
-                    <p className="truncate text-sm font-medium text-foreground hover:underline">{post.title}</p>
+                    <p className="truncate text-sm font-medium text-foreground hover:underline">
+                      {post.title}
+                    </p>
                     <p className="text-xs text-muted">
                       {post.status === "published" ? "공개" : "비공개"} ·
                       {post.featured ? " 메인 노출" : " 일반"} · {formatDate(post.publishedAt)}
@@ -162,7 +180,9 @@ export default async function AdminDashboardPage() {
 
         <SurfaceCard tone="surface" padding="md">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">최근 프로젝트 변경</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+              최근 프로젝트 변경
+            </h2>
             <Link href="/admin/projects" className="text-xs text-foreground underline">
               바로가기
             </Link>

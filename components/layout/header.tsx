@@ -10,11 +10,7 @@ import { BrandLogo } from "@/components/layout/brand-logo";
 import { Container } from "@/components/layout/container";
 import { ThemeToggle } from "@/components/theme/toggle";
 import { Button } from "@/components/ui/button";
-import {
-  getPathWithoutLocale,
-  locales,
-  withLocalePath,
-} from "@/lib/i18n/config";
+import { getPathWithoutLocale, locales, withLocalePath } from "@/lib/i18n/config";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { hasSupabasePublicEnv } from "@/lib/supabase/env";
 import { SITE_NAV_ITEMS } from "@/lib/site/navigation";
@@ -66,12 +62,7 @@ function getAvatarFromUser(user: User | null): string {
   return "";
 }
 
-function LanguageSwitcher({
-  locale,
-  currentPath,
-  dictionary,
-  onNavigate,
-}: LanguageSwitcherProps) {
+function LanguageSwitcher({ locale, currentPath, dictionary, onNavigate }: LanguageSwitcherProps) {
   return (
     <div
       aria-label={dictionary.language.ariaLabel}
@@ -219,7 +210,9 @@ export function Header({ locale, dictionary }: HeaderProps) {
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold tracking-tight text-foreground">{dictionary.header.authTitle}</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
+              {dictionary.header.authTitle}
+            </h2>
             <p className="text-sm text-muted">{dictionary.header.authDescription}</p>
           </div>
           <Button
@@ -238,14 +231,20 @@ export function Header({ locale, dictionary }: HeaderProps) {
             <div className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2.5">
               {avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt={nickname || "user"} className="h-9 w-9 rounded-full object-cover" />
+                <img
+                  src={avatarUrl}
+                  alt={nickname || "user"}
+                  className="h-9 w-9 rounded-full object-cover"
+                />
               ) : (
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-sm font-semibold text-foreground">
                   {(nickname || user.email || "U").slice(0, 1).toUpperCase()}
                 </span>
               )}
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">{nickname || user.email}</p>
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {nickname || user.email}
+                </p>
                 <p className="truncate text-xs text-muted">
                   {dictionary.header.authSignedInAs} {user.email}
                 </p>
@@ -270,121 +269,134 @@ export function Header({ locale, dictionary }: HeaderProps) {
     <>
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 shadow-sm backdrop-blur-md">
         <Container className="flex h-16 items-center justify-between gap-3 sm:gap-4">
-        <BrandLogo
-          href={withLocalePath(locale, "/")}
-          title={dictionary.header.brandTitle}
-          subtitle={dictionary.header.brandSubtitle}
-        />
+          <BrandLogo
+            href={withLocalePath(locale, "/")}
+            title={dictionary.header.brandTitle}
+            subtitle={dictionary.header.brandSubtitle}
+          />
 
-        <div className="hidden items-center gap-2.5 lg:flex">
-          <LanguageSwitcher locale={locale} currentPath={currentPath} dictionary={dictionary} />
-          <nav aria-label={dictionary.header.mainNavigationAria} className="flex items-center gap-1.5">
-            {SITE_NAV_ITEMS.map((item) => {
-              const href = withLocalePath(locale, item.href);
-              const isActive =
-                item.href === "/"
-                  ? currentPath === "/"
-                  : currentPath === item.href || currentPath.startsWith(`${item.href}/`);
+          <div className="hidden items-center gap-2.5 lg:flex">
+            <LanguageSwitcher locale={locale} currentPath={currentPath} dictionary={dictionary} />
+            <nav
+              aria-label={dictionary.header.mainNavigationAria}
+              className="flex items-center gap-1.5"
+            >
+              {SITE_NAV_ITEMS.map((item) => {
+                const href = withLocalePath(locale, item.href);
+                const isActive =
+                  item.href === "/"
+                    ? currentPath === "/"
+                    : currentPath === item.href || currentPath.startsWith(`${item.href}/`);
 
-              return (
-                <Link
-                  key={item.key}
-                  href={href}
-                  aria-current={isActive ? "page" : undefined}
+                return (
+                  <Link
+                    key={item.key}
+                    href={href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={cn(
+                      "group relative rounded-md px-3 py-1.5 text-sm font-medium text-muted transition-all duration-300 hover:text-foreground",
+                      "after:absolute after:bottom-0.5 after:left-3 after:right-3 after:h-0.5 after:origin-left after:rounded-full after:bg-accent after:transition-transform after:duration-300",
+                      isActive
+                        ? "bg-foreground/10 text-foreground after:scale-x-100"
+                        : "after:scale-x-0 group-hover:after:scale-x-100",
+                    )}
+                  >
+                    {dictionary.nav[item.key]}
+                  </Link>
+                );
+              })}
+            </nav>
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label={dictionary.header.openAuthModalLabel}
+              onClick={openAuthModal}
+              className={cn("h-9", user ? "w-9 px-0! border-0" : "px-3")}
+            >
+              {user ? (
+                avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarUrl}
+                    alt={nickname || "user"}
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-xs font-semibold text-foreground">
+                    {(nickname || user.email || "U").slice(0, 1).toUpperCase()}
+                  </span>
+                )
+              ) : (
+                dictionary.header.authSignInCta
+              )}
+            </Button>
+            <ThemeToggle labels={dictionary.theme} />
+          </div>
+
+          <div className="flex items-center gap-2 lg:hidden">
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label={dictionary.header.openAuthModalLabel}
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                openAuthModal();
+              }}
+              className="h-9 w-9 px-0"
+            >
+              {user ? (
+                avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarUrl}
+                    alt={nickname || "user"}
+                    className="h-7 w-7 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="text-xs font-semibold">
+                    {(nickname || user.email || "U").slice(0, 1).toUpperCase()}
+                  </span>
+                )
+              ) : (
+                <span className="text-xs font-semibold">U</span>
+              )}
+            </Button>
+            <ThemeToggle labels={dictionary.theme} />
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label={
+                isMobileMenuOpen
+                  ? dictionary.header.closeMobileMenuLabel
+                  : dictionary.header.openMobileMenuLabel
+              }
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-navigation"
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              className="w-10 px-0 transition-transform duration-300 active:scale-95"
+            >
+              <span className="relative block h-4 w-4">
+                <span
                   className={cn(
-                    "group relative rounded-md px-3 py-1.5 text-sm font-medium text-muted transition-all duration-300 hover:text-foreground",
-                    "after:absolute after:bottom-0.5 after:left-3 after:right-3 after:h-0.5 after:origin-left after:rounded-full after:bg-accent after:transition-transform after:duration-300",
-                    isActive
-                      ? "bg-foreground/10 text-foreground after:scale-x-100"
-                      : "after:scale-x-0 group-hover:after:scale-x-100",
+                    "absolute left-0 top-0 block h-0.5 w-4 origin-center bg-foreground transition-transform duration-300 ease-out",
+                    isMobileMenuOpen ? "translate-y-1.5 rotate-45" : "",
                   )}
-                >
-                  {dictionary.nav[item.key]}
-                </Link>
-              );
-            })}
-          </nav>
-          <Button
-            variant="outline"
-            size="sm"
-            aria-label={dictionary.header.openAuthModalLabel}
-            onClick={openAuthModal}
-            className={cn("h-9", user ? "w-9 px-0! border-0" : "px-3")}
-          >
-            {user ? (
-              avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt={nickname || "user"} className="w-full h-full rounded-full object-cover" />
-              ) : (
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-xs font-semibold text-foreground">
-                  {(nickname || user.email || "U").slice(0, 1).toUpperCase()}
-                </span>
-              )
-            ) : (
-              dictionary.header.authSignInCta
-            )}
-          </Button>
-          <ThemeToggle labels={dictionary.theme} />
-        </div>
-
-        <div className="flex items-center gap-2 lg:hidden">
-          <Button
-            variant="outline"
-            size="sm"
-            aria-label={dictionary.header.openAuthModalLabel}
-            onClick={() => {
-              setIsMobileMenuOpen(false);
-              openAuthModal();
-            }}
-            className="h-9 w-9 px-0"
-          >
-            {user ? (
-              avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt={nickname || "user"} className="h-7 w-7 rounded-full object-cover" />
-              ) : (
-                <span className="text-xs font-semibold">{(nickname || user.email || "U").slice(0, 1).toUpperCase()}</span>
-              )
-            ) : (
-              <span className="text-xs font-semibold">U</span>
-            )}
-          </Button>
-          <ThemeToggle labels={dictionary.theme} />
-          <Button
-            variant="outline"
-            size="sm"
-            aria-label={
-              isMobileMenuOpen
-                ? dictionary.header.closeMobileMenuLabel
-                : dictionary.header.openMobileMenuLabel
-            }
-            aria-expanded={isMobileMenuOpen}
-            aria-controls="mobile-navigation"
-            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-            className="w-10 px-0 transition-transform duration-300 active:scale-95"
-          >
-            <span className="relative block h-4 w-4">
-              <span
-                className={cn(
-                  "absolute left-0 top-0 block h-0.5 w-4 origin-center bg-foreground transition-transform duration-300 ease-out",
-                  isMobileMenuOpen ? "translate-y-1.5 rotate-45" : "",
-                )}
-              />
-              <span
-                className={cn(
-                  "absolute left-0 top-1.5 block h-0.5 w-4 bg-foreground transition-opacity duration-200",
-                  isMobileMenuOpen ? "opacity-0" : "opacity-100",
-                )}
-              />
-              <span
-                className={cn(
-                  "absolute left-0 top-3 block h-0.5 w-4 origin-center bg-foreground transition-transform duration-300 ease-out",
-                  isMobileMenuOpen ? "-translate-y-1.5 -rotate-45" : "",
-                )}
-              />
-            </span>
-          </Button>
-        </div>
+                />
+                <span
+                  className={cn(
+                    "absolute left-0 top-1.5 block h-0.5 w-4 bg-foreground transition-opacity duration-200",
+                    isMobileMenuOpen ? "opacity-0" : "opacity-100",
+                  )}
+                />
+                <span
+                  className={cn(
+                    "absolute left-0 top-3 block h-0.5 w-4 origin-center bg-foreground transition-transform duration-300 ease-out",
+                    isMobileMenuOpen ? "-translate-y-1.5 -rotate-45" : "",
+                  )}
+                />
+              </span>
+            </Button>
+          </div>
         </Container>
       </header>
       <div
@@ -401,7 +413,9 @@ export function Header({ locale, dictionary }: HeaderProps) {
           id="mobile-navigation"
           className={cn(
             "absolute right-0 top-0 flex h-full w-80 max-w-full flex-col gap-4 border-l border-border bg-linear-to-b from-surface/95 to-background/95 p-5 shadow-2xl transition-transform duration-300 ease-out",
-            isMobileMenuOpen ? "pointer-events-auto translate-x-0" : "pointer-events-none translate-x-full",
+            isMobileMenuOpen
+              ? "pointer-events-auto translate-x-0"
+              : "pointer-events-none translate-x-full",
           )}
         >
           <LanguageSwitcher
@@ -411,7 +425,10 @@ export function Header({ locale, dictionary }: HeaderProps) {
             onNavigate={() => setIsMobileMenuOpen(false)}
           />
 
-          <nav aria-label={dictionary.header.mobileNavigationAria} className="flex flex-col gap-1.5">
+          <nav
+            aria-label={dictionary.header.mobileNavigationAria}
+            className="flex flex-col gap-1.5"
+          >
             {SITE_NAV_ITEMS.map((item, index) => {
               const href = withLocalePath(locale, item.href);
               const isActive =
@@ -425,7 +442,9 @@ export function Header({ locale, dictionary }: HeaderProps) {
                   href={href}
                   aria-current={isActive ? "page" : undefined}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  style={{ transitionDelay: isMobileMenuOpen ? `${index * 45}ms` : "0ms" }}
+                  style={{
+                    transitionDelay: isMobileMenuOpen ? `${index * 45}ms` : "0ms",
+                  }}
                   className={cn(
                     "rounded-lg px-3 py-2.5 text-sm font-medium text-muted transition-all duration-300",
                     "hover:translate-x-1 hover:bg-foreground/5 hover:text-foreground",

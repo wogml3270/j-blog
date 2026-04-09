@@ -8,12 +8,11 @@ interface ThemeToggleLabels {
   loadingLabel: string;
   toLightLabel: string;
   toDarkLabel: string;
-};
+}
 
 interface ThemeToggleProps {
   labels: ThemeToggleLabels;
-};
-
+}
 
 function SunIcon({ className }: { className?: string }) {
   return (

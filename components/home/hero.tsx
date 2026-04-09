@@ -38,7 +38,10 @@ export function Hero({
           <Link href={withLocalePath(locale, "/projects")} className={buttonStyles()}>
             {viewProjectsLabel}
           </Link>
-          <Link href={withLocalePath(locale, "/blog")} className={buttonStyles({ variant: "outline" })}>
+          <Link
+            href={withLocalePath(locale, "/blog")}
+            className={buttonStyles({ variant: "outline" })}
+          >
             {viewBlogLabel}
           </Link>
         </div>

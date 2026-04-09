@@ -20,7 +20,8 @@ const projects = [
   {
     slug: "commerce-admin-rebuild",
     title: "커머스 어드민 리빌드",
-    summary: "레거시 어드민을 App Router 기반으로 재구성해 초기 로딩과 배포 안정성을 개선한 프로젝트",
+    summary:
+      "레거시 어드민을 App Router 기반으로 재구성해 초기 로딩과 배포 안정성을 개선한 프로젝트",
     thumbnail: "/projects/commerce-admin.svg",
     role: "Frontend Lead",
     period: "2025.03 - 2025.08",
@@ -46,7 +47,8 @@ const projects = [
   {
     slug: "content-platform-migration",
     title: "콘텐츠 플랫폼 마이그레이션",
-    summary: "페이지스 라우터에서 App Router로 전환하며 SEO 메타 구조와 MDX 콘텐츠 파이프라인을 정비한 프로젝트",
+    summary:
+      "페이지스 라우터에서 App Router로 전환하며 SEO 메타 구조와 MDX 콘텐츠 파이프라인을 정비한 프로젝트",
     thumbnail: "/projects/content-platform.svg",
     role: "Frontend Developer",
     period: "2024.08 - 2025.01",
@@ -68,7 +70,8 @@ const projects = [
   {
     slug: "analytics-dashboard",
     title: "실시간 분석 대시보드",
-    summary: "대용량 지표를 다루는 대시보드 UI를 설계해 실무자가 핵심 지표를 빠르게 해석할 수 있도록 개선",
+    summary:
+      "대용량 지표를 다루는 대시보드 UI를 설계해 실무자가 핵심 지표를 빠르게 해석할 수 있도록 개선",
     thumbnail: "/projects/analytics-dashboard.svg",
     role: "Frontend Developer",
     period: "2023.11 - 2024.05",
@@ -130,8 +133,9 @@ function parseMdxMetadata(source) {
   const body = source.slice(match.index + match[0].length).trim();
 
   const markdown = body
-    .replace(/<h([2-4]) id="[^"]*">([^<]+)<\/h\1>/g, (_, level, text) =>
-      `${"#".repeat(Number(level))} ${text}`,
+    .replace(
+      /<h([2-4]) id="[^"]*">([^<]+)<\/h\1>/g,
+      (_, level, text) => `${"#".repeat(Number(level))} ${text}`,
     )
     .replace(/<[^>]+>/g, "")
     .trim();
@@ -153,9 +157,7 @@ async function ensureAllowlist() {
     is_super_admin: index === 0,
   }));
 
-  const { error } = await supabase
-    .from("admin_allowlist")
-    .upsert(rows, { onConflict: "email" });
+  const { error } = await supabase.from("admin_allowlist").upsert(rows, { onConflict: "email" });
 
   if (error) {
     throw error;
@@ -163,9 +165,7 @@ async function ensureAllowlist() {
 }
 
 async function seedProfile() {
-  const { error } = await supabase
-    .from("profile_content")
-    .upsert(profile, { onConflict: "id" });
+  const { error } = await supabase.from("profile_content").upsert(profile, { onConflict: "id" });
 
   if (error) {
     throw error;
@@ -191,7 +191,10 @@ async function syncPostTags(postId, tags) {
 
   const { data: tagRows, error: tagError } = await supabase
     .from("post_tags")
-    .upsert(normalized.map((name) => ({ name })), { onConflict: "name" })
+    .upsert(
+      normalized.map((name) => ({ name })),
+      { onConflict: "name" },
+    )
     .select("id");
 
   if (tagError || !tagRows) {

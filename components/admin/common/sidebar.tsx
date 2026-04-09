@@ -45,7 +45,9 @@ export function AdminSidebar({ email }: AdminSidebarProps) {
         </div>
         <div className="flex items-center justify-between gap-2 xl:block">
           <p className="text-xs font-medium uppercase tracking-wide text-muted">관리자</p>
-          <p className="truncate text-xs font-medium text-foreground sm:text-sm">{email ?? "unknown"}</p>
+          <p className="truncate text-xs font-medium text-foreground sm:text-sm">
+            {email ?? "unknown"}
+          </p>
         </div>
       </div>
 

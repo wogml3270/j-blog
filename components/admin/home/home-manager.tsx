@@ -47,7 +47,10 @@ export function HomeManager({ initialHome }: HomeManagerProps) {
   const [form, setForm] = useState<HomeFormState>(initialForm);
   const [savedForm, setSavedForm] = useState<HomeFormState>(initialForm);
   const [isPending, setIsPending] = useState(false);
-  const [notice, setNotice] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [notice, setNotice] = useState<{
+    kind: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const isDirty = serializeForm(form) !== serializeForm(savedForm);
 
@@ -117,13 +120,7 @@ export function HomeManager({ initialHome }: HomeManagerProps) {
       summary="홈 화면의 히어로/기술스택 데이터를 관리합니다."
       detail="드로어 없이 이 화면에서 바로 수정/저장할 수 있습니다."
     >
-      <SurfaceCard
-        tone="surface"
-        radius="2xl"
-        padding="md"
-        interactive
-        className="space-y-4"
-      >
+      <SurfaceCard tone="surface" radius="2xl" padding="md" interactive className="space-y-4">
         <form className="space-y-4" onSubmit={onSubmit}>
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
@@ -153,7 +150,12 @@ export function HomeManager({ initialHome }: HomeManagerProps) {
               <Input
                 className="min-w-0 flex-1"
                 value={form.techStackInput}
-                onChange={(event) => setForm((prev) => ({ ...prev, techStackInput: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    techStackInput: event.target.value,
+                  }))
+                }
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();

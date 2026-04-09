@@ -9,7 +9,7 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 interface SiteLayoutProps {
   children: React.ReactNode;
   params: Promise<{ lang: string }>;
-};
+}
 
 export default async function SiteLayout({ children, params }: SiteLayoutProps) {
   const { lang } = await params;

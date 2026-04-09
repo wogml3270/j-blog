@@ -1,9 +1,4 @@
-import type {
-  AdminPost,
-  AdminPostInput,
-  BlogPostDetail,
-  BlogPostSummary,
-} from "@/types/blog";
+import type { AdminPost, AdminPostInput, BlogPostDetail, BlogPostSummary } from "@/types/blog";
 import type { AdminListFilter, PaginatedResult } from "@/types/admin";
 import type { PublishStatus } from "@/types/db";
 import {
@@ -117,7 +112,10 @@ function rowToAdminPost(row: PostRow): AdminPost {
   };
 }
 
-function normalizePublishedAt(status: PublishStatus, raw: string | null | undefined): string | null {
+function normalizePublishedAt(
+  status: PublishStatus,
+  raw: string | null | undefined,
+): string | null {
   if (status === "draft") {
     return null;
   }
@@ -152,7 +150,10 @@ async function syncPostTags(postId: string, tags: string[]) {
 
   const { data: tagRows, error: upsertError } = await service
     .from("post_tags")
-    .upsert(normalizedTags.map((name) => ({ name })), { onConflict: "name" })
+    .upsert(
+      normalizedTags.map((name) => ({ name })),
+      { onConflict: "name" },
+    )
     .select("id,name");
 
   if (upsertError || !tagRows) {
@@ -229,7 +230,8 @@ export async function getRecentPublishedPosts(limit = 3): Promise<BlogPostSummar
 
 export async function getFeaturedPublishedPosts(limit?: number): Promise<BlogPostSummary[]> {
   const service = createSupabaseServiceClient();
-  const safeLimit = typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : null;
+  const safeLimit =
+    typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : null;
 
   if (!service) {
     const fallback = fallbackPostList();
@@ -379,9 +381,7 @@ export async function getAdminPostsPaginated(
   const from = (safePage - 1) * safePageSize;
   const to = from + safePageSize - 1;
 
-  let query = service
-    .from("posts")
-    .select(POST_SELECT_FIELDS, { count: "exact" });
+  let query = service.from("posts").select(POST_SELECT_FIELDS, { count: "exact" });
 
   if (filter === "main") {
     query = query.eq("featured", true);

@@ -146,10 +146,18 @@ export async function createCommentForPost(
     author_avatar_url: input.authorAvatarUrl ?? null,
   };
 
-  let insertResult = await service.from("comments").insert(fullInsert).select("*").single<CommentRow>();
+  let insertResult = await service
+    .from("comments")
+    .insert(fullInsert)
+    .select("*")
+    .single<CommentRow>();
 
   if (insertResult.error && shouldFallbackLegacyColumns(insertResult.error.message)) {
-    insertResult = await service.from("comments").insert(baseInsert).select("*").single<CommentRow>();
+    insertResult = await service
+      .from("comments")
+      .insert(baseInsert)
+      .select("*")
+      .single<CommentRow>();
   }
 
   if (insertResult.error || !insertResult.data) {
@@ -163,7 +171,9 @@ export async function createCommentForPost(
     ...insertResult.data,
     author_email: (insertResult.data.author_email ?? input.authorEmail) as unknown,
     author_nickname: (insertResult.data.author_nickname ?? input.authorNickname) as unknown,
-    author_avatar_url: (insertResult.data.author_avatar_url ?? input.authorAvatarUrl ?? null) as unknown,
+    author_avatar_url: (insertResult.data.author_avatar_url ??
+      input.authorAvatarUrl ??
+      null) as unknown,
   });
 
   if (!mapped) {

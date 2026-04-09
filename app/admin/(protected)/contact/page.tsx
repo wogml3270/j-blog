@@ -4,7 +4,11 @@ import { normalizePagination } from "@/lib/utils/pagination";
 import { pickSingleQueryValue } from "@/lib/utils/search-params";
 import type { AdminSearchParams } from "@/types/admin";
 
-export default async function AdminContactPage({ searchParams }: { searchParams: AdminSearchParams }) {
+export default async function AdminContactPage({
+  searchParams,
+}: {
+  searchParams: AdminSearchParams;
+}) {
   const query = await searchParams;
   const { page, pageSize } = normalizePagination(
     pickSingleQueryValue(query.page),

@@ -165,11 +165,7 @@ function formatPeriodDate(value: string): string {
   return `${year}.${month}`;
 }
 
-function syncPeriod(
-  startDate: string | null,
-  endDate: string | null,
-  fallback?: string,
-): string {
+function syncPeriod(startDate: string | null, endDate: string | null, fallback?: string): string {
   if (startDate && endDate) {
     return `${formatPeriodDate(startDate)} - ${formatPeriodDate(endDate)}`;
   }
@@ -270,7 +266,8 @@ export async function getAllPublishedProjects(locale: Locale): Promise<Project[]
 
 export async function getFeaturedProjects(locale: Locale, limit?: number): Promise<Project[]> {
   const service = createSupabaseServiceClient();
-  const safeLimit = typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : null;
+  const safeLimit =
+    typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : null;
 
   if (!service) {
     return getFallbackFeaturedProjects(locale, safeLimit ?? undefined).map((project) => ({
@@ -306,7 +303,10 @@ export async function getFeaturedProjects(locale: Locale, limit?: number): Promi
   return (data as ProjectRow[]).map(rowToProject);
 }
 
-export async function getPublishedProjectBySlug(slug: string, locale: Locale): Promise<Project | null> {
+export async function getPublishedProjectBySlug(
+  slug: string,
+  locale: Locale,
+): Promise<Project | null> {
   const service = createSupabaseServiceClient();
 
   if (!service) {
@@ -387,9 +387,7 @@ export async function getAdminProjectsPaginated(
   const from = (safePage - 1) * safePageSize;
   const to = from + safePageSize - 1;
 
-  let query = service
-    .from("projects")
-    .select(PROJECT_SELECT_FIELDS, { count: "exact" });
+  let query = service.from("projects").select(PROJECT_SELECT_FIELDS, { count: "exact" });
 
   if (filter === "main") {
     query = query.eq("featured", true);
