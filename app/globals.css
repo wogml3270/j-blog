@@ -283,3 +283,24 @@ a {
 .swiper-pagination-bullet-active {
   background: var(--foreground) !important;
 }
+
+.home-card-swiper .swiper-wrapper {
+  align-items: stretch;
+}
+
+.home-card-swiper .swiper-slide {
+  display: flex;
+  height: auto;
+}
+
+.home-card-swiper .swiper-slide > * {
+  width: 100%;
+}
+
+.ui-clamp-3 {
+  display: -webkit-box;
+  overflow: hidden;
+  line-clamp: 3;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}

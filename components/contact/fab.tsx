@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { CloseIcon } from "@/components/ui/icons/close-icon";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils/cn";
 import { usePublicUiStore } from "@/stores/public-ui";
 import type { ContactFabProps, ContactFormState } from "@/types/ui";
@@ -169,7 +171,8 @@ export function ContactFab({ labels }: ContactFabProps) {
             aria-label={labels.closeAriaLabel}
             onClick={closeContactModal}
           >
-            ×
+            <CloseIcon />
+            <span className="sr-only">{labels.closeAriaLabel}</span>
           </Button>
         </div>
 
@@ -183,6 +186,7 @@ export function ContactFab({ labels }: ContactFabProps) {
               onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
               placeholder={labels.namePlaceholder}
               required
+              disabled={isPending}
             />
           </label>
 
@@ -196,6 +200,7 @@ export function ContactFab({ labels }: ContactFabProps) {
               onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
               placeholder={labels.emailPlaceholder}
               required
+              disabled={isPending}
             />
           </label>
 
@@ -208,6 +213,7 @@ export function ContactFab({ labels }: ContactFabProps) {
               onChange={(event) => setForm((prev) => ({ ...prev, subject: event.target.value }))}
               placeholder={labels.subjectPlaceholder}
               required
+              disabled={isPending}
             />
           </label>
 
@@ -221,12 +227,19 @@ export function ContactFab({ labels }: ContactFabProps) {
               className="min-h-[120px] w-full rounded-md border border-border bg-background p-3 text-sm text-foreground"
               placeholder={labels.messagePlaceholder}
               required
+              disabled={isPending}
             />
           </label>
 
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? labels.submittingLabel : labels.submitLabel}
           </Button>
+          {isPending ? (
+            <div className="space-y-1.5">
+              <Skeleton width="100%" height={8} rounded="999px" />
+              <Skeleton width="68%" height={8} rounded="999px" />
+            </div>
+          ) : null}
         </form>
 
         {notice ? (

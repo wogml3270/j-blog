@@ -3,6 +3,7 @@ import { getAllPublishedPosts } from "@/lib/blog/repository";
 import { localeInfo, locales, withLocalePath } from "@/lib/i18n/config";
 import { getAllPublishedProjects } from "@/lib/projects/repository";
 import { SITE_CONFIG } from "@/lib/site/profile";
+import { encodeSlugSegment } from "@/lib/utils/slug";
 
 function buildAlternateLanguages(pathname: string) {
   return Object.fromEntries(
@@ -49,7 +50,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]);
 
   const projectRoutes = projects.flatMap((project) =>
-    localizedEntries(`/projects/${project.slug}`, {
+    localizedEntries(`/projects/${encodeSlugSegment(project.slug)}`, {
       lastModified: project.updatedAt ? new Date(project.updatedAt) : new Date(),
       changeFrequency: "monthly",
       priority: 0.8,
@@ -57,7 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
 
   const blogRoutes = posts.flatMap((post) =>
-    localizedEntries(`/blog/${post.slug}`, {
+    localizedEntries(`/blog/${encodeSlugSegment(post.slug)}`, {
       lastModified: new Date(post.date),
       changeFrequency: "monthly",
       priority: 0.75,

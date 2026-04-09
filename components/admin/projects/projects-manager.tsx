@@ -26,9 +26,12 @@ import { ManagerShell } from "@/components/admin/common/manager-shell";
 import { AdminPagination } from "@/components/admin/common/pagination";
 import { StatusRadioGroup } from "@/components/admin/common/status-radio-group";
 import { Button } from "@/components/ui/button";
+import { FilterIcon } from "@/components/ui/icons/filter-icon";
+import { TrashIcon } from "@/components/ui/icons/trash-icon";
 import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { cn } from "@/lib/utils/cn";
+import { normalizeSlug } from "@/lib/utils/slug";
 import { useAdminDetailStore } from "@/stores/admin-detail";
 import { useAdminListUiStore } from "@/stores/admin-list-ui";
 import type { AdminListFilter, PaginatedResult } from "@/types/admin";
@@ -131,8 +134,8 @@ function toSortableLinkItems(items: ProjectLinks): SortableLinkItem[] {
 
 function toFormState(project: AdminProject): ProjectFormState {
   return {
-    slug: project.slug,
     title: project.title,
+    slug: project.slug,
     summary: project.summary,
     thumbnail: project.thumbnail,
     role: project.role,
@@ -244,9 +247,11 @@ function SortableRow({ id, children, onRemove }: SortableRowProps) {
       <button
         type="button"
         onClick={onRemove}
-        className="rounded border border-border px-2 py-1 text-xs text-muted transition-colors hover:text-foreground"
+        className="inline-flex h-7 w-7 items-center justify-center rounded border border-red-500/40 bg-red-500/10 text-red-700 transition-colors hover:bg-red-500/20 dark:border-red-400/40 dark:bg-red-500/20 dark:text-red-200 dark:hover:bg-red-500/30"
+        aria-label="삭제"
+        title="삭제"
       >
-        삭제
+        <TrashIcon className="h-3.5 w-3.5" />
       </button>
     </li>
   );
@@ -271,6 +276,7 @@ export function ProjectsManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [thumbnailMode, setThumbnailMode] = useState<ThumbnailInputMode>("url");
   const [useSummaryEditor, setUseSummaryEditor] = useState(false);
+  const [syncSlugWithTitle, setSyncSlugWithTitle] = useState(true);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -323,6 +329,7 @@ export function ProjectsManager({
     setEditingId(null);
     setForm(EMPTY_FORM);
     setUseSummaryEditor(false);
+    setSyncSlugWithTitle(true);
     setThumbnailMode("url");
     setThumbnailFile(null);
     setMessage(null);
@@ -336,6 +343,7 @@ export function ProjectsManager({
       setEditingId(project.id);
       setForm(toFormState(project));
       setUseSummaryEditor(project.useSummaryEditor);
+      setSyncSlugWithTitle(false);
       setThumbnailMode("url");
       setThumbnailFile(null);
       setMessage(null);
@@ -529,9 +537,15 @@ export function ProjectsManager({
         throw new Error("썸네일 URL을 입력하거나 이미지를 업로드해주세요.");
       }
 
+      const normalizedSlug = normalizeSlug(form.slug);
+
+      if (!normalizedSlug) {
+        throw new Error("슬러그를 확인해주세요. (한글/영문/숫자/_)");
+      }
+
       const body = {
-        slug: form.slug,
         title: form.title,
+        slug: normalizedSlug,
         summary: form.summary,
         useSummaryEditor,
         thumbnail: form.thumbnail,
@@ -566,6 +580,7 @@ export function ProjectsManager({
       setEditingId(null);
       setForm(EMPTY_FORM);
       setUseSummaryEditor(false);
+      setSyncSlugWithTitle(true);
       setThumbnailMode("url");
       setThumbnailFile(null);
       closeDetail("projects");
@@ -678,6 +693,26 @@ export function ProjectsManager({
     void loadProjects(1, savedPageSize, filter);
   }, [filter, loadProjects, pageSize, savedPageSize, searchParams]);
 
+  useEffect(() => {
+    // 제목-슬러그 자동 동기화가 켜져 있으면 title 변경을 slug에 즉시 반영한다.
+    if (!syncSlugWithTitle) {
+      return;
+    }
+
+    const nextSlug = normalizeSlug(form.title);
+
+    setForm((prev) => {
+      if (prev.slug === nextSlug) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        slug: nextSlug,
+      };
+    });
+  }, [form.title, syncSlugWithTitle]);
+
   return (
     <>
       <ManagerShell
@@ -687,7 +722,8 @@ export function ProjectsManager({
         action={
           <div className="flex items-center gap-2">
             <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-              <span className="text-xs text-muted">필터</span>
+              <FilterIcon className="h-3.5 w-3.5 text-muted" />
+              <span className="sr-only">필터</span>
               <select
                 className="bg-transparent text-sm outline-none"
                 value={filter}
@@ -754,15 +790,6 @@ export function ProjectsManager({
       >
         <form className="space-y-3.5" onSubmit={onSubmit}>
           <div className="space-y-1">
-            <label className="text-xs font-medium uppercase tracking-wide text-muted">슬러그</label>
-            <Input
-              value={form.slug}
-              onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
-              placeholder="slug"
-              required
-            />
-          </div>
-          <div className="space-y-1">
             <label className="text-xs font-medium uppercase tracking-wide text-muted">제목</label>
             <Input
               value={form.title}
@@ -771,6 +798,41 @@ export function ProjectsManager({
               required
             />
           </div>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-medium uppercase tracking-wide text-muted">
+                슬러그
+              </label>
+              <label className="inline-flex items-center gap-1.5 text-xs text-muted">
+                <input
+                  type="checkbox"
+                  checked={syncSlugWithTitle}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setSyncSlugWithTitle(checked);
+
+                    if (checked) {
+                      setForm((prev) => ({
+                        ...prev,
+                        slug: normalizeSlug(prev.title),
+                      }));
+                    }
+                  }}
+                />
+                제목과 동일
+              </label>
+            </div>
+            <Input
+              value={form.slug}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, slug: normalizeSlug(event.target.value) }))
+              }
+              placeholder="slug"
+              required
+              disabled={syncSlugWithTitle}
+            />
+          </div>
+
           <MarkdownField
             label="요약"
             value={form.summary}
@@ -968,7 +1030,7 @@ export function ProjectsManager({
                     {item}
                     <button
                       type="button"
-                      className="text-muted hover:text-foreground"
+                      className="text-red-600/80 transition-colors hover:text-red-500 dark:text-red-300/85 dark:hover:text-red-200"
                       aria-label={`${item} 삭제`}
                       onClick={() => removeTechStackItem(item)}
                     >
@@ -1175,11 +1237,13 @@ export function ProjectsManager({
             {editingId ? (
               <Button
                 type="button"
-                variant="ghost"
+                variant="destructive"
                 onClick={() => onDelete(editingId)}
                 disabled={isPending}
+                aria-label="프로젝트 삭제"
               >
-                삭제
+                <TrashIcon />
+                <span className="sr-only">삭제</span>
               </Button>
             ) : null}
           </div>

@@ -1,7 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils/cn";
 
-type ButtonVariant = "solid" | "outline" | "ghost";
+type ButtonVariant = "solid" | "outline" | "ghost" | "destructive";
 type ButtonSize = "sm" | "md";
 
 type ButtonStyleOptions = {
@@ -15,6 +15,8 @@ const variantStyles: Record<ButtonVariant, string> = {
     "bg-foreground text-background hover:bg-foreground/90 dark:bg-foreground dark:text-background dark:hover:bg-foreground/90",
   outline: "border border-border bg-transparent text-foreground hover:bg-foreground/5",
   ghost: "bg-transparent text-foreground hover:bg-foreground/10",
+  destructive:
+    "border border-red-500/40 bg-red-500/15 text-red-700 hover:bg-red-500/25 dark:border-red-400/40 dark:bg-red-500/20 dark:text-red-200 dark:hover:bg-red-500/30",
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

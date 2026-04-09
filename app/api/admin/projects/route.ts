@@ -4,6 +4,7 @@ import { revalidateProjectPaths } from "@/lib/cache/revalidate";
 import { createAdminProject, getAdminProjectsPaginated } from "@/lib/projects/repository";
 import { normalizePagination } from "@/lib/utils/pagination";
 import { normalizeAdminListFilter } from "@/lib/utils/search-params";
+import { normalizeSlug } from "@/lib/utils/slug";
 import type { AdminProjectInput, ProjectLinkItem, ProjectLinks } from "@/types/projects";
 
 function toLinks(value: unknown): ProjectLinks {
@@ -80,6 +81,7 @@ function toLinks(value: unknown): ProjectLinks {
   return normalize(legacy);
 }
 
+// 관리자 프로젝트 입력 payload를 타입/정책 기준으로 정규화한다.
 function parseBody(body: unknown): AdminProjectInput | null {
   if (!body || typeof body !== "object") {
     return null;
@@ -98,9 +100,14 @@ function parseBody(body: unknown): AdminProjectInput | null {
   }
 
   const status = source.status === "published" ? "published" : "draft";
+  const slug = normalizeSlug(source.slug);
+
+  if (!slug) {
+    return null;
+  }
 
   return {
-    slug: source.slug.trim(),
+    slug,
     title: source.title.trim(),
     summary: source.summary.trim(),
     useSummaryEditor: Boolean(source.useSummaryEditor),

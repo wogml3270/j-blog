@@ -29,7 +29,7 @@ export function FeaturedProjects({
 
       <Swiper
         modules={[Pagination, Keyboard]}
-        className="pb-10"
+        className="home-card-swiper pb-10!"
         spaceBetween={18}
         slidesPerView={1}
         keyboard={{ enabled: true }}
@@ -40,7 +40,7 @@ export function FeaturedProjects({
         }}
       >
         {projects.map((project, index) => (
-          <SwiperSlide key={project.slug} className="h-auto">
+          <SwiperSlide key={project.slug} className="h-full">
             <ProjectCard project={project} locale={locale} animationDelay={80 + index * 60} />
           </SwiperSlide>
         ))}

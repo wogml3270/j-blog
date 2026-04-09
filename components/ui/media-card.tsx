@@ -19,7 +19,7 @@ export type MediaCardBodyProps = {
 };
 
 export function MediaCardBody({ children, className }: MediaCardBodyProps) {
-  return <div className={cn("space-y-3 p-5", className)}>{children}</div>;
+  return <div className={cn("flex flex-1 flex-col space-y-3 p-5", className)}>{children}</div>;
 }
 
 export function MediaCard({
@@ -37,7 +37,7 @@ export function MediaCard({
     <Link
       href={href}
       className={cn(
-        "group block overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-foreground/30",
+        "group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-foreground/30",
         className,
       )}
     >
@@ -47,9 +47,8 @@ export function MediaCard({
         <h3 className="text-lg font-semibold tracking-tight text-foreground group-hover:underline">
           {title}
         </h3>
-        {description ? <p className="text-sm text-muted">{description}</p> : null}
-        {tags ?? null}
-        {footer ?? null}
+        {description ? <p className="ui-clamp-3 text-sm text-muted">{description}</p> : null}
+        {tags || footer ? <div className="mt-auto space-y-2">{tags ?? null}{footer ?? null}</div> : null}
       </MediaCardBody>
     </Link>
   );

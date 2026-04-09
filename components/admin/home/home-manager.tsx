@@ -178,7 +178,7 @@ export function HomeManager({ initialHome }: HomeManagerProps) {
                     {item}
                     <button
                       type="button"
-                      className="text-muted hover:text-foreground"
+                      className="text-red-600/80 transition-colors hover:text-red-500 dark:text-red-300/85 dark:hover:text-red-200"
                       aria-label={`${item} 삭제`}
                       onClick={() => removeTechStack(item)}
                     >

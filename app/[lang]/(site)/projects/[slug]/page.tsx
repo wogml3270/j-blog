@@ -10,6 +10,7 @@ import { isLocale, withLocalePath } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getPublishedProjectBySlug } from "@/lib/projects/repository";
 import { buildPageMetadata } from "@/lib/seo/metadata";
+import { decodeSlugSegment, encodeSlugSegment } from "@/lib/utils/slug";
 
 type ProjectDetailPageProps = {
   params: Promise<{ lang: string; slug: string }>;
@@ -17,13 +18,14 @@ type ProjectDetailPageProps = {
 
 export async function generateMetadata({ params }: ProjectDetailPageProps): Promise<Metadata> {
   const { lang, slug } = await params;
+  const normalizedSlug = decodeSlugSegment(slug);
 
   if (!isLocale(lang)) {
     return {};
   }
 
   const dictionary = getDictionary(lang);
-  const project = await getPublishedProjectBySlug(slug, lang);
+  const project = await getPublishedProjectBySlug(normalizedSlug, lang);
 
   if (!project) {
     return {
@@ -33,7 +35,7 @@ export async function generateMetadata({ params }: ProjectDetailPageProps): Prom
 
   return buildPageMetadata({
     locale: lang,
-    pathname: `/projects/${slug}`,
+    pathname: `/projects/${encodeSlugSegment(normalizedSlug)}`,
     title: project.title,
     description: stripMarkdownToPlainText(project.summary),
   });
@@ -41,13 +43,14 @@ export async function generateMetadata({ params }: ProjectDetailPageProps): Prom
 
 export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const { lang, slug } = await params;
+  const normalizedSlug = decodeSlugSegment(slug);
 
   if (!isLocale(lang)) {
     notFound();
   }
 
   const dictionary = getDictionary(lang);
-  const project = await getPublishedProjectBySlug(slug, lang);
+  const project = await getPublishedProjectBySlug(normalizedSlug, lang);
 
   if (!project) {
     notFound();

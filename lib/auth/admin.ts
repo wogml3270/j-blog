@@ -16,10 +16,29 @@ export type AdminState = {
   isAdmin: boolean;
   reason: AdminStateReason;
   email: string | null;
+  avatarUrl: string | null;
 };
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+// 사용자 메타데이터에서 프로필 이미지를 우선순위대로 추출한다.
+function getAvatarFromUser(user: User | null): string | null {
+  if (!user) {
+    return null;
+  }
+
+  const metadata = user.user_metadata ?? {};
+  const candidates = [metadata.avatar_url, metadata.picture];
+
+  for (const value of candidates) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return null;
 }
 
 function getAllowedEmailsFromEnv(): Set<string> {
@@ -81,6 +100,7 @@ export async function getAdminState(): Promise<AdminState> {
       isAdmin: false,
       reason: "supabase_not_configured",
       email: null,
+      avatarUrl: null,
     };
   }
 
@@ -95,6 +115,7 @@ export async function getAdminState(): Promise<AdminState> {
       isAdmin: false,
       reason: "unauthenticated",
       email: null,
+      avatarUrl: null,
     };
   }
 
@@ -106,6 +127,7 @@ export async function getAdminState(): Promise<AdminState> {
       isAdmin: false,
       reason: "not_allowed",
       email: null,
+      avatarUrl: getAvatarFromUser(user),
     };
   }
 
@@ -115,6 +137,7 @@ export async function getAdminState(): Promise<AdminState> {
       isAdmin: false,
       reason: "email_not_verified",
       email,
+      avatarUrl: getAvatarFromUser(user),
     };
   }
 
@@ -126,6 +149,7 @@ export async function getAdminState(): Promise<AdminState> {
       isAdmin: false,
       reason: "not_allowed",
       email,
+      avatarUrl: getAvatarFromUser(user),
     };
   }
 
@@ -134,6 +158,7 @@ export async function getAdminState(): Promise<AdminState> {
     isAdmin: true,
     reason: "authorized",
     email,
+    avatarUrl: getAvatarFromUser(user),
   };
 }
 

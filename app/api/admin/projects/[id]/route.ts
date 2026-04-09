@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { revalidateProjectPaths } from "@/lib/cache/revalidate";
 import { deleteAdminProject, updateAdminProject } from "@/lib/projects/repository";
+import { normalizeSlug } from "@/lib/utils/slug";
 import type { AdminProjectInput, ProjectLinkItem, ProjectLinks } from "@/types/projects";
 
 type RouteContext = {
@@ -82,6 +83,7 @@ function toLinks(value: unknown): ProjectLinks {
   return normalize(legacy);
 }
 
+// 관리자 프로젝트 수정 payload를 타입/정책 기준으로 정규화한다.
 function parseBody(body: unknown): AdminProjectInput | null {
   if (!body || typeof body !== "object") {
     return null;
@@ -100,9 +102,14 @@ function parseBody(body: unknown): AdminProjectInput | null {
   }
 
   const status = source.status === "published" ? "published" : "draft";
+  const slug = normalizeSlug(source.slug);
+
+  if (!slug) {
+    return null;
+  }
 
   return {
-    slug: source.slug.trim(),
+    slug,
     title: source.title.trim(),
     summary: source.summary.trim(),
     useSummaryEditor: Boolean(source.useSummaryEditor),

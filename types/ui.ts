@@ -51,6 +51,7 @@ export type ContactFabProps = {
 
 export type AdminSidebarProps = {
   email: string | null;
+  avatarUrl: string | null;
 };
 
 export type BlogManagerProps = {

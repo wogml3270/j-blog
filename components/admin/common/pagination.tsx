@@ -1,6 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { ChevronLeftIcon } from "@/components/ui/icons/chevron-left-icon";
+import { ChevronRightIcon } from "@/components/ui/icons/chevron-right-icon";
+import { FilterIcon } from "@/components/ui/icons/filter-icon";
 import { ADMIN_PAGE_SIZE_OPTIONS } from "@/lib/utils/pagination";
 import { cn } from "@/lib/utils/cn";
 import type { AdminPaginationProps } from "@/types/ui";
@@ -61,7 +64,8 @@ export function AdminPagination({
           총 {total}개 · {page} / {totalPages} 페이지
         </p>
         <label className="ml-auto inline-flex items-center gap-2 text-xs text-muted lg:ml-0">
-          표시 개수
+          <FilterIcon className="h-3.5 w-3.5" />
+          <span className="sr-only">표시 개수</span>
           <select
             value={String(pageSize)}
             onChange={(event) => onPageSizeChange(Number(event.target.value))}
@@ -84,8 +88,10 @@ export function AdminPagination({
           variant="outline"
           disabled={!hasPrev}
           onClick={() => onPageChange(page - 1)}
+          aria-label="이전 페이지"
         >
-          이전
+          <ChevronLeftIcon />
+          <span className="sr-only">이전</span>
         </Button>
 
         {pageItems.map((item, index) => {
@@ -124,8 +130,10 @@ export function AdminPagination({
           variant="outline"
           disabled={!hasNext}
           onClick={() => onPageChange(page + 1)}
+          aria-label="다음 페이지"
         >
-          다음
+          <ChevronRightIcon />
+          <span className="sr-only">다음</span>
         </Button>
       </nav>
     </div>

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { CloseIcon } from "@/components/ui/icons/close-icon";
 import { cn } from "@/lib/utils/cn";
 import type { EditorDrawerProps } from "@/types/ui";
 
@@ -53,8 +54,9 @@ export function EditorDrawer({ open, title, description, onClose, children }: Ed
               <h2 className="text-lg font-semibold tracking-tight text-foreground">{title}</h2>
               {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
             </div>
-            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-              닫기
+            <Button type="button" variant="ghost" size="sm" onClick={onClose} aria-label="닫기">
+              <CloseIcon />
+              <span className="sr-only">닫기</span>
             </Button>
           </div>
         </header>

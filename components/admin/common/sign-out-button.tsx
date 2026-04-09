@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { LogoutIcon } from "@/components/ui/icons/logout-icon";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils/cn";
 
@@ -30,8 +31,11 @@ export function SignOutButton({ className }: SignOutButtonProps) {
       className={cn(className)}
       onClick={onSignOut}
       disabled={pending}
+      aria-label={pending ? "로그아웃 중" : "로그아웃"}
+      title={pending ? "로그아웃 중" : "로그아웃"}
     >
-      {pending ? "로그아웃 중..." : "로그아웃"}
+      <LogoutIcon className={pending ? "animate-pulse" : undefined} />
+      <span className="sr-only">{pending ? "로그아웃 중..." : "로그아웃"}</span>
     </Button>
   );
 }

@@ -4,6 +4,7 @@ import { Tag } from "@/components/ui/tag";
 import { MediaCard } from "@/components/ui/media-card";
 import { withLocalePath } from "@/lib/i18n/config";
 import { stripMarkdownToPlainText } from "@/lib/blog/markdown";
+import { encodeSlugSegment } from "@/lib/utils/slug";
 import type { ProjectCardProps } from "@/types/ui";
 
 export function ProjectCard({
@@ -17,9 +18,10 @@ export function ProjectCard({
 
   // 프로젝트 카드도 블로그 카드와 동일한 골격을 사용해 유지보수 포인트를 줄인다.
   return (
-    <SlideIn delay={animationDelay} distance={16}>
+    <SlideIn delay={animationDelay} distance={16} className="h-full">
       <MediaCard
-        href={withLocalePath(locale, `/projects/${project.slug}`)}
+        href={withLocalePath(locale, `/projects/${encodeSlugSegment(project.slug)}`)}
+        className="h-full"
         media={
           <div className="aspect-video overflow-hidden border-b border-border bg-foreground/5">
             <Image

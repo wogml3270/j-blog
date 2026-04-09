@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { hasSupabasePublicEnv } from "@/lib/supabase/env";
 import type { BlogComment } from "@/types/blog";
@@ -103,6 +104,7 @@ export function CommentsSection({ postSlug, labels, initialComments }: CommentsS
   const [comments, setComments] = useState<BlogComment[]>(initialComments);
   const [user, setUser] = useState<User | null>(null);
   const [isAuthAvailable] = useState<boolean>(() => hasSupabasePublicEnv());
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(() => hasSupabasePublicEnv());
   const [form, setForm] = useState<CommentFormState>(EMPTY_FORM);
   const [isPending, setIsPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -122,6 +124,7 @@ export function CommentsSection({ postSlug, labels, initialComments }: CommentsS
 
   useEffect(() => {
     if (!isAuthAvailable) {
+      setIsAuthLoading(false);
       return;
     }
 
@@ -137,16 +140,23 @@ export function CommentsSection({ postSlug, labels, initialComments }: CommentsS
 
     const bootstrap = async () => {
       if (!supabase) {
+        setIsAuthLoading(false);
         return;
       }
 
-      const { data } = await supabase.auth.getUser();
+      try {
+        const { data } = await supabase.auth.getUser();
 
-      if (!isMounted) {
-        return;
+        if (!isMounted) {
+          return;
+        }
+
+        setUser(data.user ?? null);
+      } finally {
+        if (isMounted) {
+          setIsAuthLoading(false);
+        }
       }
-
-      setUser(data.user ?? null);
     };
 
     bootstrap();
@@ -250,6 +260,11 @@ export function CommentsSection({ postSlug, labels, initialComments }: CommentsS
         <div className="rounded-lg border border-border bg-background px-2.5 py-2">
           <p className="text-sm text-muted">댓글 로그인을 위한 Supabase 설정이 필요합니다.</p>
         </div>
+      ) : isAuthLoading ? (
+        <div className="space-y-2 rounded-lg border border-border bg-background px-2.5 py-2">
+          <Skeleton width="42%" height={13} />
+          <Skeleton width="58%" height={13} />
+        </div>
       ) : (
         <div className="rounded-lg border border-border bg-background px-2.5 py-2">
           <p className="text-sm text-muted">
@@ -277,10 +292,16 @@ export function CommentsSection({ postSlug, labels, initialComments }: CommentsS
           type="submit"
           size="sm"
           className="w-full sm:w-auto"
-          disabled={!user || !isAuthAvailable || isPending}
+          disabled={!user || !isAuthAvailable || isAuthLoading || isPending}
         >
           {isPending ? labels.submitting : labels.submit}
         </Button>
+        {isPending ? (
+          <div className="space-y-1">
+            <Skeleton width="100%" height={8} rounded="999px" />
+            <Skeleton width="70%" height={8} rounded="999px" />
+          </div>
+        ) : null}
       </form>
 
       {message ? <p className="text-sm text-emerald-600">{message}</p> : null}

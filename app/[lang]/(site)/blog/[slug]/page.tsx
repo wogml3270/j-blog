@@ -11,6 +11,7 @@ import { isLocale, withLocalePath } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { formatDate } from "@/lib/utils/format-date";
+import { decodeSlugSegment, encodeSlugSegment } from "@/lib/utils/slug";
 
 type BlogDetailPageProps = {
   params: Promise<{ lang: string; slug: string }>;
@@ -18,13 +19,14 @@ type BlogDetailPageProps = {
 
 export async function generateMetadata({ params }: BlogDetailPageProps): Promise<Metadata> {
   const { lang, slug } = await params;
+  const normalizedSlug = decodeSlugSegment(slug);
 
   if (!isLocale(lang)) {
     return {};
   }
 
   const dictionary = getDictionary(lang);
-  const post = await getPublishedPostBySlug(slug);
+  const post = await getPublishedPostBySlug(normalizedSlug);
 
   if (!post) {
     return {
@@ -34,7 +36,7 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
 
   return buildPageMetadata({
     locale: lang,
-    pathname: `/blog/${slug}`,
+    pathname: `/blog/${encodeSlugSegment(normalizedSlug)}`,
     title: post.title,
     description: post.description,
   });
@@ -42,14 +44,15 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
 
 export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   const { lang, slug } = await params;
+  const normalizedSlug = decodeSlugSegment(slug);
 
   if (!isLocale(lang)) {
     notFound();
   }
 
   const dictionary = getDictionary(lang);
-  const post = await getPublishedPostBySlug(slug);
-  const comments = await getApprovedCommentsByPostSlug(slug);
+  const post = await getPublishedPostBySlug(normalizedSlug);
+  const comments = await getApprovedCommentsByPostSlug(normalizedSlug);
 
   if (!post) {
     notFound();

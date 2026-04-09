@@ -38,7 +38,7 @@ export function RecentPosts({
 
       <Swiper
         modules={[Pagination, Keyboard]}
-        className="!pb-10"
+        className="home-card-swiper pb-10!"
         spaceBetween={16}
         slidesPerView={1}
         keyboard={{ enabled: true }}
@@ -49,7 +49,7 @@ export function RecentPosts({
         }}
       >
         {posts.map((post, index) => (
-          <SwiperSlide key={post.slug} className="h-auto">
+          <SwiperSlide key={post.slug} className="h-full">
             <BlogCard post={post} locale={locale} animationDelay={80 + index * 60} />
           </SwiperSlide>
         ))}

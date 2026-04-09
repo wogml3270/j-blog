@@ -9,10 +9,13 @@ import { ManagerShell } from "@/components/admin/common/manager-shell";
 import { AdminPagination } from "@/components/admin/common/pagination";
 import { StatusRadioGroup } from "@/components/admin/common/status-radio-group";
 import { Button } from "@/components/ui/button";
+import { FilterIcon } from "@/components/ui/icons/filter-icon";
+import { TrashIcon } from "@/components/ui/icons/trash-icon";
 import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { ToastMarkdownViewer } from "@/components/ui/toast-markdown-viewer";
 import { cn } from "@/lib/utils/cn";
+import { normalizeSlug } from "@/lib/utils/slug";
 import { useAdminDetailStore } from "@/stores/admin-detail";
 import { useAdminListUiStore } from "@/stores/admin-list-ui";
 import type { AdminListFilter, PaginatedResult } from "@/types/admin";
@@ -21,8 +24,8 @@ import type { PublishStatus } from "@/types/db";
 import type { BlogManagerProps, PostFormState, ThumbnailInputMode } from "@/types/ui";
 
 const EMPTY_FORM: PostFormState = {
-  slug: "",
   title: "",
+  slug: "",
   description: "",
   thumbnail: "",
   status: "published",
@@ -51,8 +54,8 @@ function toDateInputValue(value: string | null): string {
 // 편집 폼 초기값은 API 응답 객체를 기준으로 구성한다.
 function toFormState(post: AdminPost): PostFormState {
   return {
-    slug: post.slug,
     title: post.title,
+    slug: post.slug,
     description: post.description,
     thumbnail: post.thumbnail ?? "",
     status: post.status,
@@ -133,6 +136,7 @@ export function BlogManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [thumbnailMode, setThumbnailMode] = useState<ThumbnailInputMode>("url");
   const [useMarkdownEditor, setUseMarkdownEditor] = useState(false);
+  const [syncSlugWithTitle, setSyncSlugWithTitle] = useState(true);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -177,6 +181,7 @@ export function BlogManager({
     setEditingId(null);
     setForm(EMPTY_FORM);
     setUseMarkdownEditor(false);
+    setSyncSlugWithTitle(true);
     setThumbnailMode("url");
     setThumbnailFile(null);
     setMessage(null);
@@ -190,6 +195,7 @@ export function BlogManager({
       setEditingId(post.id);
       setForm(toFormState(post));
       setUseMarkdownEditor(post.useMarkdownEditor);
+      setSyncSlugWithTitle(false);
       setThumbnailMode("url");
       setThumbnailFile(null);
       setMessage(null);
@@ -317,8 +323,14 @@ export function BlogManager({
     setMessage(null);
 
     try {
+      const normalizedSlug = normalizeSlug(form.slug);
+
+      if (!normalizedSlug) {
+        throw new Error("슬러그를 확인해주세요. (한글/영문/숫자/_)");
+      }
+
       const body = {
-        slug: form.slug,
+        slug: normalizedSlug,
         title: form.title,
         description: form.description,
         thumbnail: form.thumbnail.trim() || null,
@@ -349,6 +361,7 @@ export function BlogManager({
       setEditingId(null);
       setForm(EMPTY_FORM);
       setUseMarkdownEditor(false);
+      setSyncSlugWithTitle(true);
       setThumbnailMode("url");
       setThumbnailFile(null);
       closeDetail("blog");
@@ -461,6 +474,26 @@ export function BlogManager({
     hasAppliedInitialSelection.current = true;
   }, [initialSelectedId, openEdit, posts, syncQuery]);
 
+  useEffect(() => {
+    // 제목-슬러그 자동 동기화가 켜져 있으면 title 변경을 slug에 즉시 반영한다.
+    if (!syncSlugWithTitle) {
+      return;
+    }
+
+    const nextSlug = normalizeSlug(form.title);
+
+    setForm((prev) => {
+      if (prev.slug === nextSlug) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        slug: nextSlug,
+      };
+    });
+  }, [form.title, syncSlugWithTitle]);
+
   return (
     <>
       <ManagerShell
@@ -469,7 +502,8 @@ export function BlogManager({
         action={
           <div className="flex items-center gap-2">
             <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-              <span className="text-xs text-muted">필터</span>
+              <FilterIcon className="h-3.5 w-3.5 text-muted" />
+              <span className="sr-only">필터</span>
               <select
                 className="bg-transparent text-sm outline-none"
                 value={filter}
@@ -539,15 +573,6 @@ export function BlogManager({
       >
         <form className="space-y-3" onSubmit={onSubmit}>
           <div className="space-y-1">
-            <label className="text-xs font-medium uppercase tracking-wide text-muted">슬러그</label>
-            <Input
-              value={form.slug}
-              onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
-              placeholder="slug"
-              required
-            />
-          </div>
-          <div className="space-y-1">
             <label className="text-xs font-medium uppercase tracking-wide text-muted">제목</label>
             <Input
               value={form.title}
@@ -556,6 +581,41 @@ export function BlogManager({
               required
             />
           </div>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-medium uppercase tracking-wide text-muted">
+                슬러그
+              </label>
+              <label className="inline-flex items-center gap-1.5 text-xs text-muted">
+                <input
+                  type="checkbox"
+                  checked={syncSlugWithTitle}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setSyncSlugWithTitle(checked);
+
+                    if (checked) {
+                      setForm((prev) => ({
+                        ...prev,
+                        slug: normalizeSlug(prev.title),
+                      }));
+                    }
+                  }}
+                />
+                제목과 동일
+              </label>
+            </div>
+            <Input
+              value={form.slug}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, slug: normalizeSlug(event.target.value) }))
+              }
+              placeholder="slug"
+              required
+              disabled={syncSlugWithTitle}
+            />
+          </div>
+
           <div className="space-y-1">
             <label className="text-xs font-medium uppercase tracking-wide text-muted">설명</label>
             <Input
@@ -729,7 +789,7 @@ export function BlogManager({
                     {tag}
                     <button
                       type="button"
-                      className="text-muted hover:text-foreground"
+                      className="text-red-600/80 transition-colors hover:text-red-500 dark:text-red-300/85 dark:hover:text-red-200"
                       aria-label={`${tag} 삭제`}
                       onClick={() => removeTag(tag)}
                     >
@@ -777,11 +837,13 @@ export function BlogManager({
             {editingId ? (
               <Button
                 type="button"
-                variant="ghost"
+                variant="destructive"
                 onClick={() => onDelete(editingId)}
                 disabled={isPending}
+                aria-label="게시글 삭제"
               >
-                삭제
+                <TrashIcon />
+                <span className="sr-only">삭제</span>
               </Button>
             ) : null}
           </div>

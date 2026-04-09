@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShortcutIcon } from "@/components/ui/icons/shortcut-icon";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { getAdminPosts } from "@/lib/blog/repository";
 import { getAdminContactMessages } from "@/lib/contact/repository";
@@ -150,8 +151,14 @@ export default async function AdminDashboardPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
               최근 블로그 변경
             </h2>
-            <Link href="/admin/blog" className="text-xs text-foreground underline">
-              바로가기
+            <Link
+              href="/admin/blog"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-foreground/10"
+              aria-label="블로그 관리 바로가기"
+              title="블로그 관리 바로가기"
+            >
+              <ShortcutIcon className="h-3.5 w-3.5" />
+              <span className="sr-only">바로가기</span>
             </Link>
           </div>
           <ul className="mt-3 space-y-2">
@@ -183,8 +190,14 @@ export default async function AdminDashboardPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
               최근 프로젝트 변경
             </h2>
-            <Link href="/admin/projects" className="text-xs text-foreground underline">
-              바로가기
+            <Link
+              href="/admin/projects"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-foreground/10"
+              aria-label="프로젝트 관리 바로가기"
+              title="프로젝트 관리 바로가기"
+            >
+              <ShortcutIcon className="h-3.5 w-3.5" />
+              <span className="sr-only">바로가기</span>
             </Link>
           </div>
           <ul className="mt-3 space-y-2">
@@ -214,8 +227,14 @@ export default async function AdminDashboardPage() {
         <SurfaceCard tone="surface" padding="md">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">최근 문의</h2>
-            <Link href="/admin/contact" className="text-xs text-foreground underline">
-              바로가기
+            <Link
+              href="/admin/contact"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-foreground/10"
+              aria-label="문의함 바로가기"
+              title="문의함 바로가기"
+            >
+              <ShortcutIcon className="h-3.5 w-3.5" />
+              <span className="sr-only">바로가기</span>
             </Link>
           </div>
           <ul className="mt-3 space-y-2">

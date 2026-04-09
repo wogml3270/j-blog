@@ -18,8 +18,9 @@ const NAV_ITEMS = [
   { href: "/admin/contact", label: "문의함" },
 ];
 
-export function AdminSidebar({ email }: AdminSidebarProps) {
+export function AdminSidebar({ email, avatarUrl }: AdminSidebarProps) {
   const pathname = usePathname();
+  const initial = (email ?? "U").slice(0, 1).toUpperCase();
 
   return (
     <aside className="w-full rounded-xl border border-border bg-surface p-3.5 sm:p-4 xl:sticky xl:top-6 xl:h-[calc(100dvh-3rem)] xl:w-[272px] xl:self-start">
@@ -43,11 +44,27 @@ export function AdminSidebar({ email }: AdminSidebarProps) {
             </button>
           </div>
         </div>
-        <div className="flex items-center justify-between gap-2 xl:block">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted">관리자</p>
-          <p className="truncate text-xs font-medium text-foreground sm:text-sm">
-            {email ?? "unknown"}
-          </p>
+        <div className="flex">
+          <div className="flex items-center gap-2.5">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt={email ?? "관리자 프로필"}
+                className="h-10 w-10 rounded-full border border-border object-cover"
+              />
+            ) : (
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-xs font-semibold text-foreground">
+                {initial}
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">관리자</p>
+              <p className="truncate text-xs font-medium text-foreground sm:text-sm">
+                {email ?? "unknown"}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 

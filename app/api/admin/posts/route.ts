@@ -4,8 +4,10 @@ import { createAdminPost, getAdminPostsPaginated } from "@/lib/blog/repository";
 import { revalidateBlogPaths } from "@/lib/cache/revalidate";
 import { normalizePagination } from "@/lib/utils/pagination";
 import { normalizeAdminListFilter } from "@/lib/utils/search-params";
+import { normalizeSlug } from "@/lib/utils/slug";
 import type { AdminPostInput } from "@/types/blog";
 
+// 관리자 게시글 입력 payload를 타입/정책 기준으로 정규화한다.
 function parseBody(body: unknown): AdminPostInput | null {
   if (!body || typeof body !== "object") {
     return null;
@@ -23,12 +25,17 @@ function parseBody(body: unknown): AdminPostInput | null {
   }
 
   const status = source.status === "published" ? "published" : "draft";
+  const slug = normalizeSlug(source.slug);
   const tags = Array.isArray(source.tags)
     ? source.tags.map((item) => String(item).trim()).filter(Boolean)
     : [];
 
+  if (!slug) {
+    return null;
+  }
+
   return {
-    slug: source.slug.trim(),
+    slug,
     title: source.title.trim(),
     description: source.description.trim(),
     thumbnail: typeof source.thumbnail === "string" ? source.thumbnail.trim() || null : null,

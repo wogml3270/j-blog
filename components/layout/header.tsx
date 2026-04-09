@@ -10,6 +10,8 @@ import { BrandLogo } from "@/components/layout/brand-logo";
 import { Container } from "@/components/layout/container";
 import { ThemeToggle } from "@/components/theme/toggle";
 import { Button } from "@/components/ui/button";
+import { CloseIcon } from "@/components/ui/icons/close-icon";
+import { LogoutIcon } from "@/components/ui/icons/logout-icon";
 import { getPathWithoutLocale, locales, withLocalePath } from "@/lib/i18n/config";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { hasSupabasePublicEnv } from "@/lib/supabase/env";
@@ -222,7 +224,8 @@ export function Header({ locale, dictionary }: HeaderProps) {
             aria-label={dictionary.header.closeAuthModalLabel}
             onClick={closeAuthModal}
           >
-            ×
+            <CloseIcon />
+            <span className="sr-only">{dictionary.header.closeAuthModalLabel}</span>
           </Button>
         </div>
 
@@ -250,8 +253,16 @@ export function Header({ locale, dictionary }: HeaderProps) {
                 </p>
               </div>
             </div>
-            <Button type="button" variant="outline" className="w-full" onClick={onSignOut}>
-              {dictionary.header.authSignOut}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={onSignOut}
+              aria-label={dictionary.header.authSignOut}
+              title={dictionary.header.authSignOut}
+            >
+              <LogoutIcon />
+              <span className="sr-only">{dictionary.header.authSignOut}</span>
             </Button>
           </div>
         ) : !isAuthAvailable ? (
