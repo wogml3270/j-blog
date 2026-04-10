@@ -123,16 +123,6 @@ html[data-theme-transition="active"] .locale-root * {
   }
 }
 
-@keyframes about-profile-bounce {
-  0%,
-  100% {
-    transform: translate(-50%, -50%) translateY(0);
-  }
-  50% {
-    transform: translate(-50%, -50%) translateY(-8px);
-  }
-}
-
 .ui-skeleton {
   position: relative;
   display: inline-block;
@@ -156,10 +146,6 @@ html[data-theme-transition="active"] .locale-root * {
 
 .ui-skeleton-animated::after {
   animation: ui-skeleton-shimmer 1.2s ease-in-out infinite;
-}
-
-.about-profile-bounce {
-  animation: about-profile-bounce 2.2s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
