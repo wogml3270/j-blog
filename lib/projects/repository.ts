@@ -13,6 +13,7 @@ import {
   getFeaturedProjects as getFallbackFeaturedProjects,
   getProjectBySlug as getFallbackProjectBySlug,
 } from "@/lib/projects/data";
+import { stripMarkdownToPlainText } from "@/lib/blog/markdown";
 import { removeHomeHighlightSource, syncHomeHighlightSource } from "@/lib/home/sync";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
@@ -20,12 +21,15 @@ import {
   buildPaginatedResult,
   DEFAULT_ADMIN_PAGE_SIZE,
 } from "@/lib/utils/pagination";
+import { toSlugConflictMessage } from "@/lib/utils/db-error";
 
 type ProjectRow = {
   id: string;
   slug: string;
   title: string;
+  home_summary: string | null;
   summary: string;
+  sync_slug_with_title: boolean | null;
   use_markdown_editor: boolean | null;
   thumbnail: string;
   role: string;
@@ -47,7 +51,17 @@ type RepoResult<T> = {
 };
 
 const PROJECT_SELECT_FIELDS =
-  "id,slug,title,summary,use_markdown_editor,thumbnail,role,period,start_date,end_date,tech_stack,achievements,contributions,links,featured,status,updated_at";
+  "id,slug,title,home_summary,summary,sync_slug_with_title,use_markdown_editor,thumbnail,role,period,start_date,end_date,tech_stack,achievements,contributions,links,featured,status,updated_at";
+
+function deriveHomeSummary(source: string): string {
+  const plain = stripMarkdownToPlainText(source);
+
+  if (!plain) {
+    return "";
+  }
+
+  return plain.slice(0, 140);
+}
 
 const LEGACY_LINK_LABELS: Record<string, string> = {
   live: "Live",
@@ -190,6 +204,7 @@ function rowToProject(row: ProjectRow): Project {
     id: row.id,
     slug: row.slug,
     title: row.title,
+    homeSummary: row.home_summary?.trim() || deriveHomeSummary(row.summary),
     summary: row.summary,
     thumbnail: row.thumbnail,
     role: row.role,
@@ -214,7 +229,9 @@ function rowToAdminProject(row: ProjectRow): AdminProject {
     id: row.id,
     slug: row.slug,
     title: row.title,
+    homeSummary: row.home_summary?.trim() || deriveHomeSummary(row.summary),
     summary: row.summary,
+    syncSlugWithTitle: Boolean(row.sync_slug_with_title),
     useSummaryEditor: Boolean(row.use_markdown_editor),
     thumbnail: row.thumbnail,
     role: row.role,
@@ -463,7 +480,9 @@ export async function createAdminProject(
     .insert({
       slug: input.slug,
       title: input.title,
+      home_summary: input.homeSummary.trim(),
       summary: input.summary,
+      sync_slug_with_title: Boolean(input.syncSlugWithTitle),
       use_markdown_editor: input.useSummaryEditor,
       thumbnail: input.thumbnail,
       role: input.role,
@@ -483,7 +502,8 @@ export async function createAdminProject(
   if (error || !data) {
     return {
       data: null,
-      error: error?.message ?? "Failed to create project.",
+      error:
+        toSlugConflictMessage(error, "프로젝트") ?? error?.message ?? "Failed to create project.",
     };
   }
 
@@ -522,7 +542,9 @@ export async function updateAdminProject(
     .update({
       slug: input.slug,
       title: input.title,
+      home_summary: input.homeSummary.trim(),
       summary: input.summary,
+      sync_slug_with_title: Boolean(input.syncSlugWithTitle),
       use_markdown_editor: input.useSummaryEditor,
       thumbnail: input.thumbnail,
       role: input.role,
@@ -541,7 +563,7 @@ export async function updateAdminProject(
   if (error) {
     return {
       data: null,
-      error: error.message,
+      error: toSlugConflictMessage(error, "프로젝트") ?? error.message,
     };
   }
 

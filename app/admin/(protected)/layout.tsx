@@ -11,7 +11,7 @@ export default async function AdminProtectedLayout({ children }: { children: Rea
   }
 
   return (
-    <Container className="mx-auto flex w-full flex-col gap-4 py-4 sm:gap-5 sm:py-6 xl:flex-row xl:items-start">
+    <Container className="flex w-full flex-col gap-4 py-4 sm:gap-5 sm:py-6 xl:flex-row xl:items-start">
       <AdminSidebar email={state.email} avatarUrl={state.avatarUrl} />
       <section className="min-w-0 flex-1">{children}</section>
     </Container>

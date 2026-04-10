@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { normalizeAvatarUrl } from "@/lib/utils/avatar-url";
 
 const DEFAULT_SUPER_ADMIN_EMAIL = "wogml3270@gmail.com";
 
@@ -33,8 +34,10 @@ function getAvatarFromUser(user: User | null): string | null {
   const candidates = [metadata.avatar_url, metadata.picture];
 
   for (const value of candidates) {
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
+    const normalized = normalizeAvatarUrl(value);
+
+    if (normalized) {
+      return normalized;
     }
   }
 

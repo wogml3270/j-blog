@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils/cn";
 
 type ToastMarkdownEditorProps = {
@@ -28,6 +28,28 @@ export function ToastMarkdownEditor({
   const editorRef = useRef<ToastEditorInstance | null>(null);
   const onChangeRef = useRef(onChange);
   const initialValueRef = useRef(value);
+  const destroyedRef = useRef(false);
+
+  // StrictMode/빠른 언마운트에서도 destroy가 중복 호출되지 않도록 안전하게 정리한다.
+  const safeDestroy = useCallback(() => {
+    if (destroyedRef.current) {
+      return;
+    }
+
+    destroyedRef.current = true;
+
+    try {
+      editorRef.current?.destroy();
+    } catch {
+      // 이미 DOM이 분리된 타이밍에 destroy가 불리더라도 런타임 오류를 전파하지 않는다.
+    } finally {
+      editorRef.current = null;
+
+      if (containerRef.current) {
+        containerRef.current.innerHTML = "";
+      }
+    }
+  }, []);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -36,6 +58,7 @@ export function ToastMarkdownEditor({
   // Toast UI는 브라우저 API에 의존하므로 클라이언트 마운트 이후 동적 생성한다.
   useEffect(() => {
     let isMounted = true;
+    destroyedRef.current = false;
 
     const init = async () => {
       const { Editor } = await import("@toast-ui/editor");
@@ -68,6 +91,12 @@ export function ToastMarkdownEditor({
       });
 
       nextEditor = instance as unknown as ToastEditorInstance;
+
+      if (!isMounted) {
+        safeDestroy();
+        return;
+      }
+
       editorRef.current = nextEditor;
     };
 
@@ -75,10 +104,9 @@ export function ToastMarkdownEditor({
 
     return () => {
       isMounted = false;
-      editorRef.current?.destroy();
-      editorRef.current = null;
+      safeDestroy();
     };
-  }, [height, placeholder]);
+  }, [height, placeholder, safeDestroy]);
 
   useEffect(() => {
     const editor = editorRef.current;

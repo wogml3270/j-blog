@@ -31,6 +31,7 @@ import { RowsIcon } from "@/components/ui/icons/rows-icon";
 import { TrashIcon } from "@/components/ui/icons/trash-icon";
 import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { uploadAdminMediaFile } from "@/lib/admin/upload-client";
 import { ADMIN_PAGE_SIZE_OPTIONS } from "@/lib/utils/pagination";
 import { cn } from "@/lib/utils/cn";
 import { normalizeSlug } from "@/lib/utils/slug";
@@ -51,6 +52,7 @@ import type {
 const EMPTY_FORM: ProjectFormState = {
   slug: "",
   title: "",
+  homeSummary: "",
   summary: "",
   thumbnail: "",
   role: "",
@@ -69,12 +71,23 @@ const EMPTY_FORM: ProjectFormState = {
   linkUrlInput: "",
 };
 
-function createId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
+let clientIdSeed = 0;
 
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+function createClientId(prefix: string): string {
+  clientIdSeed += 1;
+  return `${prefix}-${clientIdSeed}`;
+}
+
+function createStableId(prefix: string, seed: string, index: number): string {
+  const normalized = seed
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40);
+
+  return `${prefix}-${index}-${normalized || "item"}`;
 }
 
 function normalizeDateInput(value: string | null | undefined): string {
@@ -105,8 +118,11 @@ function uniqueStringList(items: string[]): string[] {
   return [...new Set(items.map((item) => item.trim()).filter(Boolean))];
 }
 
-function toSortableTextItems(items: string[]): SortableTextItem[] {
-  return uniqueStringList(items).map((value) => ({ id: createId(), value }));
+function toSortableTextItems(items: string[], prefix: "achievement" | "contribution"): SortableTextItem[] {
+  return uniqueStringList(items).map((value, index) => ({
+    id: createStableId(prefix, value, index),
+    value,
+  }));
 }
 
 function toSortableLinkItems(items: ProjectLinks): SortableLinkItem[] {
@@ -128,7 +144,7 @@ function toSortableLinkItems(items: ProjectLinks): SortableLinkItem[] {
     }
 
     seen.add(key);
-    next.push({ id: createId(), label, url });
+    next.push({ id: createStableId("link", `${label}-${url}`, next.length), label, url });
   }
 
   return next;
@@ -138,6 +154,7 @@ function toFormState(project: AdminProject): ProjectFormState {
   return {
     title: project.title,
     slug: project.slug,
+    homeSummary: project.homeSummary,
     summary: project.summary,
     thumbnail: project.thumbnail,
     role: project.role,
@@ -147,9 +164,9 @@ function toFormState(project: AdminProject): ProjectFormState {
     featured: project.featured,
     techStack: [...project.techStack],
     techStackInput: "",
-    achievements: toSortableTextItems(project.achievements),
+    achievements: toSortableTextItems(project.achievements, "achievement"),
     achievementInput: "",
-    contributions: toSortableTextItems(project.contributions),
+    contributions: toSortableTextItems(project.contributions, "contribution"),
     contributionInput: "",
     links: toSortableLinkItems(project.links),
     linkLabelInput: "",
@@ -282,14 +299,14 @@ export function ProjectsManager({
   const [form, setForm] = useState<ProjectFormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [thumbnailMode, setThumbnailMode] = useState<ThumbnailInputMode>("url");
-  const [useSummaryEditor, setUseSummaryEditor] = useState(false);
   const [syncSlugWithTitle, setSyncSlugWithTitle] = useState(true);
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [localThumbnailPreview, setLocalThumbnailPreview] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const hasAppliedInitialSelection = useRef(false);
+  const thumbnailUploadRequestRef = useRef(0);
   const openDetail = useAdminDetailStore((state) => state.open);
   const closeDetail = useAdminDetailStore((state) => state.close);
   const savedPageSize = useAdminListUiStore((state) => state.pageSizeByScope.projects);
@@ -342,10 +359,15 @@ export function ProjectsManager({
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
-    setUseSummaryEditor(false);
     setSyncSlugWithTitle(true);
     setThumbnailMode("url");
-    setThumbnailFile(null);
+    setLocalThumbnailPreview((prev) => {
+      if (prev) {
+        URL.revokeObjectURL(prev);
+      }
+
+      return null;
+    });
     setMessage(null);
     setDrawerOpen(true);
     closeDetail("projects");
@@ -356,10 +378,15 @@ export function ProjectsManager({
     (project: AdminProject) => {
       setEditingId(project.id);
       setForm(toFormState(project));
-      setUseSummaryEditor(project.useSummaryEditor);
-      setSyncSlugWithTitle(false);
+      setSyncSlugWithTitle(project.syncSlugWithTitle);
       setThumbnailMode("url");
-      setThumbnailFile(null);
+      setLocalThumbnailPreview((prev) => {
+        if (prev) {
+          URL.revokeObjectURL(prev);
+        }
+
+        return null;
+      });
       setMessage(null);
       setDrawerOpen(true);
       openDetail("projects", project.id);
@@ -423,45 +450,68 @@ export function ProjectsManager({
     [filter, mainPage, pageSize, privatePage, syncQuery],
   );
 
-  const onUploadThumbnail = async () => {
-    if (!thumbnailFile) {
-      setMessage("업로드할 이미지 파일을 선택해주세요.");
-      return;
-    }
-
+  // 파일 선택 즉시 로컬 미리보기 + 업로드를 수행한다.
+  const uploadThumbnailImmediately = async (file: File) => {
+    const requestId = ++thumbnailUploadRequestRef.current;
     setIsUploadingThumbnail(true);
     setMessage(null);
 
     try {
-      const formData = new FormData();
-      formData.append("file", thumbnailFile);
-      formData.append("scope", "projects");
+      const payload = await uploadAdminMediaFile(file, "projects");
 
-      const response = await fetch("/api/admin/media/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? "썸네일 업로드에 실패했습니다.");
+      if (requestId !== thumbnailUploadRequestRef.current) {
+        return;
       }
-
-      const payload = (await response.json()) as { url?: string };
 
       if (!payload.url) {
         throw new Error("업로드된 썸네일 URL을 확인할 수 없습니다.");
       }
 
       setForm((prev) => ({ ...prev, thumbnail: payload.url ?? "" }));
-      setThumbnailFile(null);
+      setLocalThumbnailPreview((prev) => {
+        if (prev) {
+          URL.revokeObjectURL(prev);
+        }
+
+        return null;
+      });
       setThumbnailMode("url");
       setMessage("썸네일 업로드가 완료되었습니다.");
     } catch (error) {
+      if (requestId !== thumbnailUploadRequestRef.current) {
+        return;
+      }
+
       setMessage(error instanceof Error ? error.message : "썸네일 업로드 중 오류가 발생했습니다.");
     } finally {
-      setIsUploadingThumbnail(false);
+      if (requestId === thumbnailUploadRequestRef.current) {
+        setIsUploadingThumbnail(false);
+      }
     }
+  };
+
+  const onSelectThumbnailFile = (file: File | null) => {
+    if (!file) {
+      setLocalThumbnailPreview((prev) => {
+        if (prev) {
+          URL.revokeObjectURL(prev);
+        }
+
+        return null;
+      });
+      return;
+    }
+
+    const nextPreview = URL.createObjectURL(file);
+
+    setLocalThumbnailPreview((prev) => {
+      if (prev) {
+        URL.revokeObjectURL(prev);
+      }
+
+      return nextPreview;
+    });
+    void uploadThumbnailImmediately(file);
   };
 
   const addTechStackItem = () => {
@@ -494,7 +544,7 @@ export function ProjectsManager({
 
     setForm((prev) => ({
       ...prev,
-      achievements: [...prev.achievements, { id: createId(), value }],
+      achievements: [...prev.achievements, { id: createClientId("achievement"), value }],
       achievementInput: "",
     }));
   };
@@ -515,7 +565,7 @@ export function ProjectsManager({
 
     setForm((prev) => ({
       ...prev,
-      contributions: [...prev.contributions, { id: createId(), value }],
+      contributions: [...prev.contributions, { id: createClientId("contribution"), value }],
       contributionInput: "",
     }));
   };
@@ -537,7 +587,7 @@ export function ProjectsManager({
 
     setForm((prev) => ({
       ...prev,
-      links: [...prev.links, { id: createId(), label, url }],
+      links: [...prev.links, { id: createClientId("link"), label, url }],
       linkLabelInput: "",
       linkUrlInput: "",
     }));
@@ -554,7 +604,7 @@ export function ProjectsManager({
     event.preventDefault();
 
     if (!form.summary.trim()) {
-      setMessage("프로젝트 요약을 입력해주세요.");
+      setMessage("프로젝트 내용을 입력해주세요.");
       return;
     }
 
@@ -575,8 +625,10 @@ export function ProjectsManager({
       const body = {
         title: form.title,
         slug: normalizedSlug,
+        homeSummary: form.homeSummary,
         summary: form.summary,
-        useSummaryEditor,
+        syncSlugWithTitle,
+        useSummaryEditor: true,
         thumbnail: form.thumbnail,
         role: form.role,
         startDate: form.startDate || null,
@@ -608,10 +660,15 @@ export function ProjectsManager({
       setDrawerOpen(false);
       setEditingId(null);
       setForm(EMPTY_FORM);
-      setUseSummaryEditor(false);
       setSyncSlugWithTitle(true);
       setThumbnailMode("url");
-      setThumbnailFile(null);
+      setLocalThumbnailPreview((prev) => {
+        if (prev) {
+          URL.revokeObjectURL(prev);
+        }
+
+        return null;
+      });
       closeDetail("projects");
       syncQuery({ id: null });
     } catch (error) {
@@ -644,7 +701,6 @@ export function ProjectsManager({
         setDrawerOpen(false);
         setEditingId(null);
         setForm(EMPTY_FORM);
-        setUseSummaryEditor(false);
         closeDetail("projects");
       }
       syncQuery({ id: null });
@@ -733,6 +789,14 @@ export function ProjectsManager({
 
     void loadProjects(1, 1, savedPageSize, filter);
   }, [filter, loadProjects, pageSize, savedPageSize, searchParams]);
+
+  useEffect(() => {
+    return () => {
+      if (localThumbnailPreview) {
+        URL.revokeObjectURL(localThumbnailPreview);
+      }
+    };
+  }, [localThumbnailPreview]);
 
   useEffect(() => {
     // 제목-슬러그 자동 동기화가 켜져 있으면 title 변경을 slug에 즉시 반영한다.
@@ -940,21 +1004,32 @@ export function ProjectsManager({
             />
           </div>
 
+          <section className="space-y-1">
+            <label className="text-xs font-medium uppercase tracking-wide text-muted">부제목</label>
+            <Input
+              value={form.homeSummary}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  homeSummary: event.target.value,
+                }))
+              }
+              placeholder="프로젝트 부제목"
+              required
+            />
+          </section>
+
           <MarkdownField
-            label="요약"
+            label="프로젝트 내용"
             value={form.summary}
             onChange={(value) => setForm((prev) => ({ ...prev, summary: value }))}
-            useEditor={useSummaryEditor}
-            onToggleEditor={setUseSummaryEditor}
-            placeholder="요약"
+            placeholder="프로젝트 내용"
             required
-            minHeight={180}
+            minHeight={320}
           />
 
           <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">
-              썸네일 입력 방식
-            </p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">썸네일 업로드</p>
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -962,7 +1037,7 @@ export function ProjectsManager({
                 size="sm"
                 onClick={() => setThumbnailMode("url")}
               >
-                외부 링크 붙여넣기
+                외부 링크
               </Button>
               <Button
                 type="button"
@@ -970,7 +1045,7 @@ export function ProjectsManager({
                 size="sm"
                 onClick={() => setThumbnailMode("upload")}
               >
-                PC 파일 업로드
+                파일 업로드
               </Button>
             </div>
 
@@ -991,27 +1066,24 @@ export function ProjectsManager({
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(event) => setThumbnailFile(event.target.files?.[0] ?? null)}
+                  onChange={(event) => onSelectThumbnailFile(event.target.files?.[0] ?? null)}
                   className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
                 />
-                <Button
-                  type="button"
-                  onClick={onUploadThumbnail}
-                  disabled={isUploadingThumbnail || !thumbnailFile}
-                >
-                  {isUploadingThumbnail ? "업로드 중..." : "업로드 후 적용"}
-                </Button>
+                <p className="text-xs text-muted">
+                  파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.
+                </p>
               </div>
             )}
 
             <p className="truncate text-xs text-muted">
-              현재 썸네일: {form.thumbnail || "설정되지 않음"}
+              현재 썸네일:{" "}
+              {isUploadingThumbnail ? "업로드 중..." : form.thumbnail || "설정되지 않음"}
             </p>
-            {form.thumbnail ? (
+            {localThumbnailPreview || form.thumbnail ? (
               <div className="overflow-hidden rounded-md border border-border bg-surface">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={form.thumbnail}
+                  src={localThumbnailPreview || form.thumbnail}
                   alt="썸네일 미리보기"
                   className="h-40 w-full object-cover"
                 />

@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-// 홈 히어로 로딩 전환 시 실제 구성과 유사한 골격을 먼저 보여준다.
+// 홈 히어로 로딩 전환 시 사용하는 스켈레톤 UI
 export function ImmersiveHeroSkeleton() {
   return (
     <section

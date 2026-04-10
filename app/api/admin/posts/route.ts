@@ -40,10 +40,13 @@ function parseBody(body: unknown): AdminPostInput | null {
     description: source.description.trim(),
     thumbnail: typeof source.thumbnail === "string" ? source.thumbnail.trim() || null : null,
     featured: Boolean(source.featured),
+    syncSlugWithTitle: Boolean(source.syncSlugWithTitle),
     bodyMarkdown: source.bodyMarkdown,
     useMarkdownEditor: Boolean(source.useMarkdownEditor),
     status,
     publishedAt: typeof source.publishedAt === "string" ? source.publishedAt : null,
+    scheduledPublishAt:
+      typeof source.scheduledPublishAt === "string" ? source.scheduledPublishAt : null,
     tags,
   };
 }

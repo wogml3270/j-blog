@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { hasSupabasePublicEnv } from "@/lib/supabase/env";
+import { normalizeAvatarUrl } from "@/lib/utils/avatar-url";
 import type { BlogComment } from "@/types/blog";
 
 interface CommentsLabels {
@@ -76,8 +77,10 @@ function getAvatarFromUser(user: User | null): string {
   const candidates = [metadata.avatar_url, metadata.picture];
 
   for (const item of candidates) {
-    if (typeof item === "string" && item.trim()) {
-      return item.trim();
+    const normalized = normalizeAvatarUrl(item);
+
+    if (normalized) {
+      return normalized;
     }
   }
 

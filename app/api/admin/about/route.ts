@@ -18,11 +18,7 @@ function parseBody(body: unknown): AdminAboutInput | null {
     typeof source.name !== "string" ||
     typeof source.title !== "string" ||
     typeof source.summary !== "string" ||
-    typeof source.introDescription !== "string" ||
-    typeof source.aboutPhotoUrl !== "string" ||
-    typeof source.aboutExperience !== "string" ||
-    typeof source.workStyle !== "string" ||
-    !Array.isArray(source.techStack)
+    typeof source.aboutPhotoUrl !== "string"
   ) {
     return null;
   }
@@ -54,15 +50,8 @@ function parseBody(body: unknown): AdminAboutInput | null {
     name: source.name.trim(),
     title: source.title.trim(),
     summary: source.summary.trim(),
-    techStack: source.techStack.map((item) => String(item).trim()).filter(Boolean),
-    introDescription: source.introDescription.trim(),
     aboutPhotoUrl: source.aboutPhotoUrl.trim(),
     aboutTechItems,
-    aboutExperience: source.aboutExperience.trim(),
-    strengths: Array.isArray(source.strengths)
-      ? source.strengths.map((item) => String(item).trim()).filter(Boolean)
-      : [],
-    workStyle: source.workStyle.trim(),
     status: source.status === "published" ? "published" : "draft",
   };
 }

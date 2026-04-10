@@ -9,7 +9,7 @@
   "closeAuthModalLabel": "Close auth modal",
   "authTitle": "Sign in",
   "authDescription": "Sign in with Google, GitHub, or Kakao.",
-  "authSignedInAs": "Signed in as:",
+  "authSignedInAs": "Signed in as",
   "authSignOut": "Sign out",
   "authSignInCta": "Sign in",
   "authSupabaseRequired": "Supabase environment variables are required for sign in."

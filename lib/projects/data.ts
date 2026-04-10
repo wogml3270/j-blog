@@ -251,6 +251,7 @@ function toLocalizedProject(seed: ProjectSeed, locale: Locale): Project {
   return {
     slug: seed.slug,
     title: seed.title[locale],
+    homeSummary: seed.summary[locale],
     summary: seed.summary[locale],
     thumbnail: seed.thumbnail,
     role: seed.role[locale],

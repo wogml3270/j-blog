@@ -8,12 +8,27 @@ const withMDX = createMDX({
 const nextConfig: NextConfig = {
   pageExtensions: ["ts", "tsx", "md", "mdx"],
   images: {
-    // 관리자에서 입력하는 외부 썸네일 URL을 허용.
-    // 필요 시 운영 단계에서 특정 도메인 allowlist로 좁히는 것을 권장.
+    // 관리자 외부 썸네일 + 소셜 로그인 아바타 도메인을 함께 허용한다.
     remotePatterns: [
       {
         protocol: "https",
         hostname: "**",
+      },
+      {
+        protocol: "http",
+        hostname: "k.kakaocdn.net",
+      },
+      {
+        protocol: "https",
+        hostname: "k.kakaocdn.net",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "avatars.githubusercontent.com",
       },
     ],
   },

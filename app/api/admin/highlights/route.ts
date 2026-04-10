@@ -42,11 +42,6 @@ function parsePayload(body: unknown): HomeHighlightInput[] | null {
       sourceId: record.sourceId.trim(),
       orderIndex: Number(record.orderIndex) || 0,
       isActive: record.isActive !== false,
-      overrideTitle: typeof record.overrideTitle === "string" ? record.overrideTitle : null,
-      overrideDescription:
-        typeof record.overrideDescription === "string" ? record.overrideDescription : null,
-      overrideImageUrl:
-        typeof record.overrideImageUrl === "string" ? record.overrideImageUrl : null,
       overrideCtaLabel:
         typeof record.overrideCtaLabel === "string" ? record.overrideCtaLabel : null,
     });

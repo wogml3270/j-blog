@@ -1,28 +1,16 @@
 import type { ProfileContent } from "@/types/profile";
 import type { PublishStatus } from "@/types/db";
 import type { Locale } from "@/lib/i18n/config";
-import {
-  DEFAULT_ABOUT_PHOTO_URL,
-  DEFAULT_ABOUT_TECH_ITEMS,
-  TECH_STACK,
-  getAboutSummary,
-  getHomeIntro,
-} from "@/lib/site/profile";
+import { DEFAULT_ABOUT_PHOTO_URL, DEFAULT_ABOUT_TECH_ITEMS, getHomeIntro } from "@/lib/site/profile";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import koAbout from "@/locales/ko/about.json";
 
 interface ProfileRow {
   id: number;
   name: string;
   title: string;
   summary: string;
-  tech_stack: unknown;
   about_photo_url: string | null;
   about_tech_items: unknown;
-  about_intro_description_ko: string | null;
-  about_experience: string;
-  strengths: unknown;
-  work_style: string;
   status: PublishStatus;
   updated_at: string;
 }
@@ -31,17 +19,12 @@ export type AdminAboutInput = {
   name: string;
   title: string;
   summary: string;
-  techStack: string[];
-  introDescription: string;
   aboutPhotoUrl: string;
   aboutTechItems: Array<{
     name: string;
     description: string;
     logoUrl: string;
   }>;
-  aboutExperience: string;
-  strengths: string[];
-  workStyle: string;
   status: PublishStatus;
 };
 
@@ -51,15 +34,7 @@ type RepoResult<T> = {
 };
 
 const PROFILE_SELECT_FIELDS =
-  "id,name,title,summary,tech_stack,about_photo_url,about_tech_items,about_intro_description_ko,about_experience,strengths,work_style,status,updated_at";
-
-function toStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.map((item) => String(item).trim()).filter(Boolean);
-}
+  "id,name,title,summary,about_photo_url,about_tech_items,status,updated_at";
 
 function toAboutTechItems(
   value: unknown,
@@ -106,13 +81,8 @@ function rowToProfile(row: ProfileRow): ProfileContent {
     name: row.name,
     title: row.title,
     summary: row.summary,
-    techStack: toStringArray(row.tech_stack),
     aboutPhotoUrl: row.about_photo_url?.trim() || DEFAULT_ABOUT_PHOTO_URL,
     aboutTechItems: aboutTechItems.length > 0 ? aboutTechItems : DEFAULT_ABOUT_TECH_ITEMS,
-    aboutIntroDescriptionKo: row.about_intro_description_ko ?? "",
-    aboutExperience: row.about_experience,
-    strengths: toStringArray(row.strengths),
-    workStyle: row.work_style,
     status: row.status,
     updatedAt: row.updated_at,
   };
@@ -124,20 +94,14 @@ function normalizeStatus(value: PublishStatus): PublishStatus {
 
 function fallbackProfile(locale: Locale): ProfileContent {
   const home = getHomeIntro(locale);
-  const about = getAboutSummary(locale);
 
   return {
     id: 1,
     name: home.name,
     title: home.title,
     summary: home.summary,
-    techStack: TECH_STACK,
     aboutPhotoUrl: DEFAULT_ABOUT_PHOTO_URL,
     aboutTechItems: DEFAULT_ABOUT_TECH_ITEMS,
-    aboutIntroDescriptionKo: koAbout.introDescription,
-    aboutExperience: about.experience,
-    strengths: about.strengths,
-    workStyle: about.workStyle,
     status: "published",
     updatedAt: new Date().toISOString(),
   };
@@ -202,13 +166,8 @@ export async function upsertAdminAboutContent(
       name: input.name,
       title: input.title,
       summary: input.summary,
-      tech_stack: input.techStack,
       about_photo_url: input.aboutPhotoUrl,
       about_tech_items: input.aboutTechItems,
-      about_intro_description_ko: input.introDescription,
-      about_experience: input.aboutExperience,
-      strengths: input.strengths,
-      work_style: input.workStyle,
       status: normalizeStatus(input.status),
     },
     { onConflict: "id" },

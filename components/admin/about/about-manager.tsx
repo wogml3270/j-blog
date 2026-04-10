@@ -1,14 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ManagerShell } from "@/components/admin/common/manager-shell";
 import { StatusRadioGroup } from "@/components/admin/common/status-radio-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { uploadAdminMediaFile } from "@/lib/admin/upload-client";
 import { cn } from "@/lib/utils/cn";
 import type { PublishStatus } from "@/types/db";
 import type { ProfileContent } from "@/types/profile";
+import type { ThumbnailInputMode } from "@/types/ui";
 
 type AboutManagerProps = {
   initialAbout: ProfileContent;
@@ -25,28 +44,21 @@ type AboutFormState = {
   name: string;
   title: string;
   summary: string;
-  techStack: string[];
-  techStackInput: string;
-  introDescription: string;
   aboutPhotoUrl: string;
   aboutTechItems: AboutTechFormItem[];
   techNameInput: string;
   techDescriptionInput: string;
   techLogoUrlInput: string;
-  aboutExperience: string;
-  strengthsText: string;
-  workStyle: string;
   status: PublishStatus;
 };
+
+type AboutTechLogoInputMode = ThumbnailInputMode | "svg";
 
 function toFormState(profile: ProfileContent): AboutFormState {
   return {
     name: profile.name,
     title: profile.title,
     summary: profile.summary,
-    techStack: [...profile.techStack],
-    techStackInput: "",
-    introDescription: profile.aboutIntroDescriptionKo,
     aboutPhotoUrl: profile.aboutPhotoUrl,
     aboutTechItems: profile.aboutTechItems.map((item, index) => ({
       id: `${item.name}-${index}`,
@@ -57,22 +69,8 @@ function toFormState(profile: ProfileContent): AboutFormState {
     techNameInput: "",
     techDescriptionInput: "",
     techLogoUrlInput: "",
-    aboutExperience: profile.aboutExperience,
-    strengthsText: profile.strengths.join("\n"),
-    workStyle: profile.workStyle,
     status: profile.status,
   };
-}
-
-function uniqueStringList(items: string[]): string[] {
-  return [...new Set(items.map((item) => item.trim()).filter(Boolean))];
-}
-
-function parseStrengths(value: string): string[] {
-  return value
-    .split("\n")
-    .map((item) => item.trim())
-    .filter(Boolean);
 }
 
 function serializeForm(form: AboutFormState): string {
@@ -80,17 +78,12 @@ function serializeForm(form: AboutFormState): string {
     name: form.name.trim(),
     title: form.title.trim(),
     summary: form.summary.trim(),
-    techStack: uniqueStringList(form.techStack),
-    introDescription: form.introDescription.trim(),
     aboutPhotoUrl: form.aboutPhotoUrl.trim(),
     aboutTechItems: form.aboutTechItems.map((item) => ({
       name: item.name.trim(),
       description: item.description.trim(),
       logoUrl: item.logoUrl.trim(),
     })),
-    aboutExperience: form.aboutExperience.trim(),
-    strengths: parseStrengths(form.strengthsText),
-    workStyle: form.workStyle.trim(),
     status: form.status,
   });
 }
@@ -105,6 +98,94 @@ function toStatusLabel(status: PublishStatus): string {
   return status === "published" ? "공개" : "비공개";
 }
 
+function reorderById<T extends { id: string }>(items: T[], event: DragEndEvent): T[] {
+  const { active, over } = event;
+
+  if (!over || active.id === over.id) {
+    return items;
+  }
+
+  const oldIndex = items.findIndex((item) => item.id === active.id);
+  const newIndex = items.findIndex((item) => item.id === over.id);
+
+  if (oldIndex < 0 || newIndex < 0) {
+    return items;
+  }
+
+  return arrayMove(items, oldIndex, newIndex);
+}
+
+function SortableAboutTechItem({
+  item,
+  onChange,
+  onRemove,
+}: {
+  item: AboutTechFormItem;
+  onChange: (next: AboutTechFormItem) => void;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+  });
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={cn(
+        "space-y-2 rounded-md border border-border bg-surface p-3",
+        isDragging ? "shadow-lg" : "",
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="inline-flex min-w-0 items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={item.logoUrl} alt="" className="h-5 w-5 rounded-sm bg-black/15 p-0.5" />
+          <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            className="inline-flex h-7 w-7 cursor-grab items-center justify-center rounded border border-border text-xs text-muted active:cursor-grabbing"
+            aria-label="순서 이동"
+            title="순서 이동"
+            {...attributes}
+            {...listeners}
+          >
+            ≡
+          </button>
+          <Button type="button" variant="destructive" size="sm" onClick={onRemove}>
+            삭제
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Input
+          value={item.name}
+          onChange={(event) => onChange({ ...item, name: event.target.value })}
+          placeholder="기술명"
+        />
+        <Input
+          value={item.logoUrl}
+          onChange={(event) => onChange({ ...item, logoUrl: event.target.value })}
+          placeholder="로고 URL"
+        />
+      </div>
+
+      <textarea
+        value={item.description}
+        onChange={(event) => onChange({ ...item, description: event.target.value })}
+        className="min-h-[78px] w-full rounded-md border border-border bg-background p-3 text-sm transition-colors focus:border-foreground/30"
+        placeholder="기술 설명"
+      />
+    </li>
+  );
+}
+
 export function AboutManager({ initialAbout }: AboutManagerProps) {
   const initialForm = useMemo(() => toFormState(initialAbout), [initialAbout]);
   const [form, setForm] = useState<AboutFormState>(initialForm);
@@ -114,32 +195,28 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
     kind: "success" | "error";
     text: string;
   } | null>(null);
+  const [aboutPhotoMode, setAboutPhotoMode] = useState<ThumbnailInputMode>("url");
+  const [techLogoMode, setTechLogoMode] = useState<AboutTechLogoInputMode>("url");
+  const [techLogoSvgInput, setTechLogoSvgInput] = useState("");
+  const [localAboutPhotoPreview, setLocalAboutPhotoPreview] = useState<string | null>(null);
+  const [localTechLogoPreview, setLocalTechLogoPreview] = useState<string | null>(null);
+  const [isUploadingAboutPhoto, setIsUploadingAboutPhoto] = useState(false);
+  const [isUploadingTechLogo, setIsUploadingTechLogo] = useState(false);
+  const aboutPhotoUploadRequestRef = useRef(0);
+  const techLogoUploadRequestRef = useRef(0);
 
   const isDirty = serializeForm(form) !== serializeForm(savedForm);
 
-  // 홈 기술 스택은 Enter/추가 버튼으로 한 항목씩 관리한다.
-  const addTechStack = () => {
-    const value = form.techStackInput.trim();
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
-    if (!value) {
-      return;
-    }
-
-    setForm((prev) => ({
-      ...prev,
-      techStack: uniqueStringList([...prev.techStack, value]),
-      techStackInput: "",
-    }));
-  };
-
-  const removeTechStack = (value: string) => {
-    setForm((prev) => ({
-      ...prev,
-      techStack: prev.techStack.filter((item) => item !== value),
-    }));
-  };
-
-  // 기술 스택 항목은 이름+설명+로고 URL 3개가 모두 있는 경우에만 추가한다.
+  // 기술 항목은 이름/설명/로고 URL이 모두 채워졌을 때만 추가한다.
   const addTechItem = () => {
     const name = form.techNameInput.trim();
     const description = form.techDescriptionInput.trim();
@@ -159,6 +236,16 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
       techDescriptionInput: "",
       techLogoUrlInput: "",
     }));
+
+    setTechLogoSvgInput("");
+    setTechLogoMode("url");
+    setLocalTechLogoPreview((prev) => {
+      if (prev) {
+        URL.revokeObjectURL(prev);
+      }
+
+      return null;
+    });
   };
 
   const removeTechItem = (id: string) => {
@@ -168,7 +255,177 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
     }));
   };
 
-  // 소개 섹션은 KO DB 값을 기준으로 저장하므로 문자열 정규화를 서버 요청 전에 수행한다.
+  // 기술 항목 순서를 드래그 결과 순서로 재배치한다.
+  const onTechItemsDragEnd = (event: DragEndEvent) => {
+    setForm((prev) => ({
+      ...prev,
+      aboutTechItems: reorderById(prev.aboutTechItems, event),
+    }));
+  };
+
+  // 프로필 사진 파일을 선택하면 로컬 미리보기를 먼저 보여주고 즉시 업로드한다.
+  const uploadAboutPhotoImmediately = async (file: File) => {
+    const requestId = aboutPhotoUploadRequestRef.current + 1;
+    aboutPhotoUploadRequestRef.current = requestId;
+    setIsUploadingAboutPhoto(true);
+    setNotice(null);
+
+    try {
+      const payload = await uploadAdminMediaFile(file, "about");
+
+      if (!payload.url) {
+        throw new Error("프로필 이미지 URL을 확인할 수 없습니다.");
+      }
+
+      if (requestId !== aboutPhotoUploadRequestRef.current) {
+        return;
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        aboutPhotoUrl: payload.url,
+      }));
+      setNotice({ kind: "success", text: "프로필 이미지를 업로드했습니다." });
+    } catch (error) {
+      if (requestId !== aboutPhotoUploadRequestRef.current) {
+        return;
+      }
+
+      setNotice({
+        kind: "error",
+        text:
+          error instanceof Error ? error.message : "프로필 이미지 업로드 중 오류가 발생했습니다.",
+      });
+    } finally {
+      if (requestId === aboutPhotoUploadRequestRef.current) {
+        setIsUploadingAboutPhoto(false);
+      }
+    }
+  };
+
+  const onSelectAboutPhotoFile = (file: File | null) => {
+    if (!file) {
+      setLocalAboutPhotoPreview((prev) => {
+        if (prev) {
+          URL.revokeObjectURL(prev);
+        }
+
+        return null;
+      });
+      return;
+    }
+
+    const nextPreview = URL.createObjectURL(file);
+
+    setLocalAboutPhotoPreview((prev) => {
+      if (prev) {
+        URL.revokeObjectURL(prev);
+      }
+
+      return nextPreview;
+    });
+    void uploadAboutPhotoImmediately(file);
+  };
+
+  // 기술 로고 파일을 선택하면 로컬 미리보기를 먼저 보여주고 즉시 업로드한다.
+  const uploadTechLogoImmediately = async (file: File) => {
+    const requestId = techLogoUploadRequestRef.current + 1;
+    techLogoUploadRequestRef.current = requestId;
+    setIsUploadingTechLogo(true);
+    setNotice(null);
+
+    try {
+      const payload = await uploadAdminMediaFile(file, "about");
+
+      if (!payload.url) {
+        throw new Error("기술 로고 URL을 확인할 수 없습니다.");
+      }
+
+      if (requestId !== techLogoUploadRequestRef.current) {
+        return;
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        techLogoUrlInput: payload.url,
+      }));
+      setNotice({ kind: "success", text: "기술 로고 이미지를 업로드했습니다." });
+    } catch (error) {
+      if (requestId !== techLogoUploadRequestRef.current) {
+        return;
+      }
+
+      setNotice({
+        kind: "error",
+        text: error instanceof Error ? error.message : "기술 로고 업로드 중 오류가 발생했습니다.",
+      });
+    } finally {
+      if (requestId === techLogoUploadRequestRef.current) {
+        setIsUploadingTechLogo(false);
+      }
+    }
+  };
+
+  const onSelectTechLogoFile = (file: File | null) => {
+    if (!file) {
+      setLocalTechLogoPreview((prev) => {
+        if (prev) {
+          URL.revokeObjectURL(prev);
+        }
+
+        return null;
+      });
+      return;
+    }
+
+    const nextPreview = URL.createObjectURL(file);
+
+    setLocalTechLogoPreview((prev) => {
+      if (prev) {
+        URL.revokeObjectURL(prev);
+      }
+
+      return nextPreview;
+    });
+    void uploadTechLogoImmediately(file);
+  };
+
+  // SVG 태그 문자열도 기술 로고로 업로드할 수 있게 파일로 변환해 처리한다.
+  const onUploadTechLogoSvg = async () => {
+    const markup = techLogoSvgInput.trim();
+
+    if (!markup) {
+      setNotice({ kind: "error", text: "SVG 코드를 입력해주세요." });
+      return;
+    }
+
+    if (!/<svg[\s>]/i.test(markup) || !/<\/svg>/i.test(markup)) {
+      setNotice({ kind: "error", text: "유효한 SVG 태그 형식이 아닙니다." });
+      return;
+    }
+
+    if (/<script[\s>]/i.test(markup)) {
+      setNotice({ kind: "error", text: "보안을 위해 script 태그는 허용되지 않습니다." });
+      return;
+    }
+
+    const file = new File([markup], `about-tech-logo-${Date.now()}.svg`, {
+      type: "image/svg+xml",
+    });
+    const previewUrl = URL.createObjectURL(file);
+
+    setLocalTechLogoPreview((prev) => {
+      if (prev) {
+        URL.revokeObjectURL(prev);
+      }
+
+      return previewUrl;
+    });
+
+    await uploadTechLogoImmediately(file);
+  };
+
+  // 단순화된 About 모델(name/title/summary/photo/tech/status) 기준으로 저장한다.
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsPending(true);
@@ -182,17 +439,12 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
           name: form.name,
           title: form.title,
           summary: form.summary,
-          techStack: uniqueStringList(form.techStack),
-          introDescription: form.introDescription,
           aboutPhotoUrl: form.aboutPhotoUrl,
           aboutTechItems: form.aboutTechItems.map((item) => ({
             name: item.name.trim(),
             description: item.description.trim(),
             logoUrl: item.logoUrl.trim(),
           })),
-          aboutExperience: form.aboutExperience,
-          strengths: parseStrengths(form.strengthsText),
-          workStyle: form.workStyle,
           status: form.status,
         }),
       });
@@ -217,19 +469,29 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
     }
   };
 
+  useEffect(() => {
+    return () => {
+      if (localAboutPhotoPreview) {
+        URL.revokeObjectURL(localAboutPhotoPreview);
+      }
+    };
+  }, [localAboutPhotoPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (localTechLogoPreview) {
+        URL.revokeObjectURL(localTechLogoPreview);
+      }
+    };
+  }, [localTechLogoPreview]);
+
   return (
     <ManagerShell
       motion
-      summary="소개 페이지 콘텐츠를 관리합니다."
-      detail="KO 소개 문구는 DB에서 관리되고, EN/JA는 locale 문구를 유지합니다."
+      summary="소개 페이지 콘텐츠를 단순 모델로 관리합니다."
+      detail="이름, 직함, 한 줄 소개, 프로필 이미지, 기술 항목만 유지합니다."
     >
-      <SurfaceCard
-        tone="surface"
-        radius="2xl"
-        padding="md"
-        interactive
-        className="space-y-4 sm:p-5"
-      >
+      <SurfaceCard tone="surface" radius="2xl" padding="md" interactive className="space-y-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <span
             className={cn(
@@ -245,102 +507,178 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
           <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-3 sm:p-4">
             <div className="space-y-1">
               <h3 className="text-sm font-semibold text-foreground">기본 정보</h3>
-              <p className="text-xs text-muted">기본 프로필을 관리합니다.</p>
+              <p className="text-xs text-muted">소개 카드의 핵심 텍스트를 관리합니다.</p>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               <Input
                 value={form.name}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    name: event.target.value,
-                  }))
-                }
+                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
                 placeholder="이름"
                 required
               />
               <Input
                 value={form.title}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    title: event.target.value,
-                  }))
-                }
+                onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
                 placeholder="직함"
                 required
               />
             </div>
 
-            <Input
+            <textarea
               value={form.summary}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  summary: event.target.value,
-                }))
-              }
-              placeholder="한 줄 소개"
-              required
-            />
-          </SurfaceCard>
-
-          <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-2 sm:p-4">
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-foreground">About</h3>
-              <p className="text-xs text-muted">소개 상단 문구와 본문 설명을 관리합니다.</p>
-            </div>
-            <textarea
-              value={form.introDescription}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  introDescription: event.target.value,
-                }))
-              }
-              className="min-h-[86px] w-full rounded-md border border-border bg-surface p-3 text-sm transition-colors focus:border-foreground/30"
-              placeholder="About 섹션 설명(KO)"
-              required
-            />
-            <textarea
-              value={form.aboutExperience}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  aboutExperience: event.target.value,
-                }))
-              }
-              className="min-h-[116px] w-full rounded-md border border-border bg-surface p-3 text-sm transition-colors focus:border-foreground/30"
-              placeholder="소개 경험 문단"
+              onChange={(event) => setForm((prev) => ({ ...prev, summary: event.target.value }))}
+              className="min-h-[110px] w-full rounded-md border border-border bg-surface p-3 text-sm leading-7 transition-colors focus:border-foreground/30"
+              placeholder="한 줄 소개/자기소개"
               required
             />
           </SurfaceCard>
 
           <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-3 sm:p-4">
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-foreground">프로필/기술 스택 미디어</h3>
-              <p className="text-xs text-muted">About 오른쪽 사진과 기술 로고/설명을 관리합니다.</p>
+              <h3 className="text-sm font-semibold text-foreground">프로필 이미지</h3>
+              <p className="text-xs text-muted">공개 About 카드에서 사용하는 대표 사진입니다.</p>
             </div>
 
-            <Input
-              value={form.aboutPhotoUrl}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  aboutPhotoUrl: event.target.value,
-                }))
-              }
-              placeholder="프로필 사진 URL"
-              required
-            />
+            <div className="space-y-2 rounded-md border border-border bg-background/70 p-3">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant={aboutPhotoMode === "url" ? "solid" : "ghost"}
+                  size="sm"
+                  onClick={() => setAboutPhotoMode("url")}
+                >
+                  외부 링크
+                </Button>
+                <Button
+                  type="button"
+                  variant={aboutPhotoMode === "upload" ? "solid" : "ghost"}
+                  size="sm"
+                  onClick={() => setAboutPhotoMode("upload")}
+                >
+                  파일 업로드
+                </Button>
+              </div>
 
-            {form.aboutPhotoUrl.trim() ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={form.aboutPhotoUrl}
-                alt="프로필 사진 미리보기"
-                className="h-40 w-full rounded-md border border-border object-cover sm:h-52"
-              />
+              {aboutPhotoMode === "url" ? (
+                <Input
+                  value={form.aboutPhotoUrl}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      aboutPhotoUrl: event.target.value,
+                    }))
+                  }
+                  placeholder="프로필 사진 URL"
+                  required
+                />
+              ) : (
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept="image/*,.svg"
+                    onChange={(event) => onSelectAboutPhotoFile(event.target.files?.[0] ?? null)}
+                    className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
+                  />
+                  <p className="text-xs text-muted">파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.</p>
+                </div>
+              )}
+
+              <p className="truncate text-xs text-muted">
+                현재 이미지: {isUploadingAboutPhoto ? "업로드 중..." : form.aboutPhotoUrl || "설정되지 않음"}
+              </p>
+            </div>
+
+            {localAboutPhotoPreview || form.aboutPhotoUrl.trim() ? (
+              <div className="overflow-hidden rounded-md border border-border bg-surface p-3">
+                <div className="relative h-44 w-full rounded-md border border-border bg-background/80 sm:h-56">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={localAboutPhotoPreview || form.aboutPhotoUrl}
+                    alt="프로필 사진 미리보기"
+                    className="h-full w-full object-contain object-center"
+                  />
+                </div>
+              </div>
+            ) : null}
+          </SurfaceCard>
+
+          <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-3 sm:p-4">
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold text-foreground">기술 항목</h3>
+              <p className="text-xs text-muted">순서 변경, 수정, 삭제가 가능한 기술 카드 목록입니다.</p>
+            </div>
+
+            <div className="space-y-2 rounded-md border border-border bg-background/70 p-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">기술 로고 업로드</p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant={techLogoMode === "url" ? "solid" : "ghost"}
+                  size="sm"
+                  onClick={() => setTechLogoMode("url")}
+                >
+                  외부 링크
+                </Button>
+                <Button
+                  type="button"
+                  variant={techLogoMode === "upload" ? "solid" : "ghost"}
+                  size="sm"
+                  onClick={() => setTechLogoMode("upload")}
+                >
+                  파일 업로드
+                </Button>
+                <Button
+                  type="button"
+                  variant={techLogoMode === "svg" ? "solid" : "ghost"}
+                  size="sm"
+                  onClick={() => setTechLogoMode("svg")}
+                >
+                  SVG 코드
+                </Button>
+              </div>
+
+              {techLogoMode === "url" ? null : techLogoMode === "upload" ? (
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept="image/*,.svg"
+                    onChange={(event) => onSelectTechLogoFile(event.target.files?.[0] ?? null)}
+                    className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
+                  />
+                  <p className="text-xs text-muted">파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <textarea
+                    value={techLogoSvgInput}
+                    onChange={(event) => setTechLogoSvgInput(event.target.value)}
+                    className="min-h-[120px] w-full rounded-md border border-border bg-surface p-3 text-xs transition-colors focus:border-foreground/30"
+                    placeholder="<svg ...>...</svg>"
+                  />
+                  <Button
+                    type="button"
+                    onClick={onUploadTechLogoSvg}
+                    disabled={!techLogoSvgInput.trim() || isUploadingTechLogo}
+                  >
+                    {isUploadingTechLogo ? "업로드 중..." : "SVG 코드 업로드"}
+                  </Button>
+                </div>
+              )}
+
+              <p className="truncate text-xs text-muted">
+                현재 로고: {isUploadingTechLogo ? "업로드 중..." : form.techLogoUrlInput || "설정되지 않음"}
+              </p>
+            </div>
+
+            {localTechLogoPreview || form.techLogoUrlInput.trim() ? (
+              <div className="overflow-hidden rounded-md border border-border bg-surface p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={localTechLogoPreview || form.techLogoUrlInput}
+                  alt="기술 로고 미리보기"
+                  className="h-12 w-12 rounded-sm object-contain"
+                />
+              </div>
             ) : null}
 
             <div className="grid gap-2 sm:grid-cols-2">
@@ -365,6 +703,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
                 placeholder="로고 URL"
               />
             </div>
+
             <textarea
               value={form.techDescriptionInput}
               onChange={(event) =>
@@ -376,70 +715,39 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
               className="min-h-[78px] w-full rounded-md border border-border bg-surface p-3 text-sm transition-colors focus:border-foreground/30"
               placeholder="기술 설명"
             />
+
             <Button type="button" variant="outline" onClick={addTechItem}>
               기술 항목 추가
             </Button>
 
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {form.aboutTechItems.map((item) => (
-                <li key={item.id}>
-                  <article className="space-y-2 rounded-md border border-border bg-surface p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="inline-flex items-center gap-2">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={item.logoUrl}
-                          alt=""
-                          className="h-5 w-5 rounded-sm bg-black/15 p-0.5"
-                        />
-                        <p className="text-sm font-medium text-foreground">{item.name}</p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => removeTechItem(item.id)}
-                      >
-                        삭제
-                      </Button>
-                    </div>
-                    <p className="text-xs leading-5 text-muted">{item.description}</p>
-                  </article>
-                </li>
-              ))}
-            </ul>
-          </SurfaceCard>
-
-          <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-2 sm:p-4">
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-foreground">핵심 역량</h3>
-              <p className="text-xs text-muted">한 줄에 한 항목씩 입력하세요.</p>
-            </div>
-            <textarea
-              value={form.strengthsText}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  strengthsText: event.target.value,
-                }))
-              }
-              className="min-h-[112px] w-full rounded-md border border-border bg-surface p-3 text-sm transition-colors focus:border-foreground/30"
-              placeholder="강점 (줄바꿈 구분)"
-            />
-          </SurfaceCard>
-
-          <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-2 sm:p-4">
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-foreground">작업 방식</h3>
-              <p className="text-xs text-muted">협업 스타일과 전달 방식을 설명합니다.</p>
-            </div>
-            <textarea
-              value={form.workStyle}
-              onChange={(event) => setForm((prev) => ({ ...prev, workStyle: event.target.value }))}
-              className="min-h-[112px] w-full rounded-md border border-border bg-surface p-3 text-sm transition-colors focus:border-foreground/30"
-              placeholder="업무 스타일"
-              required
-            />
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={onTechItemsDragEnd}
+            >
+              <SortableContext
+                items={form.aboutTechItems.map((item) => item.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <ul className="space-y-2">
+                  {form.aboutTechItems.map((item) => (
+                    <SortableAboutTechItem
+                      key={item.id}
+                      item={item}
+                      onChange={(next) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          aboutTechItems: prev.aboutTechItems.map((target) =>
+                            target.id === item.id ? next : target,
+                          ),
+                        }))
+                      }
+                      onRemove={() => removeTechItem(item.id)}
+                    />
+                  ))}
+                </ul>
+              </SortableContext>
+            </DndContext>
           </SurfaceCard>
 
           <StatusRadioGroup

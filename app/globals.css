@@ -123,6 +123,16 @@ html[data-theme-transition="active"] .locale-root * {
   }
 }
 
+@keyframes about-profile-bounce {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-8px);
+  }
+}
+
 .ui-skeleton {
   position: relative;
   display: inline-block;
@@ -146,6 +156,10 @@ html[data-theme-transition="active"] .locale-root * {
 
 .ui-skeleton-animated::after {
   animation: ui-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.about-profile-bounce {
+  animation: about-profile-bounce 2.2s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -339,6 +353,16 @@ a {
   height: 100%;
 }
 
+.home-immersive-main .swiper-slide {
+  pointer-events: none;
+  z-index: 0;
+}
+
+.home-immersive-main .swiper-slide-active {
+  pointer-events: auto;
+  z-index: 1;
+}
+
 .home-hero-bg-image {
   clip-path: circle(0% at 50% 50%);
 }
@@ -365,6 +389,7 @@ a {
 .home-immersive-main .swiper-slide-active .home-hero-copy > * {
   animation: home-hero-copy-in 980ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--copy-delay, 0ms);
+  animation-fill-mode: forwards;
 }
 
 .home-immersive-thumbs .swiper-slide {

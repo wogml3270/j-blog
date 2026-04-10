@@ -34,8 +34,8 @@ export function SignOutButton({ className }: SignOutButtonProps) {
       aria-label={pending ? "로그아웃 중" : "로그아웃"}
       title={pending ? "로그아웃 중" : "로그아웃"}
     >
+      <span>{pending ? "로그아웃 중..." : "로그아웃"}</span>
       <LogoutIcon className={pending ? "animate-pulse" : undefined} />
-      <span className="sr-only">{pending ? "로그아웃 중..." : "로그아웃"}</span>
     </Button>
   );
 }

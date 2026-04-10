@@ -30,22 +30,27 @@ export function EditorDrawer({ open, title, description, onClose, children }: Ed
     };
   }, [open, onClose]);
 
+  // 닫힌 상태에서는 드로어 본문을 언마운트해 에디터 DOM 충돌을 방지한다.
+  if (!open) {
+    return null;
+  }
+
   return (
     <>
       <div
-        aria-hidden={!open}
+        aria-hidden={false}
         className={cn(
           "fixed inset-0 z-40 bg-foreground/35 backdrop-blur-[2px] transition-opacity duration-300",
-          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+          "pointer-events-auto opacity-100",
         )}
         onClick={onClose}
       />
 
       <aside
-        aria-hidden={!open}
+        aria-hidden={false}
         className={cn(
           "fixed right-0 top-0 z-50 flex h-dvh w-[min(100vw,40rem)] flex-col border-l border-border bg-surface shadow-2xl transition-transform duration-300",
-          open ? "translate-x-0" : "translate-x-full",
+          "translate-x-0",
         )}
       >
         <header className="border-b border-border px-5 py-4">

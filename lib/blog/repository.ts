@@ -13,6 +13,7 @@ import {
   buildPaginatedResult,
   DEFAULT_ADMIN_PAGE_SIZE,
 } from "@/lib/utils/pagination";
+import { toSlugConflictMessage } from "@/lib/utils/db-error";
 
 type PostRow = {
   id: string;
@@ -21,10 +22,12 @@ type PostRow = {
   description: string;
   thumbnail: string | null;
   featured: boolean;
+  sync_slug_with_title: boolean | null;
   body_markdown: string;
   use_markdown_editor: boolean | null;
   status: PublishStatus;
   published_at: string | null;
+  scheduled_publish_at: string | null;
   updated_at: string;
   post_tag_map?: unknown;
 };
@@ -35,7 +38,7 @@ type RepoResult<T> = {
 };
 
 const POST_SELECT_FIELDS =
-  "id,slug,title,description,thumbnail,featured,body_markdown,use_markdown_editor,status,published_at,updated_at,post_tag_map(post_tags(name))";
+  "id,slug,title,description,thumbnail,featured,sync_slug_with_title,body_markdown,use_markdown_editor,status,published_at,scheduled_publish_at,updated_at,post_tag_map(post_tags(name))";
 
 function normalizeTags(tags: string[]): string[] {
   return [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
@@ -104,34 +107,75 @@ function rowToAdminPost(row: PostRow): AdminPost {
     description: row.description,
     thumbnail: row.thumbnail,
     featured: row.featured,
+    syncSlugWithTitle: Boolean(row.sync_slug_with_title),
     bodyMarkdown: row.body_markdown,
     useMarkdownEditor: Boolean(row.use_markdown_editor),
     tags: relationToTagNames(row.post_tag_map),
     status: row.status,
     publishedAt: row.published_at,
+    scheduledPublishAt: row.scheduled_publish_at,
     updatedAt: row.updated_at,
   };
 }
 
-function normalizePublishedAt(
-  status: PublishStatus,
-  raw: string | null | undefined,
-): string | null {
-  if (status === "draft") {
+function normalizeScheduledPublishAt(raw: string | null | undefined): string | null {
+  if (!raw || !raw.trim()) {
     return null;
-  }
-
-  if (!raw) {
-    return new Date().toISOString();
   }
 
   const parsed = new Date(raw);
 
   if (Number.isNaN(parsed.getTime())) {
-    return new Date().toISOString();
+    return null;
   }
 
   return parsed.toISOString();
+}
+
+// 게시일/예약발행 필드는 최초 공개 시점을 기준으로 일관되게 계산한다.
+function resolvePublicationFields({
+  status,
+  scheduledRaw,
+  existingPublishedAt,
+}: {
+  status: PublishStatus;
+  scheduledRaw: string | null | undefined;
+  existingPublishedAt: string | null;
+}): { publishedAt: string | null; scheduledPublishAt: string | null } {
+  if (status === "draft") {
+    return {
+      publishedAt: null,
+      scheduledPublishAt: null,
+    };
+  }
+
+  if (existingPublishedAt) {
+    const parsedExisting = new Date(existingPublishedAt);
+
+    if (!Number.isNaN(parsedExisting.getTime())) {
+      const fixedPublishedAt = parsedExisting.toISOString();
+      const isFuturePublish = parsedExisting.getTime() > Date.now();
+
+      return {
+        publishedAt: fixedPublishedAt,
+        scheduledPublishAt: isFuturePublish ? fixedPublishedAt : null,
+      };
+    }
+  }
+
+  const scheduledPublishAt = normalizeScheduledPublishAt(scheduledRaw);
+
+  if (scheduledPublishAt) {
+    return {
+      publishedAt: scheduledPublishAt,
+      scheduledPublishAt,
+    };
+  }
+
+  return {
+    publishedAt: new Date().toISOString(),
+    scheduledPublishAt: null,
+  };
 }
 
 async function syncPostTags(postId: string, tags: string[]) {
@@ -210,10 +254,12 @@ export async function getAllPublishedPosts(): Promise<BlogPostSummary[]> {
     return fallbackPostList();
   }
 
+  const nowIso = new Date().toISOString();
   const { data, error } = await service
     .from("posts")
     .select(POST_SELECT_FIELDS)
     .eq("status", "published")
+    .or(`scheduled_publish_at.is.null,scheduled_publish_at.lte.${nowIso}`)
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("updated_at", { ascending: false });
 
@@ -244,6 +290,7 @@ export async function getFeaturedPublishedPosts(limit?: number): Promise<BlogPos
     .select(POST_SELECT_FIELDS)
     .eq("status", "published")
     .eq("featured", true)
+    .or(`scheduled_publish_at.is.null,scheduled_publish_at.lte.${new Date().toISOString()}`)
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("updated_at", { ascending: false });
 
@@ -290,6 +337,7 @@ export async function getPublishedPostBySlug(slug: string): Promise<BlogPostDeta
       Component: fallback.Component,
       status: "published",
       publishedAt: fallback.meta.date,
+      scheduledPublishAt: null,
       updatedAt: fallback.meta.date,
     };
   }
@@ -299,6 +347,7 @@ export async function getPublishedPostBySlug(slug: string): Promise<BlogPostDeta
     .select(POST_SELECT_FIELDS)
     .eq("slug", slug)
     .eq("status", "published")
+    .or(`scheduled_publish_at.is.null,scheduled_publish_at.lte.${new Date().toISOString()}`)
     .maybeSingle<PostRow>();
 
   if (error || !data) {
@@ -320,6 +369,7 @@ export async function getPublishedPostBySlug(slug: string): Promise<BlogPostDeta
       Component: fallback.Component,
       status: "published",
       publishedAt: fallback.meta.date,
+      scheduledPublishAt: null,
       updatedAt: fallback.meta.date,
     };
   }
@@ -334,6 +384,7 @@ export async function getPublishedPostBySlug(slug: string): Promise<BlogPostDeta
     toc: extractTocFromMarkdown(bodyMarkdown),
     status: data.status,
     publishedAt: data.published_at,
+    scheduledPublishAt: data.scheduled_publish_at,
     updatedAt: data.updated_at,
   };
 }
@@ -430,6 +481,11 @@ export async function createAdminPost(
   }
 
   const normalizedStatus: PublishStatus = input.status === "published" ? "published" : "draft";
+  const publication = resolvePublicationFields({
+    status: normalizedStatus,
+    scheduledRaw: input.scheduledPublishAt,
+    existingPublishedAt: null,
+  });
 
   const { data, error } = await service
     .from("posts")
@@ -439,10 +495,12 @@ export async function createAdminPost(
       description: input.description,
       thumbnail: input.thumbnail?.trim() || null,
       featured: Boolean(input.featured),
+      sync_slug_with_title: Boolean(input.syncSlugWithTitle),
       body_markdown: input.bodyMarkdown,
       use_markdown_editor: input.useMarkdownEditor,
       status: normalizedStatus,
-      published_at: normalizePublishedAt(normalizedStatus, input.publishedAt),
+      published_at: publication.publishedAt,
+      scheduled_publish_at: publication.scheduledPublishAt,
       created_by: userId,
     })
     .select("id")
@@ -451,7 +509,8 @@ export async function createAdminPost(
   if (error || !data) {
     return {
       data: null,
-      error: error?.message ?? "Failed to create post.",
+      error:
+        toSlugConflictMessage(error, "블로그") ?? error?.message ?? "Failed to create post.",
     };
   }
 
@@ -483,6 +542,16 @@ export async function updateAdminPost(
   }
 
   const normalizedStatus: PublishStatus = input.status === "published" ? "published" : "draft";
+  const { data: current } = await service
+    .from("posts")
+    .select("published_at")
+    .eq("id", id)
+    .maybeSingle<{ published_at: string | null }>();
+  const publication = resolvePublicationFields({
+    status: normalizedStatus,
+    scheduledRaw: input.scheduledPublishAt,
+    existingPublishedAt: current?.published_at ?? null,
+  });
 
   const { error } = await service
     .from("posts")
@@ -492,17 +561,19 @@ export async function updateAdminPost(
       description: input.description,
       thumbnail: input.thumbnail?.trim() || null,
       featured: Boolean(input.featured),
+      sync_slug_with_title: Boolean(input.syncSlugWithTitle),
       body_markdown: input.bodyMarkdown,
       use_markdown_editor: input.useMarkdownEditor,
       status: normalizedStatus,
-      published_at: normalizePublishedAt(normalizedStatus, input.publishedAt),
+      published_at: publication.publishedAt,
+      scheduled_publish_at: publication.scheduledPublishAt,
     })
     .eq("id", id);
 
   if (error) {
     return {
       data: null,
-      error: error.message,
+      error: toSlugConflictMessage(error, "블로그") ?? error.message,
     };
   }
 

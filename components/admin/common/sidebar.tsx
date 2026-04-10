@@ -9,13 +9,15 @@ import { ThemeToggle } from "@/components/theme/toggle";
 import { cn } from "@/lib/utils/cn";
 import type { AdminSidebarProps } from "@/types/ui";
 
+const ADMIN_PATH = "/admin";
+
 const NAV_ITEMS = [
-  { href: "/admin/dashboard", label: "대시보드" },
-  { href: "/admin/highlight", label: "홈" },
-  { href: "/admin/about", label: "소개" },
-  { href: "/admin/projects", label: "프로젝트" },
-  { href: "/admin/blog", label: "블로그" },
-  { href: "/admin/contact", label: "문의함" },
+  { href: `${ADMIN_PATH}/dashboard`, label: "대시보드" },
+  { href: `${ADMIN_PATH}/home`, label: "홈" },
+  { href: `${ADMIN_PATH}/about`, label: "소개" },
+  { href: `${ADMIN_PATH}/projects`, label: "프로젝트" },
+  { href: `${ADMIN_PATH}/blog`, label: "블로그" },
+  { href: `${ADMIN_PATH}/contact`, label: "문의함" },
 ];
 
 export function AdminSidebar({ email, avatarUrl }: AdminSidebarProps) {
@@ -70,9 +72,9 @@ export function AdminSidebar({ email, avatarUrl }: AdminSidebarProps) {
 
       <nav className="mt-4 flex flex-wrap gap-2 xl:block xl:space-y-1.5 xl:gap-0">
         {NAV_ITEMS.map((item) => {
-          const isDashboard = item.href === "/admin/dashboard";
+          const isDashboard = item.href === `${ADMIN_PATH}/dashboard`;
           const isActive = isDashboard
-            ? pathname === "/admin/dashboard"
+            ? pathname === `${ADMIN_PATH}/dashboard`
             : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
@@ -100,7 +102,7 @@ export function AdminSidebar({ email, avatarUrl }: AdminSidebarProps) {
         >
           공개 사이트 이동
         </Link>
-        <SignOutButton className="px-3 xl:w-full" />
+        <SignOutButton className="px-3 xl:w-full flex items-center" />
       </div>
     </aside>
   );

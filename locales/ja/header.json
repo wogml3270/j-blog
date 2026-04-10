@@ -9,7 +9,7 @@
   "closeAuthModalLabel": "ログインモーダルを閉じる",
   "authTitle": "ログイン",
   "authDescription": "Google・GitHub・Kakaoでログインできます。",
-  "authSignedInAs": "ログイン中:",
+  "authSignedInAs": "ログイン中",
   "authSignOut": "ログアウト",
   "authSignInCta": "ログイン",
   "authSupabaseRequired": "ログインにはSupabase環境変数の設定が必要です。"

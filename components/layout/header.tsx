@@ -16,6 +16,7 @@ import { getPathWithoutLocale, locales, withLocalePath } from "@/lib/i18n/config
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { hasSupabasePublicEnv } from "@/lib/supabase/env";
 import { SITE_NAV_ITEMS } from "@/lib/site/navigation";
+import { normalizeAvatarUrl } from "@/lib/utils/avatar-url";
 import { cn } from "@/lib/utils/cn";
 import { usePublicUiStore } from "@/stores/public-ui";
 import type { HeaderProps, LanguageSwitcherProps } from "@/types/ui";
@@ -56,8 +57,10 @@ function getAvatarFromUser(user: User | null): string {
   const candidates = [metadata.avatar_url, metadata.picture];
 
   for (const item of candidates) {
-    if (typeof item === "string" && item.trim()) {
-      return item.trim();
+    const normalized = normalizeAvatarUrl(item);
+
+    if (normalized) {
+      return normalized;
     }
   }
 
@@ -215,7 +218,7 @@ export function Header({ locale, dictionary }: HeaderProps) {
             <h2 className="text-lg font-semibold tracking-tight text-foreground">
               {dictionary.header.authTitle}
             </h2>
-            <p className="text-sm text-muted">{dictionary.header.authDescription}</p>
+            {!user && <p className="text-sm text-muted">{dictionary.header.authDescription}</p>}
           </div>
           <Button
             type="button"
@@ -231,6 +234,7 @@ export function Header({ locale, dictionary }: HeaderProps) {
 
         {user ? (
           <div className="space-y-3">
+            <p className="text-xs">{dictionary.header.authSignedInAs}</p>
             <div className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2.5">
               {avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -238,6 +242,7 @@ export function Header({ locale, dictionary }: HeaderProps) {
                   src={avatarUrl}
                   alt={nickname || "user"}
                   className="h-9 w-9 rounded-full object-cover"
+                  loading="lazy"
                 />
               ) : (
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-sm font-semibold text-foreground">
@@ -248,9 +253,7 @@ export function Header({ locale, dictionary }: HeaderProps) {
                 <p className="truncate text-sm font-semibold text-foreground">
                   {nickname || user.email}
                 </p>
-                <p className="truncate text-xs text-muted">
-                  {dictionary.header.authSignedInAs} {user.email}
-                </p>
+                <p className="truncate text-xs text-muted">{user.email}</p>
               </div>
             </div>
             <Button
@@ -261,8 +264,8 @@ export function Header({ locale, dictionary }: HeaderProps) {
               aria-label={dictionary.header.authSignOut}
               title={dictionary.header.authSignOut}
             >
+              <span>{dictionary.header.authSignOut}</span>
               <LogoutIcon />
-              <span className="sr-only">{dictionary.header.authSignOut}</span>
             </Button>
           </div>
         ) : !isAuthAvailable ? (

@@ -11,6 +11,7 @@ export type Project = {
   id?: string;
   slug: string;
   title: string;
+  homeSummary: string;
   summary: string;
   thumbnail: string;
   role: string;
@@ -30,7 +31,9 @@ export type AdminProject = {
   id: string;
   slug: string;
   title: string;
+  homeSummary: string;
   summary: string;
+  syncSlugWithTitle: boolean;
   useSummaryEditor: boolean;
   thumbnail: string;
   role: string;
@@ -49,7 +52,9 @@ export type AdminProject = {
 export type AdminProjectInput = {
   slug: string;
   title: string;
+  homeSummary: string;
   summary: string;
+  syncSlugWithTitle: boolean;
   useSummaryEditor: boolean;
   thumbnail: string;
   role: string;

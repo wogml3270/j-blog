@@ -109,7 +109,10 @@ function parseBody(body: unknown): AdminProjectInput | null {
   return {
     slug,
     title: source.title.trim(),
+    homeSummary:
+      typeof source.homeSummary === "string" ? source.homeSummary.trim() : source.summary.trim(),
     summary: source.summary.trim(),
+    syncSlugWithTitle: Boolean(source.syncSlugWithTitle),
     useSummaryEditor: Boolean(source.useSummaryEditor),
     thumbnail: source.thumbnail.trim(),
     role: source.role.trim(),

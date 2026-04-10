@@ -14,7 +14,7 @@ import { RowsIcon } from "@/components/ui/icons/rows-icon";
 import { TrashIcon } from "@/components/ui/icons/trash-icon";
 import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { ToastMarkdownViewer } from "@/components/ui/toast-markdown-viewer";
+import { uploadAdminMediaFile } from "@/lib/admin/upload-client";
 import { ADMIN_PAGE_SIZE_OPTIONS } from "@/lib/utils/pagination";
 import { cn } from "@/lib/utils/cn";
 import { normalizeSlug } from "@/lib/utils/slug";
@@ -33,13 +33,14 @@ const EMPTY_FORM: PostFormState = {
   status: "published",
   featured: false,
   publishedAt: "",
+  scheduledPublishAt: "",
   tags: [],
   tagInput: "",
   bodyMarkdown: "",
 };
 
-// 날짜 값을 date input 포맷으로 안전하게 변환한다.
-function toDateInputValue(value: string | null): string {
+// UTC 시각을 datetime-local 입력 포맷으로 안전하게 변환한다.
+function toDateTimeLocalValue(value: string | null): string {
   if (!value) {
     return "";
   }
@@ -50,7 +51,8 @@ function toDateInputValue(value: string | null): string {
     return "";
   }
 
-  return date.toISOString().slice(0, 10);
+  const localTime = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localTime.toISOString().slice(0, 16);
 }
 
 // 편집 폼 초기값은 API 응답 객체를 기준으로 구성한다.
@@ -62,7 +64,8 @@ function toFormState(post: AdminPost): PostFormState {
     thumbnail: post.thumbnail ?? "",
     status: post.status,
     featured: post.featured,
-    publishedAt: toDateInputValue(post.publishedAt),
+    publishedAt: post.publishedAt ?? "",
+    scheduledPublishAt: toDateTimeLocalValue(post.scheduledPublishAt),
     tags: [...post.tags],
     tagInput: "",
     bodyMarkdown: post.bodyMarkdown,
@@ -92,6 +95,40 @@ function toDisplayDate(value: string | null): string {
   }).format(date);
 }
 
+function toDisplayDateTime(value: string | null): string {
+  if (!value) {
+    return "자동 설정";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "자동 설정";
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function toUtcIsoFromDateTimeLocal(value: string): string | null {
+  if (!value.trim()) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.toISOString();
+}
+
 function statusBadge(status: PublishStatus): string {
   return status === "published"
     ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
@@ -100,15 +137,6 @@ function statusBadge(status: PublishStatus): string {
 
 function toStatusLabel(status: PublishStatus): string {
   return status === "published" ? "공개" : "비공개";
-}
-
-// 게시일 입력의 기본값으로 사용할 오늘 날짜(YYYY-MM-DD)를 만든다.
-function getTodayDateInputValue(): string {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 const BLOG_FILTER_OPTIONS: Array<{ value: AdminListFilter; label: string }> = [
@@ -142,14 +170,14 @@ export function BlogManager({
   const [form, setForm] = useState<PostFormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [thumbnailMode, setThumbnailMode] = useState<ThumbnailInputMode>("url");
-  const [useMarkdownEditor, setUseMarkdownEditor] = useState(false);
   const [syncSlugWithTitle, setSyncSlugWithTitle] = useState(true);
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [localThumbnailPreview, setLocalThumbnailPreview] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const hasAppliedInitialSelection = useRef(false);
+  const thumbnailUploadRequestRef = useRef(0);
 
   const openDetail = useAdminDetailStore((state) => state.open);
   const closeDetail = useAdminDetailStore((state) => state.close);
@@ -194,10 +222,15 @@ export function BlogManager({
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
-    setUseMarkdownEditor(false);
     setSyncSlugWithTitle(true);
     setThumbnailMode("url");
-    setThumbnailFile(null);
+    setLocalThumbnailPreview((prev) => {
+      if (prev) {
+        URL.revokeObjectURL(prev);
+      }
+
+      return null;
+    });
     setMessage(null);
     setDrawerOpen(true);
     closeDetail("blog");
@@ -208,10 +241,15 @@ export function BlogManager({
     (post: AdminPost) => {
       setEditingId(post.id);
       setForm(toFormState(post));
-      setUseMarkdownEditor(post.useMarkdownEditor);
-      setSyncSlugWithTitle(false);
+      setSyncSlugWithTitle(post.syncSlugWithTitle);
       setThumbnailMode("url");
-      setThumbnailFile(null);
+      setLocalThumbnailPreview((prev) => {
+        if (prev) {
+          URL.revokeObjectURL(prev);
+        }
+
+        return null;
+      });
       setMessage(null);
       setDrawerOpen(true);
       openDetail("blog", post.id);
@@ -298,45 +336,68 @@ export function BlogManager({
     }));
   };
 
-  const onUploadThumbnail = async () => {
-    if (!thumbnailFile) {
-      setMessage("업로드할 이미지 파일을 선택해주세요.");
-      return;
-    }
-
+  // 파일 선택 즉시 로컬 미리보기 + 업로드를 수행한다.
+  const uploadThumbnailImmediately = async (file: File) => {
+    const requestId = ++thumbnailUploadRequestRef.current;
     setIsUploadingThumbnail(true);
     setMessage(null);
 
     try {
-      const formData = new FormData();
-      formData.append("file", thumbnailFile);
-      formData.append("scope", "posts");
+      const payload = await uploadAdminMediaFile(file, "blog");
 
-      const response = await fetch("/api/admin/media/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? "썸네일 업로드에 실패했습니다.");
+      if (requestId !== thumbnailUploadRequestRef.current) {
+        return;
       }
-
-      const payload = (await response.json()) as { url?: string };
 
       if (!payload.url) {
         throw new Error("업로드된 썸네일 URL을 확인할 수 없습니다.");
       }
 
       setForm((prev) => ({ ...prev, thumbnail: payload.url ?? "" }));
-      setThumbnailFile(null);
+      setLocalThumbnailPreview((prev) => {
+        if (prev) {
+          URL.revokeObjectURL(prev);
+        }
+
+        return null;
+      });
       setThumbnailMode("url");
       setMessage("썸네일 업로드가 완료되었습니다.");
     } catch (error) {
+      if (requestId !== thumbnailUploadRequestRef.current) {
+        return;
+      }
+
       setMessage(error instanceof Error ? error.message : "썸네일 업로드 중 오류가 발생했습니다.");
     } finally {
-      setIsUploadingThumbnail(false);
+      if (requestId === thumbnailUploadRequestRef.current) {
+        setIsUploadingThumbnail(false);
+      }
     }
+  };
+
+  const onSelectThumbnailFile = (file: File | null) => {
+    if (!file) {
+      setLocalThumbnailPreview((prev) => {
+        if (prev) {
+          URL.revokeObjectURL(prev);
+        }
+
+        return null;
+      });
+      return;
+    }
+
+    const nextPreview = URL.createObjectURL(file);
+
+    setLocalThumbnailPreview((prev) => {
+      if (prev) {
+        URL.revokeObjectURL(prev);
+      }
+
+      return nextPreview;
+    });
+    void uploadThumbnailImmediately(file);
   };
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -363,11 +424,14 @@ export function BlogManager({
         description: form.description,
         thumbnail: form.thumbnail.trim() || null,
         featured: form.status === "published" ? form.featured : false,
+        syncSlugWithTitle,
         status: form.status,
         publishedAt: form.publishedAt || null,
+        scheduledPublishAt:
+          form.status === "published" ? toUtcIsoFromDateTimeLocal(form.scheduledPublishAt) : null,
         tags: normalizeTagList(form.tags),
         bodyMarkdown: form.bodyMarkdown,
-        useMarkdownEditor,
+        useMarkdownEditor: true,
       };
 
       const method = editingId ? "PUT" : "POST";
@@ -388,10 +452,15 @@ export function BlogManager({
       setDrawerOpen(false);
       setEditingId(null);
       setForm(EMPTY_FORM);
-      setUseMarkdownEditor(false);
       setSyncSlugWithTitle(true);
       setThumbnailMode("url");
-      setThumbnailFile(null);
+      setLocalThumbnailPreview((prev) => {
+        if (prev) {
+          URL.revokeObjectURL(prev);
+        }
+
+        return null;
+      });
       closeDetail("blog");
       syncQuery({ id: null });
     } catch (error) {
@@ -424,7 +493,6 @@ export function BlogManager({
         setDrawerOpen(false);
         setEditingId(null);
         setForm(EMPTY_FORM);
-        setUseMarkdownEditor(false);
         closeDetail("blog");
       }
       syncQuery({ id: null });
@@ -493,6 +561,14 @@ export function BlogManager({
 
     void loadPosts(1, 1, savedPageSize, filter);
   }, [filter, loadPosts, pageSize, savedPageSize, searchParams]);
+
+  useEffect(() => {
+    return () => {
+      if (localThumbnailPreview) {
+        URL.revokeObjectURL(localThumbnailPreview);
+      }
+    };
+  }, [localThumbnailPreview]);
 
   useEffect(() => {
     // 대시보드 딥링크(id 쿼리) 진입 시 초기 대상 글을 자동으로 연다.
@@ -716,7 +792,7 @@ export function BlogManager({
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium uppercase tracking-wide text-muted">설명</label>
+            <label className="text-xs font-medium uppercase tracking-wide text-muted">부제목</label>
             <Input
               value={form.description}
               onChange={(event) =>
@@ -731,7 +807,9 @@ export function BlogManager({
           </div>
 
           <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">썸네일 (선택)</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">
+              썸네일 업로드(선택)
+            </p>
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -767,26 +845,22 @@ export function BlogManager({
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(event) => setThumbnailFile(event.target.files?.[0] ?? null)}
+                  onChange={(event) => onSelectThumbnailFile(event.target.files?.[0] ?? null)}
                   className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
                 />
-                <Button
-                  type="button"
-                  onClick={onUploadThumbnail}
-                  disabled={isUploadingThumbnail || !thumbnailFile}
-                >
-                  {isUploadingThumbnail ? "업로드 중..." : "업로드 후 적용"}
-                </Button>
+                <p className="text-xs text-muted">
+                  파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.
+                </p>
               </div>
             )}
             <p className="truncate text-xs text-muted">
-              현재 썸네일: {form.thumbnail || "설정 안 함"}
+              현재 썸네일: {isUploadingThumbnail ? "업로드 중..." : form.thumbnail || "설정 안 함"}
             </p>
-            {form.thumbnail ? (
+            {localThumbnailPreview || form.thumbnail ? (
               <div className="overflow-hidden rounded-md border border-border bg-surface">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={form.thumbnail}
+                  src={localThumbnailPreview || form.thumbnail}
                   alt="썸네일 미리보기"
                   className="h-40 w-full object-cover"
                 />
@@ -796,68 +870,106 @@ export function BlogManager({
             )}
           </SurfaceCard>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <StatusRadioGroup
-              legend="공개 상태"
-              name="post-status"
-              value={form.status}
-              options={[
-                { value: "published", label: "공개" },
-                { value: "draft", label: "비공개" },
-              ]}
-              onChange={(value) =>
-                setForm((prev) => {
-                  const nextStatus = value as PublishStatus;
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <StatusRadioGroup
+                legend="공개 상태"
+                name="post-status"
+                value={form.status}
+                options={[
+                  { value: "published", label: "공개" },
+                  { value: "draft", label: "비공개" },
+                ]}
+                onChange={(value) =>
+                  setForm((prev) => {
+                    const nextStatus = value as PublishStatus;
 
-                  if (nextStatus === "draft") {
-                    return { ...prev, status: nextStatus, featured: false };
-                  }
+                    if (nextStatus === "draft") {
+                      return {
+                        ...prev,
+                        status: nextStatus,
+                        featured: false,
+                        scheduledPublishAt: "",
+                      };
+                    }
 
-                  return {
-                    ...prev,
-                    status: nextStatus,
-                    publishedAt: prev.publishedAt || getTodayDateInputValue(),
-                  };
-                })
-              }
-              className="rounded-md px-3 py-2"
-            />
-            <div className="space-y-1">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted">
-                게시일
-              </label>
-              <Input
-                type="date"
-                value={form.publishedAt}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    publishedAt: event.target.value,
-                  }))
+                    return {
+                      ...prev,
+                      status: nextStatus,
+                    };
+                  })
                 }
-                disabled={form.status !== "published"}
+                className="rounded-md px-3 py-2"
               />
-              <p className="text-[11px] text-muted">
-                비공개 상태에서는 게시일이 반영되지 않습니다.
-              </p>
+
+              {form.status === "published" ? (
+                <label className="inline-flex h-12 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.featured}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        featured: event.target.checked,
+                      }))
+                    }
+                  />
+                  메인 페이지 노출
+                </label>
+              ) : null}
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted">
+                  실제 게시일
+                </label>
+                <div>
+                  <Input
+                    value={toDisplayDateTime(form.publishedAt || null)}
+                    readOnly
+                    className={cn("lg:w-1/2!")}
+                  />
+                  <p className="text-[11px] text-muted">
+                    최초 공개 시점이 자동 저장되며 이후 수정 시 유지됩니다.
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted">
+                  예약 발행
+                </label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="datetime-local"
+                    value={form.scheduledPublishAt}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        scheduledPublishAt: event.target.value,
+                      }))
+                    }
+                    disabled={form.status !== "published"}
+                    className={cn("lg:w-1/2!")}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        scheduledPublishAt: "",
+                      }))
+                    }
+                    disabled={form.status !== "published" || !form.scheduledPublishAt}
+                  >
+                    해제
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
-
-          {form.status === "published" ? (
-            <label className="inline-flex h-12 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-              <input
-                type="checkbox"
-                checked={form.featured}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    featured: event.target.checked,
-                  }))
-                }
-              />
-              메인 페이지 노출
-            </label>
-          ) : null}
 
           <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">태그</p>
@@ -906,28 +1018,10 @@ export function BlogManager({
             label="본문"
             value={form.bodyMarkdown}
             onChange={(value) => setForm((prev) => ({ ...prev, bodyMarkdown: value }))}
-            useEditor={useMarkdownEditor}
-            onToggleEditor={setUseMarkdownEditor}
             placeholder="Markdown 본문"
             minHeight={320}
             required
           />
-
-          {useMarkdownEditor ? (
-            <p className="text-xs text-muted">
-              에디터 사용 시 Toast UI 미리보기 탭의 결과를 기준으로 확인해주세요.
-            </p>
-          ) : (
-            <div className="rounded-xl border border-border bg-background p-3">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
-                미리보기
-              </p>
-              <ToastMarkdownViewer
-                markdown={form.bodyMarkdown}
-                className="max-h-[280px] overflow-auto"
-              />
-            </div>
-          )}
 
           <div className="flex gap-2">
             <Button type="submit" className="flex-1" disabled={isPending}>

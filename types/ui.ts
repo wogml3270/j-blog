@@ -10,6 +10,7 @@ import type {
   HomeHighlightSourceOption,
 } from "@/types/home";
 import type { AdminProject } from "@/types/projects";
+import type { ProfileContent } from "@/types/profile";
 
 export type HeaderProps = {
   locale: Locale;
@@ -144,6 +145,7 @@ export type PostFormState = {
   status: PublishStatus;
   featured: boolean;
   publishedAt: string;
+  scheduledPublishAt: string;
   tags: string[];
   tagInput: string;
   bodyMarkdown: string;
@@ -165,6 +167,7 @@ export type SortableLinkItem = {
 export type ProjectFormState = {
   slug: string;
   title: string;
+  homeSummary: string;
   summary: string;
   thumbnail: string;
   role: string;
@@ -209,4 +212,13 @@ export type HomeHeroSliderProps = {
   slides: HomeHighlightResolvedSlide[];
   viewProjectsLabel: string;
   viewBlogLabel: string;
+};
+
+export type InteractiveAboutRevealProps = {
+  profile: ProfileContent;
+  labels: {
+    aboutBadge: string;
+    headline: string;
+    techStack: string;
+  };
 };

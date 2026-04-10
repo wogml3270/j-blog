@@ -98,27 +98,29 @@ const profile = {
   title: "Frontend Developer (3년차)",
   summary:
     "사용자 경험과 유지보수성을 함께 개선하는 프론트엔드 개발자입니다. 제품의 목적과 사용자 맥락을 이해하고, 안정적인 UI 아키텍처를 만드는 데 집중합니다.",
-  about_intro_description_ko:
-    "사용자 중심 UI 구현과 유지보수 가능한 구조 설계를 중요하게 생각합니다.",
-  tech_stack: [
-    "TypeScript",
-    "React",
-    "Next.js",
-    "Tailwind CSS",
-    "TanStack Query",
-    "Zustand",
-    "Vitest",
-    "Playwright",
+  about_photo_url: "/profile/default-photo.svg",
+  about_tech_items: [
+    {
+      name: "TypeScript",
+      description: "도메인 타입을 먼저 정의해 런타임 오류를 빌드 타임에 줄입니다.",
+      logoUrl: "https://cdn.simpleicons.org/typescript/3178C6",
+    },
+    {
+      name: "React",
+      description: "컴포넌트 중심 UI 설계와 상태 분리를 구조적으로 관리합니다.",
+      logoUrl: "https://cdn.simpleicons.org/react/61DAFB",
+    },
+    {
+      name: "Next.js",
+      description: "App Router 기반 SSR/SEO 최적화와 서버-클라이언트 경계를 설계합니다.",
+      logoUrl: "https://cdn.simpleicons.org/nextdotjs/FFFFFF",
+    },
+    {
+      name: "Tailwind CSS",
+      description: "디자인 토큰과 유틸리티 패턴으로 빠르게 일관된 화면을 구현합니다.",
+      logoUrl: "https://cdn.simpleicons.org/tailwindcss/06B6D4",
+    },
   ],
-  about_experience:
-    "3년 동안 B2B SaaS와 컨슈머 서비스를 모두 경험하며, 데이터 밀집형 대시보드와 콘텐츠 플랫폼의 UI를 설계하고 운영했습니다.",
-  strengths: [
-    "도메인 요구사항을 컴포넌트/상태 구조로 명확히 분해",
-    "디자인 시스템 기반으로 일관된 화면 품질 유지",
-    "성능/접근성/SEO를 개발 초기부터 기본값으로 반영",
-  ],
-  work_style:
-    "기획-디자인-백엔드와 빠르게 합의할 수 있는 문서화와 커뮤니케이션을 중시합니다. 작은 단위로 배포하고 지표로 검증하는 방식을 선호합니다.",
   status: "published",
 };
 

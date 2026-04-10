@@ -34,6 +34,7 @@ export type BlogPostDetail = BlogPostSummary & {
   toc: TocItem[];
   status?: PublishStatus;
   publishedAt?: string | null;
+  scheduledPublishAt?: string | null;
   updatedAt?: string;
 };
 
@@ -49,11 +50,13 @@ export type AdminPost = {
   description: string;
   thumbnail?: string | null;
   featured: boolean;
+  syncSlugWithTitle: boolean;
   bodyMarkdown: string;
   useMarkdownEditor: boolean;
   tags: string[];
   status: PublishStatus;
   publishedAt: string | null;
+  scheduledPublishAt: string | null;
   updatedAt: string;
 };
 
@@ -63,10 +66,12 @@ export type AdminPostInput = {
   description: string;
   thumbnail?: string | null;
   featured: boolean;
+  syncSlugWithTitle: boolean;
   bodyMarkdown: string;
   useMarkdownEditor: boolean;
   status: PublishStatus;
   publishedAt?: string | null;
+  scheduledPublishAt?: string | null;
   tags: string[];
 };
 

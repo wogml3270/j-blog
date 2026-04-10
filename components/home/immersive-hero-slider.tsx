@@ -140,7 +140,7 @@ export function ImmersiveHeroSlider({
                   <div className="absolute inset-0 bg-linear-to-t from-black/55 via-transparent to-black/16" />
                 </div>
 
-                <div className="relative z-10 mx-auto flex h-full w-full max-w-[1240px] items-end px-5 pb-28 pt-18 sm:px-8 sm:pb-34">
+                <div className="relative z-10 mx-auto flex h-full w-full max-w-[1240px] items-center px-5 pb-16 pt-20 sm:px-8 sm:pb-20 lg:pb-24">
                   <div className="home-hero-copy max-w-[min(74ch,78vw)] space-y-4 text-white">
                     <p
                       style={{ "--copy-delay": "120ms" } as CSSProperties}
@@ -160,7 +160,7 @@ export function ImmersiveHeroSlider({
                     >
                       {slide.description}
                     </p>
-                    <div style={{ "--copy-delay": "560ms" } as CSSProperties} className="pt-1">
+                    <div style={{ "--copy-delay": "560ms" } as CSSProperties} className="pt-3">
                       <Link
                         href={slide.href}
                         className={buttonStyles({

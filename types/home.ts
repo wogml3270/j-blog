@@ -8,9 +8,6 @@ export type HomeHighlight = {
   sourceId: string;
   orderIndex: number;
   isActive: boolean;
-  overrideTitle: string | null;
-  overrideDescription: string | null;
-  overrideImageUrl: string | null;
   overrideCtaLabel: string | null;
   createdAt: string;
   updatedAt: string;
@@ -46,8 +43,5 @@ export type HomeHighlightInput = {
   sourceId: string;
   orderIndex: number;
   isActive: boolean;
-  overrideTitle?: string | null;
-  overrideDescription?: string | null;
-  overrideImageUrl?: string | null;
   overrideCtaLabel?: string | null;
 };

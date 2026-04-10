@@ -5,7 +5,7 @@ import { useEffect } from "react";
 const FALLBACK_HEADER_HEIGHT = 64;
 const FALLBACK_FOOTER_HEIGHT = 96;
 
-// 헤더/푸터 실측 높이를 CSS 변수로 동기화해 홈 히어로의 1화면 레이아웃을 보정한다.
+// 헤더/푸터 실측 높이를 CSS 변수로 동기화해 홈 히어로의 1화면 레이아웃을 보정
 export function SiteViewportSync() {
   useEffect(() => {
     const root = document.documentElement;

@@ -22,9 +22,6 @@ type HomeHighlightRow = {
   source_id: string;
   order_index: number;
   is_active: boolean;
-  override_title: string | null;
-  override_description: string | null;
-  override_image_url: string | null;
   override_cta_label: string | null;
   created_at: string;
   updated_at: string;
@@ -45,6 +42,7 @@ type HighlightProjectRow = {
   id: string;
   slug: string;
   title: string;
+  home_summary: string | null;
   summary: string;
   thumbnail: string;
   status: PublishStatus;
@@ -58,9 +56,24 @@ type RepoResult<T> = {
 };
 
 const HOME_HIGHLIGHT_SELECT_FIELDS =
-  "id,source_type,source_id,order_index,is_active,override_title,override_description,override_image_url,override_cta_label,created_at,updated_at";
+  "id,source_type,source_id,order_index,is_active,override_cta_label,created_at,updated_at";
 
 const FALLBACK_SLIDE_IMAGE = "/blog/default-thumbnail.svg";
+const MAX_HERO_DESCRIPTION_LENGTH = 170;
+
+function toHeroDescription(value: string | null | undefined): string {
+  const normalized = (value ?? "").replace(/\s+/g, " ").trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  if (normalized.length <= MAX_HERO_DESCRIPTION_LENGTH) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, MAX_HERO_DESCRIPTION_LENGTH).trimEnd()}...`;
+}
 
 function rowToHighlight(row: HomeHighlightRow): HomeHighlight {
   return {
@@ -69,9 +82,6 @@ function rowToHighlight(row: HomeHighlightRow): HomeHighlight {
     sourceId: row.source_id,
     orderIndex: row.order_index,
     isActive: row.is_active,
-    overrideTitle: row.override_title,
-    overrideDescription: row.override_description,
-    overrideImageUrl: row.override_image_url,
     overrideCtaLabel: row.override_cta_label,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -92,7 +102,7 @@ function toSourceOptionFromPost(row: HighlightPostRow): HomeHighlightSourceOptio
     id: row.id,
     sourceType: "post",
     title: row.title,
-    description: row.description,
+    description: toHeroDescription(row.description),
     slug: row.slug,
     imageUrl: row.thumbnail,
     status: row.status,
@@ -106,7 +116,7 @@ function toSourceOptionFromProject(row: HighlightProjectRow): HomeHighlightSourc
     id: row.id,
     sourceType: "project",
     title: row.title,
-    description: stripMarkdownToPlainText(row.summary),
+    description: toHeroDescription(row.home_summary?.trim() || stripMarkdownToPlainText(row.summary)),
     slug: row.slug,
     imageUrl: row.thumbnail,
     status: row.status,
@@ -131,7 +141,7 @@ export async function getAdminHomeHighlightSources(): Promise<HomeHighlightSourc
       .order("updated_at", { ascending: false }),
     service
       .from("projects")
-      .select("id,slug,title,summary,thumbnail,status,featured,updated_at")
+      .select("id,slug,title,home_summary,summary,thumbnail,status,featured,updated_at")
       .eq("status", "published")
       .order("featured", { ascending: false })
       .order("updated_at", { ascending: false }),
@@ -197,9 +207,6 @@ export async function replaceAdminHomeHighlights(
         ? Math.max(0, Math.floor(item.orderIndex))
         : index,
       is_active: Boolean(item.isActive),
-      override_title: normalizeText(item.overrideTitle),
-      override_description: normalizeText(item.overrideDescription),
-      override_image_url: normalizeText(item.overrideImageUrl),
       override_cta_label: normalizeText(item.overrideCtaLabel),
     }))
     .sort((a, b) => a.order_index - b.order_index)
@@ -252,7 +259,7 @@ async function getFallbackSlides(locale: Locale): Promise<HomeHighlightResolvedS
     sourceId: project.id ?? project.slug,
     orderIndex: index,
     title: project.title,
-    description: stripMarkdownToPlainText(project.summary),
+    description: toHeroDescription(project.homeSummary || stripMarkdownToPlainText(project.summary)),
     imageUrl: project.thumbnail || FALLBACK_SLIDE_IMAGE,
     href: withLocalePath(locale, `/projects/${encodeSlugSegment(project.slug)}`),
     ctaLabel: null,
@@ -265,7 +272,7 @@ async function getFallbackSlides(locale: Locale): Promise<HomeHighlightResolvedS
     sourceId: post.id ?? post.slug,
     orderIndex: projectSlides.length + index,
     title: post.title,
-    description: post.description,
+    description: toHeroDescription(post.description),
     imageUrl: post.thumbnail || FALLBACK_SLIDE_IMAGE,
     href: withLocalePath(locale, `/blog/${encodeSlugSegment(post.slug)}`),
     ctaLabel: null,
@@ -287,7 +294,7 @@ async function getFallbackSlides(locale: Locale): Promise<HomeHighlightResolvedS
       sourceId: "fallback-profile",
       orderIndex: 0,
       title: profile.name,
-      description: profile.summary,
+      description: toHeroDescription(profile.summary),
       imageUrl: profile.aboutPhotoUrl || DEFAULT_ABOUT_PHOTO_URL,
       href: withLocalePath(locale, "/about"),
       ctaLabel: null,
@@ -335,7 +342,7 @@ export async function getHomeHighlightSlides(
     projectIds.length > 0
       ? service
           .from("projects")
-          .select("id,slug,title,summary,thumbnail,status,featured,updated_at")
+          .select("id,slug,title,home_summary,summary,thumbnail,status,featured,updated_at")
           .eq("status", "published")
           .in("id", projectIds)
       : Promise.resolve({ data: [] as HighlightProjectRow[], error: null }),
@@ -367,9 +374,9 @@ export async function getHomeHighlightSlides(
         sourceType: "post",
         sourceId: item.sourceId,
         orderIndex: item.orderIndex,
-        title: item.overrideTitle?.trim() || source.title,
-        description: item.overrideDescription?.trim() || source.description,
-        imageUrl: item.overrideImageUrl?.trim() || source.thumbnail || FALLBACK_SLIDE_IMAGE,
+        title: source.title,
+        description: toHeroDescription(source.description),
+        imageUrl: source.thumbnail || FALLBACK_SLIDE_IMAGE,
         href: withLocalePath(locale, `/blog/${encodeSlugSegment(source.slug)}`),
         ctaLabel: item.overrideCtaLabel?.trim() || null,
         locale,
@@ -388,9 +395,9 @@ export async function getHomeHighlightSlides(
       sourceType: "project",
       sourceId: item.sourceId,
       orderIndex: item.orderIndex,
-      title: item.overrideTitle?.trim() || source.title,
-      description: item.overrideDescription?.trim() || stripMarkdownToPlainText(source.summary),
-      imageUrl: item.overrideImageUrl?.trim() || source.thumbnail || FALLBACK_SLIDE_IMAGE,
+      title: source.title,
+      description: toHeroDescription(source.home_summary?.trim() || stripMarkdownToPlainText(source.summary)),
+      imageUrl: source.thumbnail || FALLBACK_SLIDE_IMAGE,
       href: withLocalePath(locale, `/projects/${encodeSlugSegment(source.slug)}`),
       ctaLabel: item.overrideCtaLabel?.trim() || null,
       locale,
