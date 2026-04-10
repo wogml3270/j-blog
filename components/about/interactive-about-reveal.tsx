@@ -93,13 +93,10 @@ export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutReve
           className={cn(
             "cursor-pointer group z-20 aspect-square w-52 overflow-hidden rounded-full bg-surface/95 p-1.5 shadow-2xl transition-all duration-1000 ease-out sm:w-60 lg:w-72",
             profileButtonPosition.base,
-            isExpanded
-              ? cn(profileButtonPosition.expanded, "scale-110 lg:scale-100")
-              : "scale-100 hover:shadow-black/20",
+            isExpanded ? cn(profileButtonPosition.expanded, "scale-110 lg:scale-100") : "scale-100",
           )}
         >
-          <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/55" />
-          <div className="relative h-full w-full overflow-hidden rounded-full border border-border/45 bg-background/75">
+          <div className="hover:animate-pulse relative h-full w-full overflow-hidden rounded-full border border-border/45 bg-background/75">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={profile.aboutPhotoUrl}
