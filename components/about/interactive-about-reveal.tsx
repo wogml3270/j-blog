@@ -18,7 +18,7 @@ export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutReve
 
   return (
     <section className="">
-      <div className="relative min-h-[var(--home-hero-height)] px-4 py-6 sm:px-6 sm:py-8">
+      <div className="relative min-h-[--home-hero-height] px-4 py-6 sm:px-6 sm:py-8">
         <article
           className={cn(
             "w-full rounded-3xl border border-border/70 bg-background/70 p-4 pt-72 shadow-lg backdrop-blur-sm transition-all duration-1000 ease-out sm:p-5 sm:pt-80 lg:max-w-[58%] lg:pt-5",
