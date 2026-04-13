@@ -1,5 +1,4 @@
 import type { ProfileContent } from "@/types/profile";
-import type { PublishStatus } from "@/types/db";
 import type { Locale } from "@/lib/i18n/config";
 import { DEFAULT_ABOUT_PHOTO_URL, DEFAULT_ABOUT_TECH_ITEMS, getHomeIntro } from "@/lib/site/profile";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
@@ -11,7 +10,6 @@ interface ProfileRow {
   summary: string;
   about_photo_url: string | null;
   about_tech_items: unknown;
-  status: PublishStatus;
   updated_at: string;
 }
 
@@ -25,7 +23,6 @@ export type AdminAboutInput = {
     description: string;
     logoUrl: string;
   }>;
-  status: PublishStatus;
 };
 
 type RepoResult<T> = {
@@ -33,8 +30,7 @@ type RepoResult<T> = {
   error: string | null;
 };
 
-const PROFILE_SELECT_FIELDS =
-  "id,name,title,summary,about_photo_url,about_tech_items,status,updated_at";
+const PROFILE_SELECT_FIELDS = "id,name,title,summary,about_photo_url,about_tech_items,updated_at";
 
 function toAboutTechItems(
   value: unknown,
@@ -83,13 +79,8 @@ function rowToProfile(row: ProfileRow): ProfileContent {
     summary: row.summary,
     aboutPhotoUrl: row.about_photo_url?.trim() || DEFAULT_ABOUT_PHOTO_URL,
     aboutTechItems: aboutTechItems.length > 0 ? aboutTechItems : DEFAULT_ABOUT_TECH_ITEMS,
-    status: row.status,
     updatedAt: row.updated_at,
   };
-}
-
-function normalizeStatus(value: PublishStatus): PublishStatus {
-  return value === "published" ? "published" : "draft";
 }
 
 function fallbackProfile(locale: Locale): ProfileContent {
@@ -102,7 +93,6 @@ function fallbackProfile(locale: Locale): ProfileContent {
     summary: home.summary,
     aboutPhotoUrl: DEFAULT_ABOUT_PHOTO_URL,
     aboutTechItems: DEFAULT_ABOUT_TECH_ITEMS,
-    status: "published",
     updatedAt: new Date().toISOString(),
   };
 }
@@ -118,7 +108,6 @@ export async function getPublishedProfileContent(locale: Locale): Promise<Profil
     .from("profile_content")
     .select(PROFILE_SELECT_FIELDS)
     .eq("id", 1)
-    .eq("status", "published")
     .maybeSingle<ProfileRow>();
 
   if (error || !data) {
@@ -168,7 +157,6 @@ export async function upsertAdminAboutContent(
       summary: input.summary,
       about_photo_url: input.aboutPhotoUrl,
       about_tech_items: input.aboutTechItems,
-      status: normalizeStatus(input.status),
     },
     { onConflict: "id" },
   );

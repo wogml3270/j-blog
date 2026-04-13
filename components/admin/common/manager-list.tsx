@@ -25,7 +25,7 @@ export function ManagerListRow({ onClick, children, className }: ManagerListRowP
         type="button"
         onClick={onClick}
         className={cn(
-          "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-foreground/5",
+          "flex w-full justify-center items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-foreground/5 cursor-pointer",
           className,
         )}
       >

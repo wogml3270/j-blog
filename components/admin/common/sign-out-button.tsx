@@ -8,12 +8,17 @@ import { cn } from "@/lib/utils/cn";
 
 type SignOutButtonProps = {
   className?: string;
+  onBeforeSignOut?: () => boolean;
 };
 
-export function SignOutButton({ className }: SignOutButtonProps) {
+export function SignOutButton({ className, onBeforeSignOut }: SignOutButtonProps) {
   const [pending, setPending] = useState(false);
 
   const onSignOut = async () => {
+    if (onBeforeSignOut && !onBeforeSignOut()) {
+      return;
+    }
+
     try {
       setPending(true);
       const supabase = getSupabaseBrowserClient();

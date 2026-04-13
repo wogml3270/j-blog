@@ -72,7 +72,7 @@ export function ToastMarkdownEditor({
       const instance = new Editor({
         el: containerRef.current,
         initialEditType: "markdown",
-        // 미리보기는 Toast UI 기본 렌더를 그대로 신뢰하고 탭 형태로 노출한다.
+        autofocus: false,
         previewStyle: "tab",
         hideModeSwitch: true,
         usageStatistics: false,

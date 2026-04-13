@@ -19,13 +19,13 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ManagerShell } from "@/components/admin/common/manager-shell";
-import { StatusRadioGroup } from "@/components/admin/common/status-radio-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { uploadAdminMediaFile } from "@/lib/admin/upload-client";
 import { cn } from "@/lib/utils/cn";
-import type { PublishStatus } from "@/types/db";
+import { useBeforeUnloadUnsavedChanges } from "@/lib/utils/unsaved-changes";
+import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
 import type { ProfileContent } from "@/types/profile";
 import type { ThumbnailInputMode } from "@/types/ui";
 
@@ -49,7 +49,6 @@ type AboutFormState = {
   techNameInput: string;
   techDescriptionInput: string;
   techLogoUrlInput: string;
-  status: PublishStatus;
 };
 
 type AboutTechLogoInputMode = ThumbnailInputMode | "svg";
@@ -69,7 +68,6 @@ function toFormState(profile: ProfileContent): AboutFormState {
     techNameInput: "",
     techDescriptionInput: "",
     techLogoUrlInput: "",
-    status: profile.status,
   };
 }
 
@@ -84,18 +82,7 @@ function serializeForm(form: AboutFormState): string {
       description: item.description.trim(),
       logoUrl: item.logoUrl.trim(),
     })),
-    status: form.status,
   });
-}
-
-function statusBadge(status: PublishStatus): string {
-  return status === "published"
-    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-    : "border-slate-500/40 bg-slate-500/10 text-slate-700 dark:text-slate-300";
-}
-
-function toStatusLabel(status: PublishStatus): string {
-  return status === "published" ? "공개" : "비공개";
 }
 
 function reorderById<T extends { id: string }>(items: T[], event: DragEndEvent): T[] {
@@ -113,6 +100,47 @@ function reorderById<T extends { id: string }>(items: T[], event: DragEndEvent):
   }
 
   return arrayMove(items, oldIndex, newIndex);
+}
+
+function validateSvgMarkup(markup: string): { valid: boolean; message?: string } {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(markup, "image/svg+xml");
+
+  if (doc.querySelector("parsererror")) {
+    return { valid: false, message: "SVG 문법이 올바르지 않습니다." };
+  }
+
+  const root = doc.documentElement;
+  if (!root || root.nodeName.toLowerCase() !== "svg") {
+    return { valid: false, message: "최상위 태그는 <svg>여야 합니다." };
+  }
+
+  if (doc.querySelector("script")) {
+    return { valid: false, message: "보안을 위해 script 태그는 허용되지 않습니다." };
+  }
+
+  const hasUnsafeAttribute = Array.from(doc.querySelectorAll("*")).some((element) =>
+    Array.from(element.attributes).some((attribute) => {
+      const name = attribute.name.toLowerCase();
+      const value = attribute.value.trim().toLowerCase();
+
+      if (name.startsWith("on")) {
+        return true;
+      }
+
+      if ((name === "href" || name.endsWith(":href")) && value.startsWith("javascript:")) {
+        return true;
+      }
+
+      return false;
+    }),
+  );
+
+  if (hasUnsafeAttribute) {
+    return { valid: false, message: "보안을 위해 이벤트/script 링크 속성은 허용되지 않습니다." };
+  }
+
+  return { valid: true };
 }
 
 function SortableAboutTechItem({
@@ -204,8 +232,17 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
   const [isUploadingTechLogo, setIsUploadingTechLogo] = useState(false);
   const aboutPhotoUploadRequestRef = useRef(0);
   const techLogoUploadRequestRef = useRef(0);
+  const setUnsavedDirty = useAdminUnsavedStore((state) => state.setDirty);
 
   const isDirty = serializeForm(form) !== serializeForm(savedForm);
+  useBeforeUnloadUnsavedChanges(isDirty);
+
+  useEffect(() => {
+    setUnsavedDirty("about", isDirty);
+    return () => {
+      setUnsavedDirty("about", false);
+    };
+  }, [isDirty, setUnsavedDirty]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -399,13 +436,9 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
       return;
     }
 
-    if (!/<svg[\s>]/i.test(markup) || !/<\/svg>/i.test(markup)) {
-      setNotice({ kind: "error", text: "유효한 SVG 태그 형식이 아닙니다." });
-      return;
-    }
-
-    if (/<script[\s>]/i.test(markup)) {
-      setNotice({ kind: "error", text: "보안을 위해 script 태그는 허용되지 않습니다." });
+    const validation = validateSvgMarkup(markup);
+    if (!validation.valid) {
+      setNotice({ kind: "error", text: validation.message ?? "유효한 SVG가 아닙니다." });
       return;
     }
 
@@ -425,7 +458,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
     await uploadTechLogoImmediately(file);
   };
 
-  // 단순화된 About 모델(name/title/summary/photo/tech/status) 기준으로 저장한다.
+  // 단순화된 About 모델(name/title/summary/photo/tech) 기준으로 저장한다.
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsPending(true);
@@ -445,7 +478,6 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
             description: item.description.trim(),
             logoUrl: item.logoUrl.trim(),
           })),
-          status: form.status,
         }),
       });
 
@@ -487,52 +519,19 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
   return (
     <ManagerShell
-      motion
+      title="소개 관리"
       summary="소개 페이지 콘텐츠를 단순 모델로 관리합니다."
-      detail="이름, 직함, 한 줄 소개, 프로필 이미지, 기술 항목만 유지합니다."
+      detail="이름, 직함, 한 줄 소개, 프로필 이미지, 기술 항목만 관리합니다."
+      motion
     >
-      <SurfaceCard tone="surface" radius="2xl" padding="md" interactive className="space-y-4 sm:p-5">
-        <div className="flex items-center justify-between gap-3">
-          <span
-            className={cn(
-              "rounded-full border px-2.5 py-1 text-xs font-semibold",
-              statusBadge(form.status),
-            )}
-          >
-            {toStatusLabel(form.status)}
-          </span>
-        </div>
-
+      <SurfaceCard
+        tone="surface"
+        radius="2xl"
+        padding="md"
+        interactive
+        className="space-y-4 sm:p-5"
+      >
         <form className="space-y-4" onSubmit={onSubmit}>
-          <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-3 sm:p-4">
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-foreground">기본 정보</h3>
-              <p className="text-xs text-muted">소개 카드의 핵심 텍스트를 관리합니다.</p>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Input
-                value={form.name}
-                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                placeholder="이름"
-                required
-              />
-              <Input
-                value={form.title}
-                onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-                placeholder="직함"
-                required
-              />
-            </div>
-
-            <textarea
-              value={form.summary}
-              onChange={(event) => setForm((prev) => ({ ...prev, summary: event.target.value }))}
-              className="min-h-[110px] w-full rounded-md border border-border bg-surface p-3 text-sm leading-7 transition-colors focus:border-foreground/30"
-              placeholder="한 줄 소개/자기소개"
-              required
-            />
-          </SurfaceCard>
-
           <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-3 sm:p-4">
             <div className="space-y-1">
               <h3 className="text-sm font-semibold text-foreground">프로필 이미지</h3>
@@ -579,12 +578,15 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
                     onChange={(event) => onSelectAboutPhotoFile(event.target.files?.[0] ?? null)}
                     className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
                   />
-                  <p className="text-xs text-muted">파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.</p>
+                  <p className="text-xs text-muted">
+                    파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.
+                  </p>
                 </div>
               )}
 
               <p className="truncate text-xs text-muted">
-                현재 이미지: {isUploadingAboutPhoto ? "업로드 중..." : form.aboutPhotoUrl || "설정되지 않음"}
+                현재 이미지:{" "}
+                {isUploadingAboutPhoto ? "업로드 중..." : form.aboutPhotoUrl || "설정되지 않음"}
               </p>
             </div>
 
@@ -601,15 +603,47 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
               </div>
             ) : null}
           </SurfaceCard>
+          <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-3 sm:p-4">
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold text-foreground">기본 정보</h3>
+              <p className="text-xs text-muted">소개 카드의 핵심 텍스트를 관리합니다.</p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Input
+                value={form.name}
+                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                placeholder="이름"
+                required
+              />
+              <Input
+                value={form.title}
+                onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+                placeholder="직함"
+                required
+              />
+            </div>
+
+            <textarea
+              value={form.summary}
+              onChange={(event) => setForm((prev) => ({ ...prev, summary: event.target.value }))}
+              className="min-h-[110px] w-full rounded-md border border-border bg-surface p-3 text-sm leading-7 transition-colors focus:border-foreground/30"
+              placeholder="한 줄 소개/자기소개"
+              required
+            />
+          </SurfaceCard>
 
           <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-3 sm:p-4">
             <div className="space-y-1">
               <h3 className="text-sm font-semibold text-foreground">기술 항목</h3>
-              <p className="text-xs text-muted">순서 변경, 수정, 삭제가 가능한 기술 카드 목록입니다.</p>
+              <p className="text-xs text-muted">
+                순서 변경, 수정, 삭제가 가능한 기술 카드 목록입니다.
+              </p>
             </div>
 
             <div className="space-y-2 rounded-md border border-border bg-background/70 p-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted">기술 로고 업로드</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                기술 로고 업로드
+              </p>
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
@@ -645,7 +679,9 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
                     onChange={(event) => onSelectTechLogoFile(event.target.files?.[0] ?? null)}
                     className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
                   />
-                  <p className="text-xs text-muted">파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.</p>
+                  <p className="text-xs text-muted">
+                    파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -666,7 +702,8 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
               )}
 
               <p className="truncate text-xs text-muted">
-                현재 로고: {isUploadingTechLogo ? "업로드 중..." : form.techLogoUrlInput || "설정되지 않음"}
+                현재 로고:{" "}
+                {isUploadingTechLogo ? "업로드 중..." : form.techLogoUrlInput || "설정되지 않음"}
               </p>
             </div>
 
@@ -749,18 +786,6 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
               </SortableContext>
             </DndContext>
           </SurfaceCard>
-
-          <StatusRadioGroup
-            legend="공개 상태"
-            name="about-status"
-            value={form.status}
-            options={[
-              { value: "published", label: "공개" },
-              { value: "draft", label: "비공개" },
-            ]}
-            onChange={(value) => setForm((prev) => ({ ...prev, status: value as PublishStatus }))}
-            className="sm:p-4"
-          />
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span

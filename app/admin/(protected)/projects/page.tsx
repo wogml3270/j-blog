@@ -26,14 +26,11 @@ export default async function AdminProjectsPage({
   const initialSelectedId = pickSingleQueryValue(query.id);
 
   return (
-    <main className="space-y-5">
-      <h1 className="text-2xl font-semibold tracking-tight">프로젝트 관리</h1>
-      <ProjectsManager
-        initialMainPage={initialMainPage}
-        initialPrivatePage={initialPrivatePage}
-        initialSelectedId={initialSelectedId}
-        initialFilter={initialFilter}
-      />
-    </main>
+    <ProjectsManager
+      initialMainPage={initialMainPage}
+      initialPrivatePage={initialPrivatePage}
+      initialSelectedId={initialSelectedId}
+      initialFilter={initialFilter}
+    />
   );
 }

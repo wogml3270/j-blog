@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils/cn";
 import type { ManagerShellProps } from "@/types/ui";
 
 export function ManagerShell({
+  title,
   children,
   summary,
   detail,
@@ -17,6 +18,7 @@ export function ManagerShell({
       <SurfaceCard className="px-4 py-3.5" tone="surface">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
             <p className="text-sm text-muted">{summary}</p>
             {detail ? <p className="text-xs text-muted">{detail}</p> : null}
           </div>

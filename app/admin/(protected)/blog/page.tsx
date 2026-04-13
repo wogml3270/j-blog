@@ -22,14 +22,11 @@ export default async function AdminBlogPage({ searchParams }: { searchParams: Ad
   const initialSelectedId = pickSingleQueryValue(query.id);
 
   return (
-    <main className="space-y-5">
-      <h1 className="text-2xl font-semibold tracking-tight">블로그 관리</h1>
-      <BlogManager
-        initialMainPage={initialMainPage}
-        initialPrivatePage={initialPrivatePage}
-        initialSelectedId={initialSelectedId}
-        initialFilter={initialFilter}
-      />
-    </main>
+    <BlogManager
+      initialMainPage={initialMainPage}
+      initialPrivatePage={initialPrivatePage}
+      initialSelectedId={initialSelectedId}
+      initialFilter={initialFilter}
+    />
   );
 }

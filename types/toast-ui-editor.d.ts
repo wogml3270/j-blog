@@ -4,6 +4,7 @@ declare module "@toast-ui/editor" {
     initialValue?: string;
     initialEditType?: "markdown" | "wysiwyg";
     previewStyle?: "vertical" | "tab";
+    autofocus?: boolean;
     hideModeSwitch?: boolean;
     usageStatistics?: boolean;
     placeholder?: string;

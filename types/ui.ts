@@ -81,9 +81,14 @@ export type ProjectsManagerProps = {
   initialSelectedId?: string | null;
 };
 
-export type DashboardHomeManagerProps = {
+export type HomeManagerProps = {
   initialHighlights: HomeHighlight[];
   initialSources: HomeHighlightSourceOption[];
+};
+
+export type ToolbarSelectOption = {
+  value: string;
+  label: string;
 };
 
 export type StatusOption<TValue extends string = string> = {
@@ -92,6 +97,7 @@ export type StatusOption<TValue extends string = string> = {
 };
 
 export type ManagerShellProps = {
+  title: string;
   children: React.ReactNode;
   summary: string;
   detail?: string;

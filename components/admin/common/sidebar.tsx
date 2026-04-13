@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { MouseEvent } from "react";
 import { SettingsIcon } from "@/components/ui/icons/settings-icon";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { SignOutButton } from "@/components/admin/common/sign-out-button";
 import { ThemeToggle } from "@/components/theme/toggle";
 import { cn } from "@/lib/utils/cn";
+import { confirmUnsavedChanges } from "@/lib/utils/unsaved-changes";
+import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
 import type { AdminSidebarProps } from "@/types/ui";
 
 const ADMIN_PATH = "/admin";
@@ -22,13 +25,33 @@ const NAV_ITEMS = [
 
 export function AdminSidebar({ email, avatarUrl }: AdminSidebarProps) {
   const pathname = usePathname();
+  const hasAnyDirty = useAdminUnsavedStore((state) => state.hasAnyDirty);
   const initial = (email ?? "U").slice(0, 1).toUpperCase();
+
+  // 저장되지 않은 관리자 변경 사항이 있으면 네비게이션 이동 전에 확인 창을 띄운다.
+  const guardNavigation = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!hasAnyDirty) {
+      return;
+    }
+
+    if (confirmUnsavedChanges()) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+  };
 
   return (
     <aside className="w-full rounded-xl border border-border bg-surface p-3.5 sm:p-4 xl:sticky xl:top-6 xl:h-[calc(100dvh-3rem)] xl:w-[272px] xl:self-start">
       <div className="space-y-3.5">
         <div className="flex flex-col items-start justify-between gap-2">
-          <BrandLogo href="/admin/dashboard" title="Jaehee Park" subtitle="frontend engineer" />
+          <BrandLogo
+            href="/admin/dashboard"
+            title="Jaehee Park"
+            subtitle="frontend engineer"
+            onClick={guardNavigation}
+          />
           <div className="flex gap-3">
             <ThemeToggle
               labels={{
@@ -81,6 +104,7 @@ export function AdminSidebar({ email, avatarUrl }: AdminSidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={guardNavigation}
               aria-current={isActive ? "page" : undefined}
               className={cn(
                 "inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-sm transition-colors xl:flex xl:w-full xl:justify-start xl:rounded-md xl:px-3 xl:py-2.5",
@@ -98,11 +122,15 @@ export function AdminSidebar({ email, avatarUrl }: AdminSidebarProps) {
       <div className="mt-4 flex flex-wrap items-center gap-2.5 xl:mt-6 xl:flex-col xl:items-stretch">
         <Link
           href="/"
+          onClick={guardNavigation}
           className="inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground hover:bg-foreground/5 xl:w-full"
         >
           공개 사이트 이동
         </Link>
-        <SignOutButton className="px-3 xl:w-full flex items-center" />
+        <SignOutButton
+          className="px-3 xl:w-full flex items-center"
+          onBeforeSignOut={() => !hasAnyDirty || confirmUnsavedChanges()}
+        />
       </div>
     </aside>
   );

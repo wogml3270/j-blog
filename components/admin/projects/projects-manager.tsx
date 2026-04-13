@@ -19,6 +19,11 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  AdminToolbar,
+  AdminToolbarAction,
+  AdminToolbarSelect,
+} from "@/components/admin/common/admin-toolbar";
 import { EditorDrawer } from "@/components/admin/common/editor-drawer";
 import { ManagerList, ManagerListRow } from "@/components/admin/common/manager-list";
 import { MarkdownField } from "@/components/admin/common/markdown-field";
@@ -35,8 +40,10 @@ import { uploadAdminMediaFile } from "@/lib/admin/upload-client";
 import { ADMIN_PAGE_SIZE_OPTIONS } from "@/lib/utils/pagination";
 import { cn } from "@/lib/utils/cn";
 import { normalizeSlug } from "@/lib/utils/slug";
+import { confirmUnsavedChanges, useBeforeUnloadUnsavedChanges } from "@/lib/utils/unsaved-changes";
 import { useAdminDetailStore } from "@/stores/admin-detail";
 import { useAdminListUiStore } from "@/stores/admin-list-ui";
+import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
 import type { AdminListFilter, PaginatedResult } from "@/types/admin";
 import type { PublishStatus } from "@/types/db";
 import type { AdminProject, ProjectLinkItem, ProjectLinks } from "@/types/projects";
@@ -118,7 +125,10 @@ function uniqueStringList(items: string[]): string[] {
   return [...new Set(items.map((item) => item.trim()).filter(Boolean))];
 }
 
-function toSortableTextItems(items: string[], prefix: "achievement" | "contribution"): SortableTextItem[] {
+function toSortableTextItems(
+  items: string[],
+  prefix: "achievement" | "contribution",
+): SortableTextItem[] {
   return uniqueStringList(items).map((value, index) => ({
     id: createStableId(prefix, value, index),
     value,
@@ -199,6 +209,44 @@ function toLinks(form: ProjectFormState): ProjectLinks {
   }
 
   return normalized;
+}
+
+function serializeProjectForm(form: ProjectFormState, syncSlugWithTitle: boolean): string {
+  return JSON.stringify({
+    title: form.title.trim(),
+    slug: form.slug.trim(),
+    homeSummary: form.homeSummary.trim(),
+    summary: form.summary,
+    thumbnail: form.thumbnail.trim(),
+    role: form.role.trim(),
+    startDate: form.startDate,
+    endDate: form.endDate,
+    status: form.status,
+    featured: form.featured,
+    techStack: uniqueStringList(form.techStack),
+    achievements: uniqueStringList(form.achievements.map((item) => item.value)),
+    contributions: uniqueStringList(form.contributions.map((item) => item.value)),
+    links: toLinks(form),
+    syncSlugWithTitle,
+  });
+}
+
+function toDisplayDate(value: string | null | undefined): string {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 }
 
 function statusBadge(status: PublishStatus): string {
@@ -304,13 +352,37 @@ export function ProjectsManager({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [savedFormSnapshot, setSavedFormSnapshot] = useState<string>(() =>
+    serializeProjectForm(EMPTY_FORM, true),
+  );
   const [message, setMessage] = useState<string | null>(null);
   const hasAppliedInitialSelection = useRef(false);
   const thumbnailUploadRequestRef = useRef(0);
   const openDetail = useAdminDetailStore((state) => state.open);
   const closeDetail = useAdminDetailStore((state) => state.close);
+  const setUnsavedDirty = useAdminUnsavedStore((state) => state.setDirty);
   const savedPageSize = useAdminListUiStore((state) => state.pageSizeByScope.projects);
   const setSavedPageSize = useAdminListUiStore((state) => state.setPageSize);
+  const isFormDirty =
+    drawerOpen && serializeProjectForm(form, syncSlugWithTitle) !== savedFormSnapshot;
+
+  useBeforeUnloadUnsavedChanges(isFormDirty);
+
+  useEffect(() => {
+    setUnsavedDirty("projects", isFormDirty);
+    return () => {
+      setUnsavedDirty("projects", false);
+    };
+  }, [isFormDirty, setUnsavedDirty]);
+
+  // 저장되지 않은 편집 상태가 있을 때 다른 동작으로 넘어가기 전에 확인을 받는다.
+  const confirmProceedIfDirty = useCallback(() => {
+    if (!isFormDirty) {
+      return true;
+    }
+
+    return confirmUnsavedChanges();
+  }, [isFormDirty]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -357,9 +429,14 @@ export function ProjectsManager({
   );
 
   const openCreate = () => {
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setEditingId(null);
     setForm(EMPTY_FORM);
     setSyncSlugWithTitle(true);
+    setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true));
     setThumbnailMode("url");
     setLocalThumbnailPreview((prev) => {
       if (prev) {
@@ -376,9 +453,15 @@ export function ProjectsManager({
 
   const openEdit = useCallback(
     (project: AdminProject) => {
+      if (!confirmProceedIfDirty()) {
+        return;
+      }
+
       setEditingId(project.id);
-      setForm(toFormState(project));
+      const nextForm = toFormState(project);
+      setForm(nextForm);
       setSyncSlugWithTitle(project.syncSlugWithTitle);
+      setSavedFormSnapshot(serializeProjectForm(nextForm, project.syncSlugWithTitle));
       setThumbnailMode("url");
       setLocalThumbnailPreview((prev) => {
         if (prev) {
@@ -392,10 +475,14 @@ export function ProjectsManager({
       openDetail("projects", project.id);
       syncQuery({ id: project.id });
     },
-    [openDetail, syncQuery],
+    [confirmProceedIfDirty, openDetail, syncQuery],
   );
 
   const closeDrawer = () => {
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setDrawerOpen(false);
     closeDetail("projects");
     syncQuery({ id: null });
@@ -661,6 +748,7 @@ export function ProjectsManager({
       setEditingId(null);
       setForm(EMPTY_FORM);
       setSyncSlugWithTitle(true);
+      setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true));
       setThumbnailMode("url");
       setLocalThumbnailPreview((prev) => {
         if (prev) {
@@ -701,6 +789,7 @@ export function ProjectsManager({
         setDrawerOpen(false);
         setEditingId(null);
         setForm(EMPTY_FORM);
+        setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true));
         closeDetail("projects");
       }
       syncQuery({ id: null });
@@ -737,8 +826,13 @@ export function ProjectsManager({
       return;
     }
 
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setDrawerOpen(false);
     setEditingId(null);
+    setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true));
     closeDetail("projects");
     await loadProjects(nextPage, privatePage, pageSize, filter);
   };
@@ -748,9 +842,14 @@ export function ProjectsManager({
       return;
     }
 
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setSavedPageSize("projects", nextPageSize);
     setDrawerOpen(false);
     setEditingId(null);
+    setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true));
     closeDetail("projects");
     await loadProjects(1, 1, nextPageSize, filter);
   };
@@ -760,8 +859,13 @@ export function ProjectsManager({
       return;
     }
 
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setDrawerOpen(false);
     setEditingId(null);
+    setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true));
     closeDetail("projects");
     await loadProjects(mainPage, nextPage, pageSize, filter);
   };
@@ -771,8 +875,13 @@ export function ProjectsManager({
       return;
     }
 
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setDrawerOpen(false);
     setEditingId(null);
+    setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true));
     closeDetail("projects");
     await loadProjects(1, 1, pageSize, nextFilter);
   };
@@ -824,45 +933,36 @@ export function ProjectsManager({
     <>
       <ManagerShell
         motion
+        title="프로젝트 관리"
         summary={`전체 프로젝트 ${total}개`}
         action={
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-              <FilterIcon className="h-3.5 w-3.5 text-muted" />
-              <span className="sr-only">상태 필터</span>
-              <select
-                className="bg-transparent text-sm outline-none"
-                value={filter}
-                aria-label="상태 필터"
-                onChange={(event) => void onChangeFilter(event.target.value as AdminListFilter)}
-              >
-                {PROJECT_FILTER_OPTIONS.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-              <RowsIcon className="h-3.5 w-3.5 text-muted" />
-              <span className="sr-only">표시 개수</span>
-              <select
-                className="bg-transparent text-sm outline-none"
-                value={String(pageSize)}
-                aria-label="페이지 표시 개수"
-                onChange={(event) => void onChangePageSize(Number(event.target.value))}
-              >
-                {ADMIN_PAGE_SIZE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}줄씩 보기
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button type="button" onClick={openCreate}>
-              새 프로젝트
-            </Button>
-          </div>
+          <AdminToolbar>
+            <AdminToolbarSelect
+              icon={<FilterIcon className="h-3.5 w-3.5 text-muted" />}
+              label="상태 필터"
+              value={filter}
+              options={PROJECT_FILTER_OPTIONS.map((item) => ({
+                value: item.value,
+                label: item.label,
+              }))}
+              onChange={(value) => void onChangeFilter(value as AdminListFilter)}
+            />
+            <AdminToolbarSelect
+              icon={<RowsIcon className="h-3.5 w-3.5 text-muted" />}
+              label="페이지 표시 개수"
+              value={String(pageSize)}
+              options={ADMIN_PAGE_SIZE_OPTIONS.map((option) => ({
+                value: String(option),
+                label: `${option}줄씩 보기`,
+              }))}
+              onChange={(value) => void onChangePageSize(Number(value))}
+            />
+            <AdminToolbarAction>
+              <Button type="button" onClick={openCreate}>
+                새 프로젝트
+              </Button>
+            </AdminToolbarAction>
+          </AdminToolbar>
         }
         message={message}
       >
@@ -879,28 +979,58 @@ export function ProjectsManager({
                 className="transition-all duration-300 hover:-translate-y-0.5"
               >
                 <>
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-semibold",
-                      statusBadge(project.status),
-                    )}
-                  >
-                    {toStatusLabel(project.status)}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                    {project.title}
-                  </span>
-                  <span className="hidden text-xs text-muted sm:inline">{project.slug}</span>
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-medium",
-                      project.featured
-                        ? "bg-accent/15 text-accent"
-                        : "bg-foreground/10 text-foreground",
-                    )}
-                  >
-                    {project.featured ? "메인 노출" : "일반 공개"}
-                  </span>
+                  <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-background">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={project.thumbnail}
+                      alt={`${project.title} 썸네일`}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {project.title}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-muted">{project.slug}</p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {project.techStack.slice(0, 3).map((item) => (
+                        <span
+                          key={`${project.id}-${item}`}
+                          className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted"
+                        >
+                          #{item}
+                        </span>
+                      ))}
+                      {project.techStack.length > 3 ? (
+                        <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted">
+                          +{project.techStack.length - 3}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex flex-col shrink-0 items-end gap-1.5 text-xs">
+                    <div className="flex gap-1 justify-center items-center">
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 font-semibold",
+                          statusBadge(project.status),
+                        )}
+                      >
+                        {toStatusLabel(project.status)}
+                      </span>
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 font-medium",
+                          project.featured
+                            ? "bg-accent/15 text-accent"
+                            : "bg-foreground/10 text-foreground",
+                        )}
+                      >
+                        {project.featured ? "메인 노출" : "일반 공개"}
+                      </span>
+                    </div>
+                    <span className="text-muted">{toDisplayDate(project.updatedAt)}</span>
+                  </div>
                 </>
               </ManagerListRow>
             ))}
@@ -924,22 +1054,52 @@ export function ProjectsManager({
               <ManagerListRow
                 key={project.id}
                 onClick={() => openEdit(project)}
-                className="transition-all duration-300 hover:-translate-y-0.5"
+                className="items-start transition-all duration-300 hover:-translate-y-0.5"
               >
                 <>
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-semibold",
-                      statusBadge(project.status),
-                    )}
-                  >
-                    {toStatusLabel(project.status)}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                    {project.title}
-                  </span>
-                  <span className="hidden text-xs text-muted sm:inline">{project.slug}</span>
-                  <span className="text-xs text-muted">비공개</span>
+                  <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-background">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={project.thumbnail}
+                      alt={`${project.title} 썸네일`}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {project.title}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-muted">{project.slug}</p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {project.techStack.slice(0, 3).map((item) => (
+                        <span
+                          key={`${project.id}-${item}`}
+                          className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted"
+                        >
+                          #{item}
+                        </span>
+                      ))}
+                      {project.techStack.length > 3 ? (
+                        <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted">
+                          +{project.techStack.length - 3}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1.5 text-xs">
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 font-semibold",
+                        statusBadge(project.status),
+                      )}
+                    >
+                      {toStatusLabel(project.status)}
+                    </span>
+                    <span className="rounded-full bg-foreground/10 px-2 py-0.5 font-medium text-foreground">
+                      비공개
+                    </span>
+                    <span className="text-muted">{toDisplayDate(project.updatedAt)}</span>
+                  </div>
                 </>
               </ManagerListRow>
             ))}
@@ -960,6 +1120,70 @@ export function ProjectsManager({
         description="필수 필드를 채운 뒤 저장하면 공개 페이지와 동기화됩니다."
       >
         <form className="space-y-3.5" onSubmit={onSubmit}>
+          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">썸네일 업로드</p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant={thumbnailMode === "url" ? "solid" : "ghost"}
+                size="sm"
+                onClick={() => setThumbnailMode("url")}
+              >
+                외부 링크
+              </Button>
+              <Button
+                type="button"
+                variant={thumbnailMode === "upload" ? "solid" : "ghost"}
+                size="sm"
+                onClick={() => setThumbnailMode("upload")}
+              >
+                파일 업로드
+              </Button>
+            </div>
+
+            {thumbnailMode === "url" ? (
+              <Input
+                value={form.thumbnail}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    thumbnail: event.target.value,
+                  }))
+                }
+                placeholder="https://... 또는 /images/..."
+                required
+              />
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => onSelectThumbnailFile(event.target.files?.[0] ?? null)}
+                  className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
+                />
+                <p className="text-xs text-muted">
+                  파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.
+                </p>
+              </div>
+            )}
+
+            <p className="truncate text-xs text-muted">
+              현재 썸네일:{" "}
+              {isUploadingThumbnail ? "업로드 중..." : form.thumbnail || "설정되지 않음"}
+            </p>
+            {localThumbnailPreview || form.thumbnail ? (
+              <div className="overflow-hidden rounded-md border border-border bg-surface">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={localThumbnailPreview || form.thumbnail}
+                  alt="썸네일 미리보기"
+                  className="h-40 w-full object-cover"
+                />
+              </div>
+            ) : (
+              <p className="text-xs text-muted">썸네일 미리보기가 없습니다.</p>
+            )}
+          </SurfaceCard>
           <div className="space-y-1">
             <label className="text-xs font-medium uppercase tracking-wide text-muted">제목</label>
             <Input
@@ -1027,71 +1251,6 @@ export function ProjectsManager({
             required
             minHeight={320}
           />
-
-          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">썸네일 업로드</p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant={thumbnailMode === "url" ? "solid" : "ghost"}
-                size="sm"
-                onClick={() => setThumbnailMode("url")}
-              >
-                외부 링크
-              </Button>
-              <Button
-                type="button"
-                variant={thumbnailMode === "upload" ? "solid" : "ghost"}
-                size="sm"
-                onClick={() => setThumbnailMode("upload")}
-              >
-                파일 업로드
-              </Button>
-            </div>
-
-            {thumbnailMode === "url" ? (
-              <Input
-                value={form.thumbnail}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    thumbnail: event.target.value,
-                  }))
-                }
-                placeholder="https://... 또는 /images/..."
-                required
-              />
-            ) : (
-              <div className="space-y-2">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => onSelectThumbnailFile(event.target.files?.[0] ?? null)}
-                  className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
-                />
-                <p className="text-xs text-muted">
-                  파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.
-                </p>
-              </div>
-            )}
-
-            <p className="truncate text-xs text-muted">
-              현재 썸네일:{" "}
-              {isUploadingThumbnail ? "업로드 중..." : form.thumbnail || "설정되지 않음"}
-            </p>
-            {localThumbnailPreview || form.thumbnail ? (
-              <div className="overflow-hidden rounded-md border border-border bg-surface">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={localThumbnailPreview || form.thumbnail}
-                  alt="썸네일 미리보기"
-                  className="h-40 w-full object-cover"
-                />
-              </div>
-            ) : (
-              <p className="text-xs text-muted">썸네일 미리보기가 없습니다.</p>
-            )}
-          </SurfaceCard>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
@@ -1188,6 +1347,10 @@ export function ProjectsManager({
                   }))
                 }
                 onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) {
+                    return;
+                  }
+
                   if (event.key === "Enter") {
                     event.preventDefault();
                     addTechStackItem();
@@ -1236,6 +1399,10 @@ export function ProjectsManager({
                   }))
                 }
                 onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) {
+                    return;
+                  }
+
                   if (event.key === "Enter") {
                     event.preventDefault();
                     addAchievement();
@@ -1295,6 +1462,10 @@ export function ProjectsManager({
                   }))
                 }
                 onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) {
+                    return;
+                  }
+
                   if (event.key === "Enter") {
                     event.preventDefault();
                     addContribution();
@@ -1365,6 +1536,10 @@ export function ProjectsManager({
                   }))
                 }
                 onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) {
+                    return;
+                  }
+
                   if (event.key === "Enter") {
                     event.preventDefault();
                     addLink();

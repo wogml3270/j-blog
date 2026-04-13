@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { CloseIcon } from "@/components/ui/icons/close-icon";
-import { cn } from "@/lib/utils/cn";
 import type { EditorDrawerProps } from "@/types/ui";
 
 export function EditorDrawer({ open, title, description, onClose, children }: EditorDrawerProps) {
+  const panelRef = useRef<HTMLElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
   // 드로어가 열린 동안 스크롤/ESC 닫기 동작을 공통 처리한다.
   useEffect(() => {
     if (!open) {
@@ -28,7 +30,23 @@ export function EditorDrawer({ open, title, description, onClose, children }: Ed
       document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [open, onClose]);
+  }, [onClose, open]);
+
+  // 드로어가 열릴 때마다 스크롤을 최상단으로 고정하고 포커스를 패널로 모아 입력 포커스 점프를 막는다.
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const rafId = window.requestAnimationFrame(() => {
+      contentRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      panelRef.current?.focus({ preventScroll: true });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [open]);
 
   // 닫힌 상태에서는 드로어 본문을 언마운트해 에디터 DOM 충돌을 방지한다.
   if (!open) {
@@ -39,19 +57,15 @@ export function EditorDrawer({ open, title, description, onClose, children }: Ed
     <>
       <div
         aria-hidden={false}
-        className={cn(
-          "fixed inset-0 z-40 bg-foreground/35 backdrop-blur-[2px] transition-opacity duration-300",
-          "pointer-events-auto opacity-100",
-        )}
+        className="admin-drawer-overlay-in fixed inset-0 z-40 bg-foreground/35 backdrop-blur-[2px]"
         onClick={onClose}
       />
 
       <aside
+        ref={panelRef}
+        tabIndex={-1}
         aria-hidden={false}
-        className={cn(
-          "fixed right-0 top-0 z-50 flex h-dvh w-[min(100vw,40rem)] flex-col border-l border-border bg-surface shadow-2xl transition-transform duration-300",
-          "translate-x-0",
-        )}
+        className="admin-drawer-panel-in fixed right-0 top-0 z-50 flex h-dvh w-[min(100vw,40rem)] flex-col border-l border-border bg-surface shadow-2xl focus-visible:outline-none"
       >
         <header className="border-b border-border px-5 py-4">
           <div className="flex items-start justify-between gap-3">
@@ -65,7 +79,9 @@ export function EditorDrawer({ open, title, description, onClose, children }: Ed
             </Button>
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        <div ref={contentRef} className="flex-1 overflow-y-auto px-5 py-4">
+          {children}
+        </div>
       </aside>
     </>
   );

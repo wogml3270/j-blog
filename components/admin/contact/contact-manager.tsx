@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  AdminToolbar,
+  AdminToolbarSelect,
+} from "@/components/admin/common/admin-toolbar";
 import { EditorDrawer } from "@/components/admin/common/editor-drawer";
 import { ManagerList, ManagerListRow } from "@/components/admin/common/manager-list";
 import { ManagerShell } from "@/components/admin/common/manager-shell";
@@ -13,8 +17,10 @@ import { RowsIcon } from "@/components/ui/icons/rows-icon";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { ADMIN_PAGE_SIZE_OPTIONS } from "@/lib/utils/pagination";
 import { cn } from "@/lib/utils/cn";
+import { confirmUnsavedChanges, useBeforeUnloadUnsavedChanges } from "@/lib/utils/unsaved-changes";
 import { useAdminDetailStore } from "@/stores/admin-detail";
 import { useAdminListUiStore } from "@/stores/admin-list-ui";
+import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
 import type { ContactListFilter, PaginatedResult } from "@/types/admin";
 import type { ContactMessage } from "@/types/contact";
 import type { ContactMessageStatus } from "@/types/db";
@@ -113,8 +119,29 @@ export function ContactManager({
 
   const openDetailStore = useAdminDetailStore((state) => state.open);
   const closeDetailStore = useAdminDetailStore((state) => state.close);
+  const setUnsavedDirty = useAdminUnsavedStore((state) => state.setDirty);
   const savedPageSize = useAdminListUiStore((state) => state.pageSizeByScope.contact);
   const setSavedPageSize = useAdminListUiStore((state) => state.setPageSize);
+  const hasUnsavedChanges =
+    selected !== null && (selected.status !== nextStatus || selected.adminNote !== adminNote);
+
+  useBeforeUnloadUnsavedChanges(hasUnsavedChanges);
+
+  useEffect(() => {
+    setUnsavedDirty("contact", hasUnsavedChanges);
+    return () => {
+      setUnsavedDirty("contact", false);
+    };
+  }, [hasUnsavedChanges, setUnsavedDirty]);
+
+  // 저장되지 않은 문의 메모/상태가 있으면 이동 전에 확인을 받는다.
+  const confirmProceedIfDirty = useCallback(() => {
+    if (!hasUnsavedChanges) {
+      return true;
+    }
+
+    return confirmUnsavedChanges();
+  }, [hasUnsavedChanges]);
 
   // URL 쿼리(newPage/repliedPage/pageSize/id)와 현재 리스트/상세 상태를 항상 맞춘다.
   const syncQuery = useCallback(
@@ -155,6 +182,10 @@ export function ContactManager({
   // 상세 패널을 열 때 상태/메모의 기준값을 동기화해 dirty 판단 기준을 고정한다.
   const openDetail = useCallback(
     (contact: ContactMessage) => {
+      if (selected && selected.id !== contact.id && !confirmProceedIfDirty()) {
+        return;
+      }
+
       setSelected(contact);
       setNextStatus(contact.status);
       setAdminNote(contact.adminNote);
@@ -162,10 +193,14 @@ export function ContactManager({
       openDetailStore("contact", contact.id);
       syncQuery({ id: contact.id });
     },
-    [openDetailStore, syncQuery],
+    [confirmProceedIfDirty, openDetailStore, selected, syncQuery],
   );
 
   const closeDetail = () => {
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setSelected(null);
     setAdminNote("");
     setMessage(null);
@@ -272,6 +307,10 @@ export function ContactManager({
       return;
     }
 
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     closeDetailStore("contact");
     setSelected(null);
     await loadContacts(nextPage, repliedPage, pageSize, statusFilter);
@@ -279,6 +318,10 @@ export function ContactManager({
 
   const onChangeRepliedPage = async (nextPage: number) => {
     if (nextPage === repliedPage || nextPage < 1 || nextPage > repliedTotalPages) {
+      return;
+    }
+
+    if (!confirmProceedIfDirty()) {
       return;
     }
 
@@ -292,6 +335,10 @@ export function ContactManager({
       return;
     }
 
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setSavedPageSize("contact", nextPageSize);
     closeDetailStore("contact");
     setSelected(null);
@@ -300,6 +347,10 @@ export function ContactManager({
 
   const onChangeStatusFilter = async (nextStatusFilter: ContactListFilter) => {
     if (nextStatusFilter === statusFilter) {
+      return;
+    }
+
+    if (!confirmProceedIfDirty()) {
       return;
     }
 
@@ -341,8 +392,6 @@ export function ContactManager({
     hasAppliedInitialSelection.current = true;
   }, [initialSelectedId, newContacts, openDetail, repliedContacts, syncQuery]);
 
-  const isDirty =
-    selected !== null && (selected.status !== nextStatus || selected.adminNote !== adminNote);
   const showNewSection = statusFilter !== "replied";
   const showRepliedSection = statusFilter !== "new";
   const summaryTotal =
@@ -356,44 +405,31 @@ export function ContactManager({
     <>
       <ManagerShell
         motion
+        title="문의 관리"
         summary={`문의함 ${summaryTotal}건`}
         action={
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-              <FilterIcon className="h-3.5 w-3.5 text-muted" />
-              <span className="sr-only">상태 필터</span>
-              <select
-                className="bg-transparent text-sm outline-none"
-                value={statusFilter}
-                aria-label="상태 필터"
-                onChange={(event) =>
-                  void onChangeStatusFilter(event.target.value as ContactListFilter)
-                }
-              >
-                {CONTACT_FILTER_OPTIONS.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-              <RowsIcon className="h-3.5 w-3.5 text-muted" />
-              <span className="sr-only">표시 개수</span>
-              <select
-                className="bg-transparent text-sm outline-none"
-                value={String(pageSize)}
-                aria-label="페이지 표시 개수"
-                onChange={(event) => void onChangePageSize(Number(event.target.value))}
-              >
-                {ADMIN_PAGE_SIZE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}줄씩 보기
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <AdminToolbar>
+            <AdminToolbarSelect
+              icon={<FilterIcon className="h-3.5 w-3.5 text-muted" />}
+              label="상태 필터"
+              value={statusFilter}
+              options={CONTACT_FILTER_OPTIONS.map((item) => ({
+                value: item.value,
+                label: item.label,
+              }))}
+              onChange={(value) => void onChangeStatusFilter(value as ContactListFilter)}
+            />
+            <AdminToolbarSelect
+              icon={<RowsIcon className="h-3.5 w-3.5 text-muted" />}
+              label="페이지 표시 개수"
+              value={String(pageSize)}
+              options={ADMIN_PAGE_SIZE_OPTIONS.map((option) => ({
+                value: String(option),
+                label: `${option}줄씩 보기`,
+              }))}
+              onChange={(value) => void onChangePageSize(Number(value))}
+            />
+          </AdminToolbar>
         }
       >
         {showNewSection ? (
@@ -550,7 +586,7 @@ export function ContactManager({
               type="button"
               className="w-full"
               onClick={saveContact}
-              disabled={isPending || !isDirty}
+              disabled={isPending || !hasUnsavedChanges}
             >
               {isPending ? "저장 중..." : "상태/메모 저장"}
             </Button>

@@ -30,14 +30,11 @@ export default async function AdminContactPage({
   const initialSelectedId = pickSingleQueryValue(query.id);
 
   return (
-    <main className="space-y-5">
-      <h1 className="text-2xl font-semibold tracking-tight">문의 관리</h1>
-      <ContactManager
-        initialNewPage={initialNewPage}
-        initialRepliedPage={initialRepliedPage}
-        initialStatusFilter={initialStatusFilter}
-        initialSelectedId={initialSelectedId}
-      />
-    </main>
+    <ContactManager
+      initialNewPage={initialNewPage}
+      initialRepliedPage={initialRepliedPage}
+      initialStatusFilter={initialStatusFilter}
+      initialSelectedId={initialSelectedId}
+    />
   );
 }

@@ -52,7 +52,6 @@ function parseBody(body: unknown): AdminAboutInput | null {
     summary: source.summary.trim(),
     aboutPhotoUrl: source.aboutPhotoUrl.trim(),
     aboutTechItems,
-    status: source.status === "published" ? "published" : "draft",
   };
 }
 

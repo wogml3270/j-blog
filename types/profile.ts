@@ -1,5 +1,3 @@
-import type { PublishStatus } from "@/types/db";
-
 export type AboutTechItem = {
   name: string;
   description: string;
@@ -13,6 +11,5 @@ export type ProfileContent = {
   summary: string;
   aboutPhotoUrl: string;
   aboutTechItems: AboutTechItem[];
-  status: PublishStatus;
   updatedAt: string;
 };

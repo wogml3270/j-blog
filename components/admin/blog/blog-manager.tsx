@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  AdminToolbar,
+  AdminToolbarAction,
+  AdminToolbarSelect,
+} from "@/components/admin/common/admin-toolbar";
 import { EditorDrawer } from "@/components/admin/common/editor-drawer";
 import { ManagerList, ManagerListRow } from "@/components/admin/common/manager-list";
 import { MarkdownField } from "@/components/admin/common/markdown-field";
@@ -18,8 +23,10 @@ import { uploadAdminMediaFile } from "@/lib/admin/upload-client";
 import { ADMIN_PAGE_SIZE_OPTIONS } from "@/lib/utils/pagination";
 import { cn } from "@/lib/utils/cn";
 import { normalizeSlug } from "@/lib/utils/slug";
+import { confirmUnsavedChanges, useBeforeUnloadUnsavedChanges } from "@/lib/utils/unsaved-changes";
 import { useAdminDetailStore } from "@/stores/admin-detail";
 import { useAdminListUiStore } from "@/stores/admin-list-ui";
+import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
 import type { AdminListFilter, PaginatedResult } from "@/types/admin";
 import type { AdminPost } from "@/types/blog";
 import type { PublishStatus } from "@/types/db";
@@ -77,6 +84,22 @@ function normalizeTagList(tags: string[]): string[] {
   return [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
 }
 
+function serializePostForm(form: PostFormState, syncSlugWithTitle: boolean): string {
+  return JSON.stringify({
+    title: form.title.trim(),
+    slug: form.slug.trim(),
+    description: form.description.trim(),
+    thumbnail: form.thumbnail.trim(),
+    status: form.status,
+    featured: form.featured,
+    publishedAt: form.publishedAt,
+    scheduledPublishAt: form.scheduledPublishAt,
+    tags: normalizeTagList(form.tags),
+    bodyMarkdown: form.bodyMarkdown,
+    syncSlugWithTitle,
+  });
+}
+
 function toDisplayDate(value: string | null): string {
   if (!value) {
     return "-";
@@ -93,6 +116,10 @@ function toDisplayDate(value: string | null): string {
     month: "2-digit",
     day: "2-digit",
   }).format(date);
+}
+
+function toListDate(post: Pick<AdminPost, "publishedAt" | "updatedAt">): string {
+  return toDisplayDate(post.publishedAt || post.updatedAt || null);
 }
 
 function toDisplayDateTime(value: string | null): string {
@@ -175,14 +202,38 @@ export function BlogManager({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [savedFormSnapshot, setSavedFormSnapshot] = useState<string>(() =>
+    serializePostForm(EMPTY_FORM, true),
+  );
   const [message, setMessage] = useState<string | null>(null);
   const hasAppliedInitialSelection = useRef(false);
   const thumbnailUploadRequestRef = useRef(0);
 
   const openDetail = useAdminDetailStore((state) => state.open);
   const closeDetail = useAdminDetailStore((state) => state.close);
+  const setUnsavedDirty = useAdminUnsavedStore((state) => state.setDirty);
   const savedPageSize = useAdminListUiStore((state) => state.pageSizeByScope.blog);
   const setSavedPageSize = useAdminListUiStore((state) => state.setPageSize);
+  const isFormDirty =
+    drawerOpen && serializePostForm(form, syncSlugWithTitle) !== savedFormSnapshot;
+
+  useBeforeUnloadUnsavedChanges(isFormDirty);
+
+  useEffect(() => {
+    setUnsavedDirty("blog", isFormDirty);
+    return () => {
+      setUnsavedDirty("blog", false);
+    };
+  }, [isFormDirty, setUnsavedDirty]);
+
+  // 저장되지 않은 편집 상태가 있을 때 다른 동작으로 넘어가기 전에 확인을 받는다.
+  const confirmProceedIfDirty = useCallback(() => {
+    if (!isFormDirty) {
+      return true;
+    }
+
+    return confirmUnsavedChanges();
+  }, [isFormDirty]);
 
   // 상세 패널 상태와 페이지 상태를 URL 쿼리와 일치시킨다.
   const syncQuery = useCallback(
@@ -220,9 +271,14 @@ export function BlogManager({
   );
 
   const openCreate = () => {
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setEditingId(null);
     setForm(EMPTY_FORM);
     setSyncSlugWithTitle(true);
+    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
     setThumbnailMode("url");
     setLocalThumbnailPreview((prev) => {
       if (prev) {
@@ -239,9 +295,15 @@ export function BlogManager({
 
   const openEdit = useCallback(
     (post: AdminPost) => {
+      if (!confirmProceedIfDirty()) {
+        return;
+      }
+
       setEditingId(post.id);
-      setForm(toFormState(post));
+      const nextForm = toFormState(post);
+      setForm(nextForm);
       setSyncSlugWithTitle(post.syncSlugWithTitle);
+      setSavedFormSnapshot(serializePostForm(nextForm, post.syncSlugWithTitle));
       setThumbnailMode("url");
       setLocalThumbnailPreview((prev) => {
         if (prev) {
@@ -255,10 +317,14 @@ export function BlogManager({
       openDetail("blog", post.id);
       syncQuery({ id: post.id });
     },
-    [openDetail, syncQuery],
+    [confirmProceedIfDirty, openDetail, syncQuery],
   );
 
   const closeDrawer = () => {
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setDrawerOpen(false);
     closeDetail("blog");
     syncQuery({ id: null });
@@ -453,6 +519,7 @@ export function BlogManager({
       setEditingId(null);
       setForm(EMPTY_FORM);
       setSyncSlugWithTitle(true);
+      setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
       setThumbnailMode("url");
       setLocalThumbnailPreview((prev) => {
         if (prev) {
@@ -493,6 +560,7 @@ export function BlogManager({
         setDrawerOpen(false);
         setEditingId(null);
         setForm(EMPTY_FORM);
+        setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
         closeDetail("blog");
       }
       syncQuery({ id: null });
@@ -509,8 +577,13 @@ export function BlogManager({
       return;
     }
 
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setDrawerOpen(false);
     setEditingId(null);
+    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
     closeDetail("blog");
     await loadPosts(nextPage, privatePage, pageSize, filter);
   };
@@ -520,9 +593,14 @@ export function BlogManager({
       return;
     }
 
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setSavedPageSize("blog", nextPageSize);
     setDrawerOpen(false);
     setEditingId(null);
+    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
     closeDetail("blog");
     await loadPosts(1, 1, nextPageSize, filter);
   };
@@ -532,8 +610,13 @@ export function BlogManager({
       return;
     }
 
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setDrawerOpen(false);
     setEditingId(null);
+    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
     closeDetail("blog");
     await loadPosts(mainPage, nextPage, pageSize, filter);
   };
@@ -543,8 +626,13 @@ export function BlogManager({
       return;
     }
 
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
     setDrawerOpen(false);
     setEditingId(null);
+    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
     closeDetail("blog");
     await loadPosts(1, 1, pageSize, nextFilter);
   };
@@ -613,45 +701,36 @@ export function BlogManager({
   return (
     <>
       <ManagerShell
+        title="블로그 관리"
         summary={`전체 게시글 ${total}개`}
         action={
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-              <FilterIcon className="h-3.5 w-3.5 text-muted" />
-              <span className="sr-only">상태 필터</span>
-              <select
-                className="bg-transparent text-sm outline-none"
-                value={filter}
-                aria-label="상태 필터"
-                onChange={(event) => void onChangeFilter(event.target.value as AdminListFilter)}
-              >
-                {BLOG_FILTER_OPTIONS.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-              <RowsIcon className="h-3.5 w-3.5 text-muted" />
-              <span className="sr-only">표시 개수</span>
-              <select
-                className="bg-transparent text-sm outline-none"
-                value={String(pageSize)}
-                aria-label="페이지 표시 개수"
-                onChange={(event) => void onChangePageSize(Number(event.target.value))}
-              >
-                {ADMIN_PAGE_SIZE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}줄씩 보기
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button type="button" onClick={openCreate}>
-              새 게시글
-            </Button>
-          </div>
+          <AdminToolbar>
+            <AdminToolbarSelect
+              icon={<FilterIcon className="h-3.5 w-3.5 text-muted" />}
+              label="상태 필터"
+              value={filter}
+              options={BLOG_FILTER_OPTIONS.map((item) => ({
+                value: item.value,
+                label: item.label,
+              }))}
+              onChange={(value) => void onChangeFilter(value as AdminListFilter)}
+            />
+            <AdminToolbarSelect
+              icon={<RowsIcon className="h-3.5 w-3.5 text-muted" />}
+              label="페이지 표시 개수"
+              value={String(pageSize)}
+              options={ADMIN_PAGE_SIZE_OPTIONS.map((option) => ({
+                value: String(option),
+                label: `${option}줄씩 보기`,
+              }))}
+              onChange={(value) => void onChangePageSize(Number(value))}
+            />
+            <AdminToolbarAction>
+              <Button type="button" onClick={openCreate}>
+                새 게시글
+              </Button>
+            </AdminToolbarAction>
+          </AdminToolbar>
         }
         message={message}
       >
@@ -659,36 +738,62 @@ export function BlogManager({
           <h2 className="text-sm font-semibold tracking-tight text-foreground">공개</h2>
           <ManagerList hasItems={mainPosts.length > 0} emptyLabel="공개 상태의 게시글이 없습니다.">
             {mainPosts.map((post) => (
-              <ManagerListRow key={post.id} onClick={() => openEdit(post)}>
+              <ManagerListRow key={post.id} onClick={() => openEdit(post)} className="items-start">
                 <>
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-semibold",
-                      statusBadge(post.status),
+                  <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-background">
+                    {post.thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={post.thumbnail}
+                        alt={`${post.title} 썸네일`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-[11px] text-muted">
+                        없음
+                      </div>
                     )}
-                  >
-                    {toStatusLabel(post.status)}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                    {post.title}
-                  </span>
-                  {post.thumbnail ? (
-                    <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs text-foreground">
-                      썸네일
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground">{post.title}</p>
+                    <p className="mt-0.5 truncate text-xs text-muted">{post.slug}</p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {post.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={`${post.id}-${tag}`}
+                          className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                      {post.tags.length > 3 ? (
+                        <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted">
+                          +{post.tags.length - 3}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1.5 text-xs">
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 font-semibold",
+                        statusBadge(post.status),
+                      )}
+                    >
+                      {toStatusLabel(post.status)}
                     </span>
-                  ) : null}
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-medium",
-                      post.featured
-                        ? "bg-accent/15 text-accent"
-                        : "bg-foreground/10 text-foreground",
-                    )}
-                  >
-                    {post.featured ? "메인 노출" : "일반 공개"}
-                  </span>
-                  <span className="hidden text-xs text-muted sm:inline">{post.slug}</span>
-                  <span className="text-xs text-muted">{toDisplayDate(post.publishedAt)}</span>
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 font-medium",
+                        post.featured
+                          ? "bg-accent/15 text-accent"
+                          : "bg-foreground/10 text-foreground",
+                      )}
+                    >
+                      {post.featured ? "메인 노출" : "일반 공개"}
+                    </span>
+                    <span className="text-muted">{toListDate(post)}</span>
+                  </div>
                 </>
               </ManagerListRow>
             ))}
@@ -706,26 +811,57 @@ export function BlogManager({
           <h2 className="text-sm font-semibold tracking-tight text-foreground">비공개</h2>
           <ManagerList hasItems={privatePosts.length > 0} emptyLabel="비공개 게시글이 없습니다.">
             {privatePosts.map((post) => (
-              <ManagerListRow key={post.id} onClick={() => openEdit(post)}>
+              <ManagerListRow key={post.id} onClick={() => openEdit(post)} className="items-start">
                 <>
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-semibold",
-                      statusBadge(post.status),
+                  <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-background">
+                    {post.thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={post.thumbnail}
+                        alt={`${post.title} 썸네일`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-[11px] text-muted">
+                        없음
+                      </div>
                     )}
-                  >
-                    {toStatusLabel(post.status)}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                    {post.title}
-                  </span>
-                  {post.thumbnail ? (
-                    <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs text-foreground">
-                      썸네일
-                    </span>
-                  ) : null}
-                  <span className="hidden text-xs text-muted sm:inline">{post.slug}</span>
-                  <span className="text-xs text-muted">비공개</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground">{post.title}</p>
+                    <p className="mt-0.5 truncate text-xs text-muted">{post.slug}</p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {post.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={`${post.id}-${tag}`}
+                          className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                      {post.tags.length > 3 ? (
+                        <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted">
+                          +{post.tags.length - 3}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1.5 text-xs">
+                    <div className="flex gap-1 justify-center items-center">
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 font-semibold",
+                          statusBadge(post.status),
+                        )}
+                      >
+                        {toStatusLabel(post.status)}
+                      </span>
+                      <span className="rounded-full bg-foreground/10 px-2 py-0.5 font-medium text-foreground">
+                        비공개
+                      </span>
+                    </div>
+                    <span className="text-muted">{toListDate(post)}</span>
+                  </div>
                 </>
               </ManagerListRow>
             ))}
@@ -747,6 +883,71 @@ export function BlogManager({
         description="저장 즉시 Supabase 데이터가 갱신됩니다."
       >
         <form className="space-y-3" onSubmit={onSubmit}>
+          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">
+              썸네일 업로드(선택)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant={thumbnailMode === "url" ? "solid" : "ghost"}
+                size="sm"
+                onClick={() => setThumbnailMode("url")}
+              >
+                외부 링크
+              </Button>
+              <Button
+                type="button"
+                variant={thumbnailMode === "upload" ? "solid" : "ghost"}
+                size="sm"
+                onClick={() => setThumbnailMode("upload")}
+              >
+                파일 업로드
+              </Button>
+            </div>
+
+            {thumbnailMode === "url" ? (
+              <Input
+                autoFocus
+                value={form.thumbnail}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    thumbnail: event.target.value,
+                  }))
+                }
+                placeholder="https://... 또는 비워두기"
+              />
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  autoFocus
+                  onChange={(event) => onSelectThumbnailFile(event.target.files?.[0] ?? null)}
+                  className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
+                />
+                <p className="text-xs text-muted">
+                  파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.
+                </p>
+              </div>
+            )}
+            <p className="truncate text-xs text-muted">
+              현재 썸네일: {isUploadingThumbnail ? "업로드 중..." : form.thumbnail || "설정 안 함"}
+            </p>
+            {localThumbnailPreview || form.thumbnail ? (
+              <div className="overflow-hidden rounded-md border border-border bg-surface">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={localThumbnailPreview || form.thumbnail}
+                  alt="썸네일 미리보기"
+                  className="h-40 w-full object-cover"
+                />
+              </div>
+            ) : (
+              <p className="text-xs text-muted">썸네일 미리보기가 없습니다.</p>
+            )}
+          </SurfaceCard>
           <div className="space-y-1">
             <label className="text-xs font-medium uppercase tracking-wide text-muted">제목</label>
             <Input
@@ -805,70 +1006,6 @@ export function BlogManager({
               required
             />
           </div>
-
-          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">
-              썸네일 업로드(선택)
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant={thumbnailMode === "url" ? "solid" : "ghost"}
-                size="sm"
-                onClick={() => setThumbnailMode("url")}
-              >
-                외부 링크
-              </Button>
-              <Button
-                type="button"
-                variant={thumbnailMode === "upload" ? "solid" : "ghost"}
-                size="sm"
-                onClick={() => setThumbnailMode("upload")}
-              >
-                파일 업로드
-              </Button>
-            </div>
-
-            {thumbnailMode === "url" ? (
-              <Input
-                value={form.thumbnail}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    thumbnail: event.target.value,
-                  }))
-                }
-                placeholder="https://... 또는 비워두기"
-              />
-            ) : (
-              <div className="space-y-2">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => onSelectThumbnailFile(event.target.files?.[0] ?? null)}
-                  className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
-                />
-                <p className="text-xs text-muted">
-                  파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.
-                </p>
-              </div>
-            )}
-            <p className="truncate text-xs text-muted">
-              현재 썸네일: {isUploadingThumbnail ? "업로드 중..." : form.thumbnail || "설정 안 함"}
-            </p>
-            {localThumbnailPreview || form.thumbnail ? (
-              <div className="overflow-hidden rounded-md border border-border bg-surface">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={localThumbnailPreview || form.thumbnail}
-                  alt="썸네일 미리보기"
-                  className="h-40 w-full object-cover"
-                />
-              </div>
-            ) : (
-              <p className="text-xs text-muted">썸네일 미리보기가 없습니다.</p>
-            )}
-          </SurfaceCard>
 
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-3">
@@ -979,6 +1116,10 @@ export function BlogManager({
                 value={form.tagInput}
                 onChange={(event) => setForm((prev) => ({ ...prev, tagInput: event.target.value }))}
                 onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) {
+                    return;
+                  }
+
                   if (event.key === "Enter") {
                     event.preventDefault();
                     addTag();

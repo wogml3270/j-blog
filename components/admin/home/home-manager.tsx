@@ -17,14 +17,26 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  AdminToolbar,
+  AdminToolbarSelect,
+} from "@/components/admin/common/admin-toolbar";
 import { ManagerShell } from "@/components/admin/common/manager-shell";
 import { Button } from "@/components/ui/button";
+import { FilterIcon } from "@/components/ui/icons/filter-icon";
 import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { cn } from "@/lib/utils/cn";
-import type { HomeHighlightInput, HomeHighlightSourceType } from "@/types/home";
-import type { DashboardHomeManagerProps } from "@/types/ui";
+import { useBeforeUnloadUnsavedChanges } from "@/lib/utils/unsaved-changes";
+import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
+import type {
+  HomeActiveFilter,
+  HomeHighlightInput,
+  HomeHighlightSourceType,
+  HomeSourceFilter,
+} from "@/types/home";
+import type { HomeManagerProps } from "@/types/ui";
 
 type EditableHighlight = {
   id: string;
@@ -39,9 +51,7 @@ function sourceKey(sourceType: HomeHighlightSourceType, sourceId: string): strin
   return `${sourceType}:${sourceId}`;
 }
 
-function toEditableList(
-  items: DashboardHomeManagerProps["initialHighlights"],
-): EditableHighlight[] {
+function toEditableList(items: HomeManagerProps["initialHighlights"]): EditableHighlight[] {
   return items.map((item, index) => ({
     id: item.id,
     sourceType: item.sourceType,
@@ -83,13 +93,36 @@ function reorderById<T extends { id: string }>(items: T[], event: DragEndEvent):
   return arrayMove(items, oldIndex, newIndex);
 }
 
-function SortableHighlightRow({
-  children,
-  id,
-}: {
-  id: string;
-  children: React.ReactNode;
-}) {
+function reorderByVisibleSubset<T extends { id: string }>(
+  items: T[],
+  visibleIds: string[],
+  event: DragEndEvent,
+): T[] {
+  if (visibleIds.length <= 1) {
+    return items;
+  }
+
+  const visibleSet = new Set(visibleIds);
+  const visibleItems = items.filter((item) => visibleSet.has(item.id));
+  const reorderedVisible = reorderById(visibleItems, event);
+
+  if (reorderedVisible === visibleItems) {
+    return items;
+  }
+
+  let pointer = 0;
+  return items.map((item) => {
+    if (!visibleSet.has(item.id)) {
+      return item;
+    }
+
+    const next = reorderedVisible[pointer];
+    pointer += 1;
+    return next;
+  });
+}
+
+function SortableHighlightRow({ children, id }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   });
@@ -122,24 +155,48 @@ function SortableHighlightRow({
   );
 }
 
-export function DashboardHomeManager({
+export function HomeManager({
   initialHighlights,
   initialSources,
-}: DashboardHomeManagerProps) {
+}: HomeManagerProps) {
   const [items, setItems] = useState<EditableHighlight[]>(() => toEditableList(initialHighlights));
   const [savedItems, setSavedItems] = useState<EditableHighlight[]>(() =>
     toEditableList(initialHighlights),
   );
   const [isPending, setIsPending] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<HomeSourceFilter>("all");
+  const [activeFilter, setActiveFilter] = useState<HomeActiveFilter>("all");
   const [notice, setNotice] = useState<{
     kind: "success" | "error";
     text: string;
   } | null>(null);
+  const setUnsavedDirty = useAdminUnsavedStore((state) => state.setDirty);
 
   const sourceMap = new Map(
     initialSources.map((source) => [sourceKey(source.sourceType, source.id), source] as const),
   );
   const isDirty = serialize(items) !== serialize(savedItems);
+  useBeforeUnloadUnsavedChanges(isDirty);
+
+  useEffect(() => {
+    setUnsavedDirty("home", isDirty);
+    return () => {
+      setUnsavedDirty("home", false);
+    };
+  }, [isDirty, setUnsavedDirty]);
+
+  const filteredItems = useMemo(
+    () =>
+      items.filter((item) => {
+        const sourceMatched = sourceFilter === "all" || item.sourceType === sourceFilter;
+        const activeMatched =
+          activeFilter === "all" ||
+          (activeFilter === "active" && item.isActive) ||
+          (activeFilter === "inactive" && !item.isActive);
+        return sourceMatched && activeMatched;
+      }),
+    [activeFilter, items, sourceFilter],
+  );
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
@@ -151,7 +208,13 @@ export function DashboardHomeManager({
 
   // 대시보드 홈 항목 순서를 드래그 결과 순서로 재배치한다.
   const onHighlightsDragEnd = (event: DragEndEvent) => {
-    setItems((prev) => reorderById(prev, event));
+    setItems((prev) =>
+      reorderByVisibleSubset(
+        prev,
+        filteredItems.map((item) => item.id),
+        event,
+      ),
+    );
   };
 
   // 저장 시 순서/활성 상태와 CTA 오버라이드만 갱신한다.
@@ -172,7 +235,7 @@ export function DashboardHomeManager({
       }
 
       const payload = (await response.json()) as {
-        highlights?: DashboardHomeManagerProps["initialHighlights"];
+        highlights?: HomeManagerProps["initialHighlights"];
       };
       const next = toEditableList(payload.highlights ?? []);
       setItems(next);
@@ -190,14 +253,41 @@ export function DashboardHomeManager({
 
   return (
     <ManagerShell
+      title="메인 홈 슬라이드 관리"
       motion
       summary="대시보드 홈 Hero 슬라이드 노출 순서와 활성 상태를 관리합니다."
       detail="제목/설명/이미지는 원본 콘텐츠를 사용하며, CTA 라벨만 오버라이드할 수 있습니다."
+      action={
+        <AdminToolbar>
+          <AdminToolbarSelect
+            icon={<FilterIcon className="h-3.5 w-3.5 text-muted" />}
+            label="소스 필터"
+            value={sourceFilter}
+            options={[
+              { value: "all", label: "전체 소스" },
+              { value: "project", label: "프로젝트" },
+              { value: "post", label: "블로그" },
+            ]}
+            onChange={(value) => setSourceFilter(value as HomeSourceFilter)}
+          />
+          <AdminToolbarSelect
+            icon={<FilterIcon className="h-3.5 w-3.5 text-muted" />}
+            label="노출 필터"
+            value={activeFilter}
+            options={[
+              { value: "all", label: "전체 노출" },
+              { value: "active", label: "활성" },
+              { value: "inactive", label: "비활성" },
+            ]}
+            onChange={(value) => setActiveFilter(value as HomeActiveFilter)}
+          />
+        </AdminToolbar>
+      }
     >
       <SurfaceCard tone="surface" radius="2xl" padding="md" className="space-y-3">
-        {items.length === 0 ? (
+        {filteredItems.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted">
-            아직 대시보드 홈 항목이 없습니다.
+            조건에 맞는 대시보드 홈 항목이 없습니다.
           </p>
         ) : (
           <DndContext
@@ -206,11 +296,11 @@ export function DashboardHomeManager({
             onDragEnd={onHighlightsDragEnd}
           >
             <SortableContext
-              items={items.map((item) => item.id)}
+              items={filteredItems.map((item) => item.id)}
               strategy={verticalListSortingStrategy}
             >
               <ul className="space-y-3">
-                {items.map((item, index) => {
+                {filteredItems.map((item, index) => {
                   const source = sourceMap.get(sourceKey(item.sourceType, item.sourceId));
 
                   return (
@@ -236,7 +326,8 @@ export function DashboardHomeManager({
                             {source?.title ?? "연결된 원본이 없습니다."}
                           </p>
                           <p className="mt-1 text-xs text-muted">
-                            {item.sourceType === "project" ? "프로젝트" : "블로그"} · 순서 {index + 1}
+                            {item.sourceType === "project" ? "프로젝트" : "블로그"} · 순서{" "}
+                            {index + 1}
                           </p>
                         </div>
                       </div>
@@ -248,8 +339,8 @@ export function DashboardHomeManager({
                             checked={item.isActive}
                             onChange={(event) =>
                               setItems((prev) =>
-                                prev.map((target, targetIndex) =>
-                                  targetIndex === index
+                                prev.map((target) =>
+                                  target.id === item.id
                                     ? { ...target, isActive: event.target.checked }
                                     : target,
                                 ),
@@ -264,8 +355,8 @@ export function DashboardHomeManager({
                           value={item.overrideCtaLabel}
                           onChange={(event) =>
                             setItems((prev) =>
-                              prev.map((target, targetIndex) =>
-                                targetIndex === index
+                              prev.map((target) =>
+                                target.id === item.id
                                   ? { ...target, overrideCtaLabel: event.target.value }
                                   : target,
                               ),

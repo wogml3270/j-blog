@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { MouseEventHandler } from "react";
 import { cn } from "@/lib/utils/cn";
 
 type BrandLogoProps = {
@@ -6,12 +7,14 @@ type BrandLogoProps = {
   title: string;
   subtitle: string;
   className?: string;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
 };
 
-export function BrandLogo({ href, title, subtitle, className }: BrandLogoProps) {
+export function BrandLogo({ href, title, subtitle, className, onClick }: BrandLogoProps) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={cn(
         "group inline-flex items-center gap-2.5 rounded-xl border border-border/80 bg-linear-to-br from-surface to-surface/70 px-2.5 py-1.5 text-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md",
         className,
