@@ -87,6 +87,6 @@ export async function PUT(request: Request) {
     );
   }
 
-  revalidateHomePaths();
+  await revalidateHomePaths();
   return NextResponse.json({ highlights: result.data });
 }

@@ -178,7 +178,7 @@ export async function PUT(request: Request, context: RouteContext) {
     );
   }
 
-  revalidateProjectPaths(result.data.slug);
+  await revalidateProjectPaths(result.data.slug);
   return NextResponse.json({ project: result.data });
 }
 
@@ -196,6 +196,6 @@ export async function DELETE(_: Request, context: RouteContext) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  revalidateProjectPaths();
+  await revalidateProjectPaths();
   return NextResponse.json({ success: true });
 }

@@ -88,7 +88,7 @@ export async function PUT(request: Request, context: RouteContext) {
     return NextResponse.json({ error: result.error ?? "Failed to update post." }, { status: 400 });
   }
 
-  revalidateBlogPaths(result.data.slug);
+  await revalidateBlogPaths(result.data.slug);
   return NextResponse.json({ post: result.data });
 }
 
@@ -106,6 +106,6 @@ export async function DELETE(_: Request, context: RouteContext) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  revalidateBlogPaths();
+  await revalidateBlogPaths();
   return NextResponse.json({ success: true });
 }

@@ -105,6 +105,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error ?? "Failed to create post." }, { status: 400 });
   }
 
-  revalidateBlogPaths(result.data.slug);
+  await revalidateBlogPaths(result.data.slug);
   return NextResponse.json({ post: result.data }, { status: 201 });
 }

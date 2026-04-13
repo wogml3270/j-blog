@@ -195,6 +195,6 @@ export async function POST(request: Request) {
     );
   }
 
-  revalidateProjectPaths(result.data.slug);
+  await revalidateProjectPaths(result.data.slug);
   return NextResponse.json({ project: result.data }, { status: 201 });
 }

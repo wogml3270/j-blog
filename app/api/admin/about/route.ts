@@ -85,6 +85,6 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: result.error ?? "Failed to update about." }, { status: 400 });
   }
 
-  revalidateProfilePaths();
+  await revalidateProfilePaths();
   return NextResponse.json({ about: result.data });
 }
