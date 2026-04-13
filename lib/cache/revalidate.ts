@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache";
-import { locales, withLocalePath } from "@/lib/i18n/config";
+import { locales, withLocalePath, withLocaleRoutePath } from "@/lib/i18n/config";
 import { encodeSlugSegment } from "@/lib/utils/slug";
 
 const DEFAULT_REVALIDATE_ENDPOINT = "/api/internal/revalidate";
@@ -10,6 +10,11 @@ type RevalidateOptions = {
 
 function normalizePaths(paths: string[]): string[] {
   return [...new Set(paths.map((path) => path.trim()).filter(Boolean))];
+}
+
+// 공개 URL(/blog)과 내부 locale 경로(/ko/blog)를 모두 재검증 대상으로 포함한다.
+function buildLocaleRevalidatePaths(locale: (typeof locales)[number], pathname: string): string[] {
+  return normalizePaths([withLocalePath(locale, pathname), withLocaleRoutePath(locale, pathname)]);
 }
 
 // 현재 런타임 인스턴스의 Next 캐시를 즉시 무효화한다.
@@ -69,7 +74,7 @@ async function revalidateWithStrategy(paths: string[], options: RevalidateOption
 }
 
 export async function revalidateHomePaths() {
-  const paths = locales.map((locale) => withLocalePath(locale, "/"));
+  const paths = locales.flatMap((locale) => buildLocaleRevalidatePaths(locale, "/"));
   await revalidateWithStrategy(paths);
 }
 
@@ -78,11 +83,11 @@ export async function revalidateBlogPaths(slug?: string) {
   const paths: string[] = [];
 
   for (const locale of locales) {
-    paths.push(withLocalePath(locale, "/"));
-    paths.push(withLocalePath(locale, "/blog"));
+    paths.push(...buildLocaleRevalidatePaths(locale, "/"));
+    paths.push(...buildLocaleRevalidatePaths(locale, "/blog"));
 
     if (slug) {
-      paths.push(withLocalePath(locale, `/blog/${encodeSlugSegment(slug)}`));
+      paths.push(...buildLocaleRevalidatePaths(locale, `/blog/${encodeSlugSegment(slug)}`));
     }
   }
 
@@ -94,11 +99,11 @@ export async function revalidateProjectPaths(slug?: string) {
   const paths: string[] = [];
 
   for (const locale of locales) {
-    paths.push(withLocalePath(locale, "/"));
-    paths.push(withLocalePath(locale, "/projects"));
+    paths.push(...buildLocaleRevalidatePaths(locale, "/"));
+    paths.push(...buildLocaleRevalidatePaths(locale, "/projects"));
 
     if (slug) {
-      paths.push(withLocalePath(locale, `/projects/${encodeSlugSegment(slug)}`));
+      paths.push(...buildLocaleRevalidatePaths(locale, `/projects/${encodeSlugSegment(slug)}`));
     }
   }
 
@@ -109,8 +114,8 @@ export async function revalidateProfilePaths() {
   const paths: string[] = [];
 
   for (const locale of locales) {
-    paths.push(withLocalePath(locale, "/"));
-    paths.push(withLocalePath(locale, "/about"));
+    paths.push(...buildLocaleRevalidatePaths(locale, "/"));
+    paths.push(...buildLocaleRevalidatePaths(locale, "/about"));
   }
 
   await revalidateWithStrategy(paths);
