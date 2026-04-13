@@ -55,7 +55,8 @@ function recentPanelSkeleton(titleWidth: number) {
 export function AdminDashboardLoadingSkeleton() {
   return (
     <main className="space-y-6">
-      {pageTitleSkeleton(188)}
+      {pageTitleSkeleton(136)}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {Array.from({ length: 5 }).map((_, index) => dashboardCardSkeleton(index))}
       </div>
@@ -132,11 +133,9 @@ export function AdminAboutLoadingSkeleton() {
   }
   return (
     <main className="space-y-5">
-      {pageTitleSkeleton(136)}
-      {managerHeaderSkeleton(false)}
       <SurfaceCard tone="surface" radius="2xl" padding="md" className="space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <Skeleton width={58} height={24} rounded="999px" />
+          <Skeleton width={88} height={24} rounded="999px" />
         </div>
         {aboutSectionSkeleton(46, "42%")}
         {aboutSectionSkeleton(64, "36%")}
@@ -159,7 +158,6 @@ export function AdminAboutLoadingSkeleton() {
 
 // 관리자 목록형 페이지(블로그/프로젝트/문의 등) 공통 스켈레톤 조합 UI
 export function AdminListManagerLoadingSkeleton({
-  titleWidth = 148,
   hasAction = true,
 }: {
   titleWidth?: number;
@@ -167,7 +165,6 @@ export function AdminListManagerLoadingSkeleton({
 }) {
   return (
     <main className="space-y-5">
-      {pageTitleSkeleton(titleWidth)}
       {managerHeaderSkeleton(hasAction)}
       {managerListSkeleton()}
     </main>
