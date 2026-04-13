@@ -7,6 +7,9 @@ import { SiteViewportSync } from "@/components/layout/site-viewport-sync";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 
+// 공개 사이트는 항상 최신 DB 상태를 반영하도록 동적 렌더링으로 고정한다.
+export const dynamic = "force-dynamic";
+
 interface SiteLayoutProps {
   children: React.ReactNode;
   params: Promise<{ lang: string }>;

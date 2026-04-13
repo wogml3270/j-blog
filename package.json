@@ -9,7 +9,8 @@
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "seed:supabase": "node scripts/seed-supabase.mjs"
+    "seed:supabase": "node scripts/seed-supabase.mjs",
+    "deploy": "npx vercel --prod --yes"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
