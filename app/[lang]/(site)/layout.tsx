@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ContactFab } from "@/components/contact/fab";
 import { Footer } from "@/components/layout/footer";
@@ -16,6 +17,8 @@ interface SiteLayoutProps {
 }
 
 export default async function SiteLayout({ children, params }: SiteLayoutProps) {
+  // Request-time API를 호출해 공개 라우트를 항상 요청 시점 렌더링으로 강제한다.
+  await headers();
   const { lang } = await params;
 
   if (!isLocale(lang)) {
