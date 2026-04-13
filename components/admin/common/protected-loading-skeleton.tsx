@@ -1,6 +1,12 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { SurfaceCard } from "@/components/ui/surface-card";
 
+// 페이지 최상단 제목 영역 스켈레톤 UI
+function pageTitleSkeleton(width = 180) {
+  return <Skeleton width={width} height={36} rounded="0.55rem" />;
+}
+
+// 대시보드 탭 스켈레톤 UI
 function dashboardCardSkeleton(index: number) {
   const widthMap = ["34%", "26%", "31%", "29%", "33%"] as const;
 
@@ -19,52 +25,7 @@ function dashboardCardSkeleton(index: number) {
   );
 }
 
-function managerHeaderSkeleton(hasAction: boolean) {
-  return (
-    <SurfaceCard tone="surface" radius="xl" padding="md">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="space-y-2">
-          <Skeleton width={164} height={14} rounded="0.35rem" />
-          <Skeleton width={220} height={12} rounded="0.35rem" />
-        </div>
-        {hasAction ? <Skeleton width={92} height={36} rounded="0.6rem" /> : null}
-      </div>
-    </SurfaceCard>
-  );
-}
-
-function managerListSkeleton() {
-  const titleWidths = ["43%", "39%", "47%", "34%", "41%"] as const;
-
-  return (
-    <SurfaceCard tone="background" radius="xl" className="p-2.5">
-      <ul className="space-y-2">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <li
-            key={`admin-list-skeleton-${index}`}
-            className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2.5"
-          >
-            <Skeleton width={50} height={20} rounded="999px" />
-            <Skeleton width={titleWidths[index] ?? "42%"} height={14} rounded="0.35rem" />
-            <Skeleton className="hidden sm:inline-block" width={84} height={12} rounded="0.35rem" />
-            <Skeleton width={72} height={12} rounded="0.35rem" />
-          </li>
-        ))}
-      </ul>
-    </SurfaceCard>
-  );
-}
-
-function aboutSectionSkeleton(titleWidth: number, lineWidth: string) {
-  return (
-    <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-2 sm:p-4">
-      <Skeleton width={titleWidth} height={16} rounded="0.35rem" />
-      <Skeleton width={lineWidth} height={12} rounded="0.35rem" />
-      <Skeleton className="w-full" height={108} rounded="0.65rem" />
-    </SurfaceCard>
-  );
-}
-
+// 대시보드 하단 "최근 변경/문의" 패널 스켈레톤 UI
 function recentPanelSkeleton(titleWidth: number) {
   return (
     <SurfaceCard tone="surface" padding="md">
@@ -90,10 +51,7 @@ function recentPanelSkeleton(titleWidth: number) {
   );
 }
 
-function pageTitleSkeleton(width = 180) {
-  return <Skeleton width={width} height={36} rounded="0.55rem" />;
-}
-
+// 관리자 대시보드 페이지 전체 스켈레톤 조합 UI
 export function AdminDashboardLoadingSkeleton() {
   return (
     <main className="space-y-6">
@@ -117,23 +75,61 @@ export function AdminDashboardLoadingSkeleton() {
   );
 }
 
-export function AdminListManagerLoadingSkeleton({
-  titleWidth = 148,
-  hasAction = true,
-}: {
-  titleWidth?: number;
-  hasAction?: boolean;
-}) {
+// manager header (제목, 서브 제목, 필터 selectbox, 버튼 등) 스켈레톤 UI
+function managerHeaderSkeleton(hasAction: boolean) {
   return (
-    <main className="space-y-5">
-      {pageTitleSkeleton(titleWidth)}
-      {managerHeaderSkeleton(hasAction)}
-      {managerListSkeleton()}
-    </main>
+    <SurfaceCard tone="surface" radius="xl" padding="md">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-2 flex flex-col">
+          <Skeleton width={164} height={14} rounded="0.35rem" />
+          <Skeleton width={220} height={12} rounded="0.35rem" />
+        </div>
+        {hasAction ? (
+          <div className="flex gap-3">
+            <Skeleton width={92} height={36} rounded="0.6rem" />
+            <Skeleton width={92} height={36} rounded="0.6rem" />
+            <Skeleton width={92} height={36} rounded="0.6rem" />
+          </div>
+        ) : null}
+      </div>
+    </SurfaceCard>
   );
 }
 
+// list 목록 스켈레톤 UI
+function managerListSkeleton() {
+  const titleWidths = ["43%", "39%", "47%", "34%", "41%"] as const;
+
+  return (
+    <SurfaceCard tone="background" radius="xl" className="p-2.5">
+      <ul className="space-y-2">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <li
+            key={`admin-list-skeleton-${index}`}
+            className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2.5"
+          >
+            <Skeleton width={50} height={20} rounded="999px" />
+            <Skeleton width={titleWidths[index] ?? "42%"} height={14} rounded="0.35rem" />
+            <Skeleton className="hidden sm:inline-block" width={84} height={12} rounded="0.35rem" />
+            <Skeleton width={72} height={12} rounded="0.35rem" />
+          </li>
+        ))}
+      </ul>
+    </SurfaceCard>
+  );
+}
+
+// 관리자 소개 관리 페이지 전용 스켈레톤 조합 UI
 export function AdminAboutLoadingSkeleton() {
+  function aboutSectionSkeleton(titleWidth: number, lineWidth: string) {
+    return (
+      <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-2 sm:p-4">
+        <Skeleton width={titleWidth} height={16} rounded="0.35rem" />
+        <Skeleton width={lineWidth} height={12} rounded="0.35rem" />
+        <Skeleton className="w-full" height={108} rounded="0.65rem" />
+      </SurfaceCard>
+    );
+  }
   return (
     <main className="space-y-5">
       {pageTitleSkeleton(136)}
@@ -157,6 +153,23 @@ export function AdminAboutLoadingSkeleton() {
           <Skeleton width={94} height={36} rounded="0.6rem" />
         </div>
       </SurfaceCard>
+    </main>
+  );
+}
+
+// 관리자 목록형 페이지(블로그/프로젝트/문의 등) 공통 스켈레톤 조합 UI
+export function AdminListManagerLoadingSkeleton({
+  titleWidth = 148,
+  hasAction = true,
+}: {
+  titleWidth?: number;
+  hasAction?: boolean;
+}) {
+  return (
+    <main className="space-y-5">
+      {pageTitleSkeleton(titleWidth)}
+      {managerHeaderSkeleton(hasAction)}
+      {managerListSkeleton()}
     </main>
   );
 }

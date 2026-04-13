@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { cn } from "@/lib/utils/cn";
 import type { HomeHighlightInput, HomeHighlightSourceType } from "@/types/home";
-import type { HomeHighlightManagerProps } from "@/types/ui";
+import type { DashboardHomeManagerProps } from "@/types/ui";
 
 type EditableHighlight = {
   id: string;
@@ -40,7 +40,7 @@ function sourceKey(sourceType: HomeHighlightSourceType, sourceId: string): strin
 }
 
 function toEditableList(
-  items: HomeHighlightManagerProps["initialHighlights"],
+  items: DashboardHomeManagerProps["initialHighlights"],
 ): EditableHighlight[] {
   return items.map((item, index) => ({
     id: item.id,
@@ -122,10 +122,10 @@ function SortableHighlightRow({
   );
 }
 
-export function HomeHighlightManager({
+export function DashboardHomeManager({
   initialHighlights,
   initialSources,
-}: HomeHighlightManagerProps) {
+}: DashboardHomeManagerProps) {
   const [items, setItems] = useState<EditableHighlight[]>(() => toEditableList(initialHighlights));
   const [savedItems, setSavedItems] = useState<EditableHighlight[]>(() =>
     toEditableList(initialHighlights),
@@ -149,7 +149,7 @@ export function HomeHighlightManager({
     }),
   );
 
-  // 홈 하이라이트 항목 순서를 드래그 결과 순서로 재배치한다.
+  // 대시보드 홈 항목 순서를 드래그 결과 순서로 재배치한다.
   const onHighlightsDragEnd = (event: DragEndEvent) => {
     setItems((prev) => reorderById(prev, event));
   };
@@ -168,16 +168,16 @@ export function HomeHighlightManager({
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? "홈 저장에 실패했습니다.");
+        throw new Error(payload.error ?? "대시보드 홈 저장에 실패했습니다.");
       }
 
       const payload = (await response.json()) as {
-        highlights?: HomeHighlightManagerProps["initialHighlights"];
+        highlights?: DashboardHomeManagerProps["initialHighlights"];
       };
       const next = toEditableList(payload.highlights ?? []);
       setItems(next);
       setSavedItems(next);
-      setNotice({ kind: "success", text: "홈 하이라이트를 저장했습니다." });
+      setNotice({ kind: "success", text: "대시보드 홈 구성을 저장했습니다." });
     } catch (error) {
       setNotice({
         kind: "error",
@@ -191,13 +191,13 @@ export function HomeHighlightManager({
   return (
     <ManagerShell
       motion
-      summary="메인 Hero 슬라이드 노출 순서와 활성 상태를 관리합니다."
+      summary="대시보드 홈 Hero 슬라이드 노출 순서와 활성 상태를 관리합니다."
       detail="제목/설명/이미지는 원본 콘텐츠를 사용하며, CTA 라벨만 오버라이드할 수 있습니다."
     >
       <SurfaceCard tone="surface" radius="2xl" padding="md" className="space-y-3">
         {items.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted">
-            아직 추가된 하이라이트가 없습니다.
+            아직 대시보드 홈 항목이 없습니다.
           </p>
         ) : (
           <DndContext

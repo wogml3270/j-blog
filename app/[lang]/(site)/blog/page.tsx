@@ -44,8 +44,8 @@ export default async function BlogListPage({ params }: BlogListPageProps) {
       description={dictionary.blog.listDescription}
       listClassName="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4"
     >
-      {posts.map((post) => (
-        <BlogCard key={post.slug} post={post} locale={lang} />
+      {posts.map((post, index) => (
+        <BlogCard key={post.slug} post={post} locale={lang} animationDelay={index * 70} />
       ))}
     </ContentListLayout>
   );

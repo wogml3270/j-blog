@@ -81,7 +81,7 @@ export type ProjectsManagerProps = {
   initialSelectedId?: string | null;
 };
 
-export type HomeHighlightManagerProps = {
+export type DashboardHomeManagerProps = {
   initialHighlights: HomeHighlight[];
   initialSources: HomeHighlightSourceOption[];
 };

@@ -106,11 +106,11 @@ export default async function AdminDashboardPage() {
         </Link>
 
         <Link
-          href="/admin/highlight"
+          href="/admin/home"
           className="group block rounded-xl border border-border bg-surface p-4 transition hover:border-foreground/35"
         >
           <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">
-            홈 하이라이트
+            대시보드 홈
           </p>
           <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">
             {activeHighlightsCount}
@@ -154,7 +154,7 @@ export default async function AdminDashboardPage() {
           ) : null}
           {activeHighlightsCount === 0 ? (
             <li>
-              <Link href="/admin/highlight" className="text-foreground underline">
+              <Link href="/admin/home" className="text-foreground underline">
                 메인 히어로 하이라이트가 비어 있습니다. 항목 추가하기
               </Link>
             </li>

@@ -61,13 +61,14 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
       }
       listClassName="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4"
     >
-      {projects.map((project) => (
+      {projects.map((project, index) => (
         <ProjectCard
           key={project.slug}
           project={project}
           locale={lang}
           roleLabel={dictionary.projects.role}
           periodLabel={dictionary.projects.period}
+          animationDelay={index * 70}
         />
       ))}
     </ContentListLayout>

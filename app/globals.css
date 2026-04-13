@@ -123,6 +123,32 @@ html[data-theme-transition="active"] .locale-root * {
   }
 }
 
+@keyframes about-avatar-spin-desktop {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes about-avatar-spin-mobile {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.about-avatar-spin-desktop {
+  animation: about-avatar-spin-desktop 1800ms cubic-bezier(0.22, 1, 0.36, 1) 1 both;
+}
+
+.about-avatar-spin-mobile {
+  animation: about-avatar-spin-mobile 1400ms cubic-bezier(0.22, 1, 0.36, 1) 1 both;
+}
+
 .ui-skeleton {
   position: relative;
   display: inline-block;
@@ -168,6 +194,11 @@ html[data-theme-transition="active"] .locale-root * {
   .ui-strong-motion * {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
+  }
+
+  .about-avatar-spin-desktop,
+  .about-avatar-spin-mobile {
+    animation: none !important;
   }
 }
 
