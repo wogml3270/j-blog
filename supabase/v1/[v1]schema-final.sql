@@ -1,5 +1,5 @@
 -- Schema Version: v1.0.15-final
--- File: [v1]schema-최종.sql
+-- File: [v1]schema-final.sql
 -- Purpose:
 --   - v1.0.0 ~ v1.0.15 누적 결과를 반영한 최종 구조 스키마
 --   - 현재 애플리케이션 코드 기준 컬럼/제약/RLS/트리거를 일관되게 정리
