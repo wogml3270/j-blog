@@ -1,6 +1,7 @@
 import type { ContentLocale } from "@/types/content-locale";
 
 export type AboutTechItem = {
+  category: string;
   name: string;
   description: string;
   logoUrl: string;
