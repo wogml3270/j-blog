@@ -124,7 +124,12 @@ function managerListSkeleton() {
 export function AdminAboutLoadingSkeleton() {
   function aboutSectionSkeleton(titleWidth: number, lineWidth: string) {
     return (
-      <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-2 sm:p-4">
+      <SurfaceCard
+        tone="background"
+        radius="xl"
+        padding="sm"
+        className="space-y-2 sm:p-4 flex flex-col gap-3"
+      >
         <Skeleton width={titleWidth} height={16} rounded="0.35rem" />
         <Skeleton width={lineWidth} height={12} rounded="0.35rem" />
         <Skeleton className="w-full" height={108} rounded="0.65rem" />
@@ -136,11 +141,17 @@ export function AdminAboutLoadingSkeleton() {
       <SurfaceCard tone="surface" radius="2xl" padding="md" className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <Skeleton width={88} height={24} rounded="999px" />
+          <Skeleton width={150} height={24} rounded="999px" />
         </div>
         {aboutSectionSkeleton(46, "42%")}
         {aboutSectionSkeleton(64, "36%")}
         {aboutSectionSkeleton(64, "34%")}
-        <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-2 sm:p-4">
+        <SurfaceCard
+          tone="background"
+          radius="xl"
+          padding="sm"
+          className="space-y-2 sm:p-4 flex flex-col gap-3"
+        >
           <Skeleton width={64} height={14} rounded="0.35rem" />
           <div className="grid gap-2 sm:grid-cols-2">
             <Skeleton className="h-9 w-full" rounded="0.55rem" />
