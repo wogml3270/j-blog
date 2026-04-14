@@ -1,24 +1,24 @@
 import type { Locale } from "@/lib/i18n/config";
 import type { PublishStatus } from "@/types/db";
 import type {
-  HomeHighlight,
-  HomeHighlightInput,
-  HomeHighlightResolvedSlide,
-  HomeHighlightSourceOption,
-  HomeHighlightSourceType,
-} from "@/types/home";
+  HomeSlide,
+  HomeSlideInput,
+  HomeSlideResolved,
+  HomeSlideSourceOption,
+  HomeSlideSourceType,
+} from "@/types/home-slide";
 import { getFeaturedPublishedPosts } from "@/lib/blog/repository";
 import { stripMarkdownToPlainText } from "@/lib/blog/markdown";
 import { withLocalePath } from "@/lib/i18n/config";
-import { getPublishedProfileContent } from "@/lib/profile/repository";
+import { getPublishedAboutContent } from "@/lib/profile/repository";
 import { getFeaturedProjects } from "@/lib/projects/repository";
 import { DEFAULT_ABOUT_PHOTO_URL } from "@/lib/site/profile";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { encodeSlugSegment } from "@/lib/utils/slug";
 
-type HomeHighlightRow = {
+type HomeSlideRow = {
   id: string;
-  source_type: HomeHighlightSourceType;
+  source_type: HomeSlideSourceType;
   source_id: string;
   order_index: number;
   is_active: boolean;
@@ -27,7 +27,7 @@ type HomeHighlightRow = {
   updated_at: string;
 };
 
-type HighlightPostRow = {
+type HomeSlidePostRow = {
   id: string;
   slug: string;
   title: string;
@@ -38,7 +38,7 @@ type HighlightPostRow = {
   updated_at: string;
 };
 
-type HighlightProjectRow = {
+type HomeSlideProjectRow = {
   id: string;
   slug: string;
   title: string;
@@ -55,7 +55,7 @@ type RepoResult<T> = {
   error: string | null;
 };
 
-const HOME_HIGHLIGHT_SELECT_FIELDS =
+const HOME_SLIDE_SELECT_FIELDS =
   "id,source_type,source_id,order_index,is_active,override_cta_label,created_at,updated_at";
 
 const FALLBACK_SLIDE_IMAGE = "/blog/default-thumbnail.svg";
@@ -75,7 +75,7 @@ function toHeroDescription(value: string | null | undefined): string {
   return `${normalized.slice(0, MAX_HERO_DESCRIPTION_LENGTH).trimEnd()}...`;
 }
 
-function rowToHighlight(row: HomeHighlightRow): HomeHighlight {
+function rowToHomeSlide(row: HomeSlideRow): HomeSlide {
   return {
     id: row.id,
     sourceType: row.source_type,
@@ -97,7 +97,7 @@ function normalizeText(value: string | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
-function toSourceOptionFromPost(row: HighlightPostRow): HomeHighlightSourceOption {
+function toSourceOptionFromPost(row: HomeSlidePostRow): HomeSlideSourceOption {
   return {
     id: row.id,
     sourceType: "post",
@@ -111,7 +111,7 @@ function toSourceOptionFromPost(row: HighlightPostRow): HomeHighlightSourceOptio
   };
 }
 
-function toSourceOptionFromProject(row: HighlightProjectRow): HomeHighlightSourceOption {
+function toSourceOptionFromProject(row: HomeSlideProjectRow): HomeSlideSourceOption {
   return {
     id: row.id,
     sourceType: "project",
@@ -125,7 +125,8 @@ function toSourceOptionFromProject(row: HighlightProjectRow): HomeHighlightSourc
   };
 }
 
-export async function getAdminHomeHighlightSources(): Promise<HomeHighlightSourceOption[]> {
+// 관리자 홈 슬라이드 후보(공개 프로젝트/게시글) 목록을 가져온다.
+export async function getAdminHomeSlideSources(): Promise<HomeSlideSourceOption[]> {
   const service = createSupabaseServiceClient();
 
   if (!service) {
@@ -147,10 +148,10 @@ export async function getAdminHomeHighlightSources(): Promise<HomeHighlightSourc
       .order("updated_at", { ascending: false }),
   ]);
 
-  const posts = postsResult.error ? [] : ((postsResult.data ?? []) as HighlightPostRow[]);
+  const posts = postsResult.error ? [] : ((postsResult.data ?? []) as HomeSlidePostRow[]);
   const projects = projectsResult.error
     ? []
-    : ((projectsResult.data ?? []) as HighlightProjectRow[]);
+    : ((projectsResult.data ?? []) as HomeSlideProjectRow[]);
 
   return [...projects.map(toSourceOptionFromProject), ...posts.map(toSourceOptionFromPost)].sort(
     (a, b) => {
@@ -163,7 +164,8 @@ export async function getAdminHomeHighlightSources(): Promise<HomeHighlightSourc
   );
 }
 
-export async function getAdminHomeHighlights(): Promise<HomeHighlight[]> {
+// 관리자 홈 슬라이드 편집 목록을 정렬 순서대로 조회한다.
+export async function getAdminHomeSlides(): Promise<HomeSlide[]> {
   const service = createSupabaseServiceClient();
 
   if (!service) {
@@ -171,8 +173,8 @@ export async function getAdminHomeHighlights(): Promise<HomeHighlight[]> {
   }
 
   const { data, error } = await service
-    .from("home_highlights")
-    .select(HOME_HIGHLIGHT_SELECT_FIELDS)
+    .from("home_slide")
+    .select(HOME_SLIDE_SELECT_FIELDS)
     .order("order_index", { ascending: true })
     .order("updated_at", { ascending: true });
 
@@ -180,12 +182,13 @@ export async function getAdminHomeHighlights(): Promise<HomeHighlight[]> {
     return [];
   }
 
-  return (data as HomeHighlightRow[]).map(rowToHighlight);
+  return (data as HomeSlideRow[]).map(rowToHomeSlide);
 }
 
-export async function replaceAdminHomeHighlights(
-  input: HomeHighlightInput[],
-): Promise<RepoResult<HomeHighlight[]>> {
+// 관리자 저장 결과를 기준으로 home_slide 테이블을 스냅샷 교체한다.
+export async function replaceAdminHomeSlides(
+  input: HomeSlideInput[],
+): Promise<RepoResult<HomeSlide[]>> {
   const service = createSupabaseServiceClient();
 
   if (!service) {
@@ -215,7 +218,7 @@ export async function replaceAdminHomeHighlights(
       order_index: index,
     }));
 
-  const deleteResult = await service.from("home_highlights").delete().gte("order_index", 0);
+  const deleteResult = await service.from("home_slide").delete().gte("order_index", 0);
 
   if (deleteResult.error) {
     return {
@@ -225,7 +228,7 @@ export async function replaceAdminHomeHighlights(
   }
 
   if (normalizedRows.length > 0) {
-    const insertResult = await service.from("home_highlights").insert(normalizedRows);
+    const insertResult = await service.from("home_slide").insert(normalizedRows);
 
     if (insertResult.error) {
       return {
@@ -236,15 +239,15 @@ export async function replaceAdminHomeHighlights(
   }
 
   return {
-    data: await getAdminHomeHighlights(),
+    data: await getAdminHomeSlides(),
     error: null,
   };
 }
 
-async function getFallbackSlides(locale: Locale): Promise<HomeHighlightResolvedSlide[]> {
+async function getFallbackSlides(locale: Locale): Promise<HomeSlideResolved[]> {
   const [projects, posts] = await Promise.all([
     getFeaturedProjects(locale),
-    getFeaturedPublishedPosts(),
+    getFeaturedPublishedPosts(undefined, locale),
   ]);
 
   // 하이라이트가 비어있을 때는 "공개 + 메인 노출" 데이터만 기본 슬라이드로 사용한다.
@@ -253,7 +256,7 @@ async function getFallbackSlides(locale: Locale): Promise<HomeHighlightResolvedS
   );
   const featuredPosts = posts.filter((post) => post.featured);
 
-  const projectSlides: HomeHighlightResolvedSlide[] = featuredProjects.map((project, index) => ({
+  const projectSlides: HomeSlideResolved[] = featuredProjects.map((project, index) => ({
     id: `fallback-project-${project.slug}`,
     sourceType: "project",
     sourceId: project.id ?? project.slug,
@@ -266,7 +269,7 @@ async function getFallbackSlides(locale: Locale): Promise<HomeHighlightResolvedS
     locale,
   }));
 
-  const postSlides: HomeHighlightResolvedSlide[] = featuredPosts.map((post, index) => ({
+  const postSlides: HomeSlideResolved[] = featuredPosts.map((post, index) => ({
     id: `fallback-post-${post.slug}`,
     sourceType: "post",
     sourceId: post.id ?? post.slug,
@@ -285,7 +288,7 @@ async function getFallbackSlides(locale: Locale): Promise<HomeHighlightResolvedS
     return combined;
   }
 
-  const profile = await getPublishedProfileContent(locale);
+  const profile = await getPublishedAboutContent(locale);
 
   return [
     {
@@ -303,9 +306,10 @@ async function getFallbackSlides(locale: Locale): Promise<HomeHighlightResolvedS
   ];
 }
 
-export async function getHomeHighlightSlides(
+// 공개 홈 슬라이드는 home_slide 우선, 비어 있으면 featured fallback을 사용한다.
+export async function getHomeSlides(
   locale: Locale,
-): Promise<HomeHighlightResolvedSlide[]> {
+): Promise<HomeSlideResolved[]> {
   const service = createSupabaseServiceClient();
 
   if (!service) {
@@ -313,8 +317,8 @@ export async function getHomeHighlightSlides(
   }
 
   const { data: rows, error } = await service
-    .from("home_highlights")
-    .select(HOME_HIGHLIGHT_SELECT_FIELDS)
+    .from("home_slide")
+    .select(HOME_SLIDE_SELECT_FIELDS)
     .eq("is_active", true)
     .order("order_index", { ascending: true })
     .order("updated_at", { ascending: true });
@@ -323,7 +327,7 @@ export async function getHomeHighlightSlides(
     return getFallbackSlides(locale);
   }
 
-  const highlights = (rows as HomeHighlightRow[]).map(rowToHighlight);
+  const highlights = (rows as HomeSlideRow[]).map(rowToHomeSlide);
   const postIds = highlights
     .filter((item) => item.sourceType === "post")
     .map((item) => item.sourceId);
@@ -338,28 +342,28 @@ export async function getHomeHighlightSlides(
           .select("id,slug,title,description,thumbnail,status,featured,updated_at")
           .eq("status", "published")
           .in("id", postIds)
-      : Promise.resolve({ data: [] as HighlightPostRow[], error: null }),
+      : Promise.resolve({ data: [] as HomeSlidePostRow[], error: null }),
     projectIds.length > 0
       ? service
           .from("projects")
           .select("id,slug,title,home_summary,summary,thumbnail,status,featured,updated_at")
           .eq("status", "published")
           .in("id", projectIds)
-      : Promise.resolve({ data: [] as HighlightProjectRow[], error: null }),
+      : Promise.resolve({ data: [] as HomeSlideProjectRow[], error: null }),
   ]);
 
-  const postMap = new Map<string, HighlightPostRow>(
-    (postRowsResult.error ? [] : ((postRowsResult.data ?? []) as HighlightPostRow[])).map(
+  const postMap = new Map<string, HomeSlidePostRow>(
+    (postRowsResult.error ? [] : ((postRowsResult.data ?? []) as HomeSlidePostRow[])).map(
       (item) => [item.id, item],
     ),
   );
-  const projectMap = new Map<string, HighlightProjectRow>(
-    (projectRowsResult.error ? [] : ((projectRowsResult.data ?? []) as HighlightProjectRow[])).map(
+  const projectMap = new Map<string, HomeSlideProjectRow>(
+    (projectRowsResult.error ? [] : ((projectRowsResult.data ?? []) as HomeSlideProjectRow[])).map(
       (item) => [item.id, item],
     ),
   );
 
-  const slides: HomeHighlightResolvedSlide[] = [];
+  const slides: HomeSlideResolved[] = [];
 
   for (const item of highlights) {
     if (item.sourceType === "post") {
@@ -410,3 +414,9 @@ export async function getHomeHighlightSlides(
 
   return slides.sort((a, b) => a.orderIndex - b.orderIndex);
 }
+
+// v1 호출처 호환을 위해 기존 함수명을 alias로 유지한다.
+export const getAdminHomeHighlightSources = getAdminHomeSlideSources;
+export const getAdminHomeHighlights = getAdminHomeSlides;
+export const replaceAdminHomeHighlights = replaceAdminHomeSlides;
+export const getHomeHighlightSlides = getHomeSlides;

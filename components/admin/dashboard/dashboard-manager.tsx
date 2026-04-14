@@ -2,10 +2,10 @@ import Link from "next/link";
 import { ShortcutIcon } from "@/components/ui/icons/shortcut-icon";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import type { AdminPost } from "@/types/blog";
-import type { ContactMessage } from "@/types/contact";
-import type { HomeHighlight } from "@/types/home";
+import type { Contact } from "@/types/contacts";
+import type { HomeSlide } from "@/types/home-slide";
 import type { AdminProject } from "@/types/projects";
-import type { ProfileContent } from "@/types/profile";
+import type { AboutContent } from "@/types/about";
 
 function formatDate(value: string | null): string {
   if (!value) {
@@ -34,9 +34,9 @@ export function DashboardManager({
 }: {
   posts: AdminPost[];
   projects: AdminProject[];
-  profile: ProfileContent;
-  contacts: ContactMessage[];
-  highlights: HomeHighlight[];
+  profile: AboutContent;
+  contacts: Contact[];
+  highlights: HomeSlide[];
 }) {
   // 대시보드는 독립 데이터 소스를 요약 카드/최근 변경 패널로 나눠 보여준다.
   const newContactsCount = contacts.filter((item) => item.status === "new").length;

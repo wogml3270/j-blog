@@ -230,86 +230,48 @@ export function CommentsSection({ postSlug, labels, initialComments }: CommentsS
 
   return (
     <section className="space-y-3 rounded-xl border border-border bg-surface p-3.5 sm:p-4">
-      <header className="space-y-0.5">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">{labels.title}</h2>
-        <p className="text-sm text-muted">{labels.description}</p>
-      </header>
+      <div className="flex flex-col md:flex-row gap-3 justify-between">
+        <header className="space-y-0.5">
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">{labels.title}</h2>
+          {!user && <p className="text-sm text-muted">{labels.description}</p>}
+        </header>
 
-      {user ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background px-2.5 py-2">
-          <div className="flex min-w-0 items-center gap-2">
-            {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={avatarUrl}
-                alt={nickname || "user"}
-                className="h-7 w-7 rounded-full object-cover"
-              />
-            ) : (
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-[11px] font-semibold text-foreground">
-                {(nickname || email || "U").slice(0, 1).toUpperCase()}
-              </span>
-            )}
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-foreground">{nickname || email}</p>
-              <p className="truncate text-xs text-muted">{authLabel}</p>
+        {user ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background px-2.5 py-2">
+            <div className="flex min-w-0 items-center gap-2">
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt={nickname || "user"}
+                  className="h-7 w-7 rounded-full object-cover"
+                />
+              ) : (
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-[11px] font-semibold text-foreground">
+                  {(nickname || email || "U").slice(0, 1).toUpperCase()}
+                </span>
+              )}
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-foreground">{nickname || email}</p>
+                <p className="truncate text-xs text-muted">{authLabel}</p>
+              </div>
             </div>
           </div>
-          <Button type="button" size="sm" variant="ghost" onClick={onSignOut}>
-            {labels.signOut}
-          </Button>
-        </div>
-      ) : !isAuthAvailable ? (
-        <div className="rounded-lg border border-border bg-background px-2.5 py-2">
-          <p className="text-sm text-muted">댓글 로그인을 위한 Supabase 설정이 필요합니다.</p>
-        </div>
-      ) : isAuthLoading ? (
-        <div className="space-y-2 rounded-lg border border-border bg-background px-2.5 py-2">
-          <Skeleton width="42%" height={13} />
-          <Skeleton width="58%" height={13} />
-        </div>
-      ) : (
-        <div className="rounded-lg border border-border bg-background px-2.5 py-2">
-          <p className="text-sm text-muted">
-            {labels.signInHint} (헤더의 로그인 버튼을 이용해주세요)
-          </p>
-        </div>
-      )}
-
-      <form className="space-y-2.5" onSubmit={onSubmit}>
-        <label className="space-y-1">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted">
-            {labels.contentLabel}
-          </span>
-          <textarea
-            className="min-h-[78px] w-full rounded-md border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted focus-visible:outline-none"
-            value={form.content}
-            onChange={(event) => setForm((prev) => ({ ...prev, content: event.target.value }))}
-            placeholder={labels.contentPlaceholder}
-            required
-            disabled={!user || isPending}
-          />
-        </label>
-
-        <Button
-          type="submit"
-          size="sm"
-          className="w-full sm:w-auto"
-          disabled={!user || !isAuthAvailable || isAuthLoading || isPending}
-        >
-          {isPending ? labels.submitting : labels.submit}
-        </Button>
-        {isPending ? (
-          <div className="space-y-1">
-            <Skeleton width="100%" height={8} rounded="999px" />
-            <Skeleton width="70%" height={8} rounded="999px" />
+        ) : !isAuthAvailable ? (
+          <div className="rounded-lg border border-border bg-background px-2.5 py-2">
+            <p className="text-sm text-muted">댓글 로그인을 위한 Supabase 설정이 필요합니다.</p>
           </div>
-        ) : null}
-      </form>
-
-      {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
-      {errorMessage ? <p className="text-sm text-red-500">{errorMessage}</p> : null}
-
+        ) : isAuthLoading ? (
+          <div className="space-y-2 rounded-lg border border-border bg-background px-2.5 py-2">
+            <Skeleton width="42%" height={13} />
+            <Skeleton width="58%" height={13} />
+          </div>
+        ) : (
+          <div className="rounded-lg border border-border bg-background px-2.5 py-2">
+            <p className="text-sm text-muted">{labels.signInHint}</p>
+          </div>
+        )}
+      </div>
       <div className="space-y-2.5">
         {comments.length > 0 ? (
           comments.map((comment) => (
@@ -347,6 +309,41 @@ export function CommentsSection({ postSlug, labels, initialComments }: CommentsS
           </p>
         )}
       </div>
+
+      <form className="space-y-2.5" onSubmit={onSubmit}>
+        <label className="space-y-1">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted">
+            {labels.contentLabel}
+          </span>
+          <textarea
+            className="min-h-[78px] w-full rounded-md border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted focus-visible:outline-none"
+            value={form.content}
+            onChange={(event) => setForm((prev) => ({ ...prev, content: event.target.value }))}
+            placeholder={labels.contentPlaceholder}
+            required
+            disabled={!user || isPending}
+          />
+        </label>
+        <div className="flex justify-end mt-3">
+          <Button
+            type="submit"
+            size="sm"
+            className="w-full sm:w-auto"
+            disabled={!user || !isAuthAvailable || isAuthLoading || isPending}
+          >
+            {isPending ? labels.submitting : labels.submit}
+          </Button>
+        </div>
+        {isPending ? (
+          <div className="space-y-1">
+            <Skeleton width="100%" height={8} rounded="999px" />
+            <Skeleton width="70%" height={8} rounded="999px" />
+          </div>
+        ) : null}
+      </form>
+
+      {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
+      {errorMessage ? <p className="text-sm text-red-500">{errorMessage}</p> : null}
     </section>
   );
 }

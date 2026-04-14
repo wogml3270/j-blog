@@ -7,6 +7,7 @@ import {
   AdminToolbarAction,
   AdminToolbarSelect,
 } from "@/components/admin/common/admin-toolbar";
+import { AdminLocaleTabs, type AdminLocale } from "@/components/admin/common/locale-tabs";
 import { EditorDrawer } from "@/components/admin/common/editor-drawer";
 import { ManagerList, ManagerListRow } from "@/components/admin/common/manager-list";
 import { MarkdownField } from "@/components/admin/common/markdown-field";
@@ -28,7 +29,7 @@ import { useAdminDetailStore } from "@/stores/admin-detail";
 import { useAdminListUiStore } from "@/stores/admin-list-ui";
 import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
 import type { AdminListFilter, PaginatedResult } from "@/types/admin";
-import type { AdminPost } from "@/types/blog";
+import type { AdminPost, BlogTranslationMap } from "@/types/blog";
 import type { PublishStatus } from "@/types/db";
 import type { BlogManagerProps, PostFormState, ThumbnailInputMode } from "@/types/ui";
 
@@ -44,6 +45,29 @@ const EMPTY_FORM: PostFormState = {
   tags: [],
   tagInput: "",
   bodyMarkdown: "",
+};
+
+type TranslationLocale = Exclude<AdminLocale, "ko">;
+
+type BlogTranslationFormState = {
+  title: string;
+  description: string;
+  bodyMarkdown: string;
+  tags: string[];
+  tagInput: string;
+};
+
+const EMPTY_BLOG_TRANSLATION_FORM: BlogTranslationFormState = {
+  title: "",
+  description: "",
+  bodyMarkdown: "",
+  tags: [],
+  tagInput: "",
+};
+
+const EMPTY_BLOG_TRANSLATIONS: Record<TranslationLocale, BlogTranslationFormState> = {
+  en: { ...EMPTY_BLOG_TRANSLATION_FORM },
+  ja: { ...EMPTY_BLOG_TRANSLATION_FORM },
 };
 
 // UTC 시각을 datetime-local 입력 포맷으로 안전하게 변환한다.
@@ -84,7 +108,49 @@ function normalizeTagList(tags: string[]): string[] {
   return [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
 }
 
-function serializePostForm(form: PostFormState, syncSlugWithTitle: boolean): string {
+function toTranslationState(translations: BlogTranslationMap | undefined) {
+  return {
+    en: {
+      ...EMPTY_BLOG_TRANSLATION_FORM,
+      title: translations?.en?.title ?? "",
+      description: translations?.en?.description ?? "",
+      bodyMarkdown: translations?.en?.bodyMarkdown ?? "",
+      tags: normalizeTagList(translations?.en?.tags ?? []),
+    },
+    ja: {
+      ...EMPTY_BLOG_TRANSLATION_FORM,
+      title: translations?.ja?.title ?? "",
+      description: translations?.ja?.description ?? "",
+      bodyMarkdown: translations?.ja?.bodyMarkdown ?? "",
+      tags: normalizeTagList(translations?.ja?.tags ?? []),
+    },
+  };
+}
+
+function toTranslationPayload(
+  translations: Record<TranslationLocale, BlogTranslationFormState>,
+): BlogTranslationMap {
+  return {
+    en: {
+      title: translations.en.title.trim(),
+      description: translations.en.description.trim(),
+      bodyMarkdown: translations.en.bodyMarkdown,
+      tags: normalizeTagList(translations.en.tags),
+    },
+    ja: {
+      title: translations.ja.title.trim(),
+      description: translations.ja.description.trim(),
+      bodyMarkdown: translations.ja.bodyMarkdown,
+      tags: normalizeTagList(translations.ja.tags),
+    },
+  };
+}
+
+function serializePostForm(
+  form: PostFormState,
+  syncSlugWithTitle: boolean,
+  translations: Record<TranslationLocale, BlogTranslationFormState>,
+): string {
   return JSON.stringify({
     title: form.title.trim(),
     slug: form.slug.trim(),
@@ -96,6 +162,7 @@ function serializePostForm(form: PostFormState, syncSlugWithTitle: boolean): str
     scheduledPublishAt: form.scheduledPublishAt,
     tags: normalizeTagList(form.tags),
     bodyMarkdown: form.bodyMarkdown,
+    translations: toTranslationPayload(translations),
     syncSlugWithTitle,
   });
 }
@@ -195,6 +262,10 @@ export function BlogManager({
   const [pageSize, setPageSize] = useState(initialMainPage.pageSize);
   const [filter, setFilter] = useState<AdminListFilter>(initialFilter);
   const [form, setForm] = useState<PostFormState>(EMPTY_FORM);
+  const [translations, setTranslations] = useState<Record<TranslationLocale, BlogTranslationFormState>>(
+    EMPTY_BLOG_TRANSLATIONS,
+  );
+  const [activeLocale, setActiveLocale] = useState<AdminLocale>("ko");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [thumbnailMode, setThumbnailMode] = useState<ThumbnailInputMode>("url");
   const [syncSlugWithTitle, setSyncSlugWithTitle] = useState(true);
@@ -203,7 +274,7 @@ export function BlogManager({
   const [isPending, setIsPending] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [savedFormSnapshot, setSavedFormSnapshot] = useState<string>(() =>
-    serializePostForm(EMPTY_FORM, true),
+    serializePostForm(EMPTY_FORM, true, EMPTY_BLOG_TRANSLATIONS),
   );
   const [message, setMessage] = useState<string | null>(null);
   const hasAppliedInitialSelection = useRef(false);
@@ -215,7 +286,7 @@ export function BlogManager({
   const savedPageSize = useAdminListUiStore((state) => state.pageSizeByScope.blog);
   const setSavedPageSize = useAdminListUiStore((state) => state.setPageSize);
   const isFormDirty =
-    drawerOpen && serializePostForm(form, syncSlugWithTitle) !== savedFormSnapshot;
+    drawerOpen && serializePostForm(form, syncSlugWithTitle, translations) !== savedFormSnapshot;
 
   useBeforeUnloadUnsavedChanges(isFormDirty);
 
@@ -277,8 +348,10 @@ export function BlogManager({
 
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setTranslations(EMPTY_BLOG_TRANSLATIONS);
+    setActiveLocale("ko");
     setSyncSlugWithTitle(true);
-    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
+    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true, EMPTY_BLOG_TRANSLATIONS));
     setThumbnailMode("url");
     setLocalThumbnailPreview((prev) => {
       if (prev) {
@@ -302,8 +375,11 @@ export function BlogManager({
       setEditingId(post.id);
       const nextForm = toFormState(post);
       setForm(nextForm);
+      const nextTranslations = toTranslationState(post.translations);
+      setTranslations(nextTranslations);
+      setActiveLocale("ko");
       setSyncSlugWithTitle(post.syncSlugWithTitle);
-      setSavedFormSnapshot(serializePostForm(nextForm, post.syncSlugWithTitle));
+      setSavedFormSnapshot(serializePostForm(nextForm, post.syncSlugWithTitle, nextTranslations));
       setThumbnailMode("url");
       setLocalThumbnailPreview((prev) => {
         if (prev) {
@@ -402,6 +478,90 @@ export function BlogManager({
     }));
   };
 
+  const addTranslationTag = (locale: TranslationLocale) => {
+    const nextTag = translations[locale].tagInput.trim();
+
+    if (!nextTag) {
+      return;
+    }
+
+    setTranslations((prev) => ({
+      ...prev,
+      [locale]: {
+        ...prev[locale],
+        tags: normalizeTagList([...prev[locale].tags, nextTag]),
+        tagInput: "",
+      },
+    }));
+  };
+
+  const removeTranslationTag = (locale: TranslationLocale, value: string) => {
+    setTranslations((prev) => ({
+      ...prev,
+      [locale]: {
+        ...prev[locale],
+        tags: prev[locale].tags.filter((tag) => tag !== value),
+      },
+    }));
+  };
+
+  // 현재 선택된 로케일의 입력 필드를 동일 UI에서 읽기/쓰기할 수 있도록 정규화한다.
+  const localeTitle =
+    activeLocale === "ko" ? form.title : translations[activeLocale as TranslationLocale].title;
+  const localeDescription =
+    activeLocale === "ko"
+      ? form.description
+      : translations[activeLocale as TranslationLocale].description;
+  const localeBodyMarkdown =
+    activeLocale === "ko"
+      ? form.bodyMarkdown
+      : translations[activeLocale as TranslationLocale].bodyMarkdown;
+  const localeTags =
+    activeLocale === "ko" ? form.tags : translations[activeLocale as TranslationLocale].tags;
+  const localeTagInput =
+    activeLocale === "ko"
+      ? form.tagInput
+      : translations[activeLocale as TranslationLocale].tagInput;
+
+  const setLocaleField = (
+    field: "title" | "description" | "bodyMarkdown" | "tagInput",
+    value: string,
+  ) => {
+    if (activeLocale === "ko") {
+      setForm((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+      return;
+    }
+
+    setTranslations((prev) => ({
+      ...prev,
+      [activeLocale]: {
+        ...prev[activeLocale],
+        [field]: value,
+      },
+    }));
+  };
+
+  const addLocaleTag = () => {
+    if (activeLocale === "ko") {
+      addTag();
+      return;
+    }
+
+    addTranslationTag(activeLocale);
+  };
+
+  const removeLocaleTag = (value: string) => {
+    if (activeLocale === "ko") {
+      removeTag(value);
+      return;
+    }
+
+    removeTranslationTag(activeLocale, value);
+  };
+
   // 파일 선택 즉시 로컬 미리보기 + 업로드를 수행한다.
   const uploadThumbnailImmediately = async (file: File) => {
     const requestId = ++thumbnailUploadRequestRef.current;
@@ -498,6 +658,7 @@ export function BlogManager({
         tags: normalizeTagList(form.tags),
         bodyMarkdown: form.bodyMarkdown,
         useMarkdownEditor: true,
+        translations: toTranslationPayload(translations),
       };
 
       const method = editingId ? "PUT" : "POST";
@@ -518,8 +679,10 @@ export function BlogManager({
       setDrawerOpen(false);
       setEditingId(null);
       setForm(EMPTY_FORM);
+      setTranslations(EMPTY_BLOG_TRANSLATIONS);
+      setActiveLocale("ko");
       setSyncSlugWithTitle(true);
-      setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
+      setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true, EMPTY_BLOG_TRANSLATIONS));
       setThumbnailMode("url");
       setLocalThumbnailPreview((prev) => {
         if (prev) {
@@ -560,7 +723,9 @@ export function BlogManager({
         setDrawerOpen(false);
         setEditingId(null);
         setForm(EMPTY_FORM);
-        setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
+        setTranslations(EMPTY_BLOG_TRANSLATIONS);
+        setActiveLocale("ko");
+        setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true, EMPTY_BLOG_TRANSLATIONS));
         closeDetail("blog");
       }
       syncQuery({ id: null });
@@ -583,7 +748,9 @@ export function BlogManager({
 
     setDrawerOpen(false);
     setEditingId(null);
-    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
+    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true, EMPTY_BLOG_TRANSLATIONS));
+    setTranslations(EMPTY_BLOG_TRANSLATIONS);
+    setActiveLocale("ko");
     closeDetail("blog");
     await loadPosts(nextPage, privatePage, pageSize, filter);
   };
@@ -600,7 +767,9 @@ export function BlogManager({
     setSavedPageSize("blog", nextPageSize);
     setDrawerOpen(false);
     setEditingId(null);
-    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
+    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true, EMPTY_BLOG_TRANSLATIONS));
+    setTranslations(EMPTY_BLOG_TRANSLATIONS);
+    setActiveLocale("ko");
     closeDetail("blog");
     await loadPosts(1, 1, nextPageSize, filter);
   };
@@ -616,7 +785,9 @@ export function BlogManager({
 
     setDrawerOpen(false);
     setEditingId(null);
-    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
+    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true, EMPTY_BLOG_TRANSLATIONS));
+    setTranslations(EMPTY_BLOG_TRANSLATIONS);
+    setActiveLocale("ko");
     closeDetail("blog");
     await loadPosts(mainPage, nextPage, pageSize, filter);
   };
@@ -632,7 +803,9 @@ export function BlogManager({
 
     setDrawerOpen(false);
     setEditingId(null);
-    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true));
+    setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true, EMPTY_BLOG_TRANSLATIONS));
+    setTranslations(EMPTY_BLOG_TRANSLATIONS);
+    setActiveLocale("ko");
     closeDetail("blog");
     await loadPosts(1, 1, pageSize, nextFilter);
   };
@@ -949,12 +1122,18 @@ export function BlogManager({
             )}
           </SurfaceCard>
           <div className="space-y-1">
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-medium uppercase tracking-wide text-muted">콘텐츠 언어</label>
+              <AdminLocaleTabs value={activeLocale} onChange={setActiveLocale} />
+            </div>
+          </div>
+          <div className="space-y-1">
             <label className="text-xs font-medium uppercase tracking-wide text-muted">제목</label>
             <Input
-              value={form.title}
-              onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+              value={localeTitle}
+              onChange={(event) => setLocaleField("title", event.target.value)}
               placeholder="제목"
-              required
+              required={activeLocale === "ko"}
             />
           </div>
           <div className="space-y-1">
@@ -995,15 +1174,10 @@ export function BlogManager({
           <div className="space-y-1">
             <label className="text-xs font-medium uppercase tracking-wide text-muted">부제목</label>
             <Input
-              value={form.description}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  description: event.target.value,
-                }))
-              }
+              value={localeDescription}
+              onChange={(event) => setLocaleField("description", event.target.value)}
               placeholder="설명"
-              required
+              required={activeLocale === "ko"}
             />
           </div>
 
@@ -1113,8 +1287,8 @@ export function BlogManager({
             <div className="flex items-center gap-2">
               <Input
                 className="min-w-0 flex-1"
-                value={form.tagInput}
-                onChange={(event) => setForm((prev) => ({ ...prev, tagInput: event.target.value }))}
+                value={localeTagInput}
+                onChange={(event) => setLocaleField("tagInput", event.target.value)}
                 onKeyDown={(event) => {
                   if (event.nativeEvent.isComposing) {
                     return;
@@ -1122,18 +1296,18 @@ export function BlogManager({
 
                   if (event.key === "Enter") {
                     event.preventDefault();
-                    addTag();
+                    addLocaleTag();
                   }
                 }}
                 placeholder="태그를 입력하고 Enter"
               />
-              <Button type="button" className="h-10 shrink-0 px-4" onClick={addTag}>
+              <Button type="button" className="h-10 shrink-0 px-4" onClick={addLocaleTag}>
                 추가
               </Button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {form.tags.length > 0 ? (
-                form.tags.map((tag) => (
+              {localeTags.length > 0 ? (
+                localeTags.map((tag) => (
                   <span
                     key={tag}
                     className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs"
@@ -1143,7 +1317,7 @@ export function BlogManager({
                       type="button"
                       className="text-red-600/80 transition-colors hover:text-red-500 dark:text-red-300/85 dark:hover:text-red-200"
                       aria-label={`${tag} 삭제`}
-                      onClick={() => removeTag(tag)}
+                      onClick={() => removeLocaleTag(tag)}
                     >
                       ×
                     </button>
@@ -1157,11 +1331,11 @@ export function BlogManager({
 
           <MarkdownField
             label="본문"
-            value={form.bodyMarkdown}
-            onChange={(value) => setForm((prev) => ({ ...prev, bodyMarkdown: value }))}
+            value={localeBodyMarkdown}
+            onChange={(value) => setLocaleField("bodyMarkdown", value)}
             placeholder="Markdown 본문"
             minHeight={320}
-            required
+            required={activeLocale === "ko"}
           />
 
           <div className="flex gap-2">

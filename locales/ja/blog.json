@@ -1,7 +1,7 @@
 {
   "title": "ブログ",
   "description": "MDXベースの技術ブログ一覧",
-  "listTitle": "Blog",
+  "listTitle": "ブログ",
   "listDescription": "タグ・公開日・目次メタデータを含むMDXベースの記事一覧です。",
   "tableOfContents": "目次",
   "backToList": "← ブログ一覧へ",

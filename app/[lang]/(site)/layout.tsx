@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ContactFab } from "@/components/contact/fab";
 import { Footer } from "@/components/layout/footer";
@@ -7,12 +8,17 @@ import { SiteViewportSync } from "@/components/layout/site-viewport-sync";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 
+// 공개 사이트는 항상 최신 DB 상태를 반영하도록 동적 렌더링으로 고정한다.
+export const dynamic = "force-dynamic";
+
 interface SiteLayoutProps {
   children: React.ReactNode;
   params: Promise<{ lang: string }>;
 }
 
 export default async function SiteLayout({ children, params }: SiteLayoutProps) {
+  // Request-time API를 호출해 공개 라우트를 항상 요청 시점 렌더링으로 강제한다.
+  await headers();
   const { lang } = await params;
 
   if (!isLocale(lang)) {

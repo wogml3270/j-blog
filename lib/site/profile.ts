@@ -1,5 +1,5 @@
 import type { Locale } from "@/lib/i18n/config";
-import type { AboutTechItem } from "@/types/profile";
+import type { AboutTechItem } from "@/types/about";
 
 export const SITE_CONFIG = {
   siteUrl: "https://portfolio.example.com",

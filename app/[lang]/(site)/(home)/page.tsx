@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ImmersiveHeroSlider } from "@/components/home/immersive-hero-slider";
-import { getHomeHighlightSlides } from "@/lib/home/repository";
+import { getHomeSlides } from "@/lib/home/repository";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { buildPageMetadata } from "@/lib/seo/metadata";
@@ -35,7 +35,7 @@ export default async function HomePage({ params }: HomePageProps) {
   }
 
   const dictionary = getDictionary(lang);
-  const slides = await getHomeHighlightSlides(lang);
+  const slides = await getHomeSlides(lang);
 
   return (
     <div>

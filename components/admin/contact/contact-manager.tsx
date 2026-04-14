@@ -22,11 +22,11 @@ import { useAdminDetailStore } from "@/stores/admin-detail";
 import { useAdminListUiStore } from "@/stores/admin-list-ui";
 import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
 import type { ContactListFilter, PaginatedResult } from "@/types/admin";
-import type { ContactMessage } from "@/types/contact";
-import type { ContactMessageStatus } from "@/types/db";
+import type { Contact } from "@/types/contacts";
+import type { ContactStatus } from "@/types/db";
 import type { ContactManagerProps, StatusOption } from "@/types/ui";
 
-const STATUS_OPTIONS: StatusOption<ContactMessageStatus>[] = [
+const STATUS_OPTIONS: StatusOption<ContactStatus>[] = [
   { value: "new", label: "신규" },
   { value: "replied", label: "답변완료" },
 ];
@@ -37,7 +37,7 @@ const CONTACT_FILTER_OPTIONS: Array<{ value: ContactListFilter; label: string }>
   { value: "replied", label: "답변완료" },
 ];
 
-function statusBadge(status: ContactMessageStatus): string {
+function statusBadge(status: ContactStatus): string {
   if (status === "replied") {
     return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300";
   }
@@ -45,7 +45,7 @@ function statusBadge(status: ContactMessageStatus): string {
   return "bg-amber-500/15 text-amber-700 dark:text-amber-300";
 }
 
-function toStatusLabel(status: ContactMessageStatus): string {
+function toStatusLabel(status: ContactStatus): string {
   if (status === "replied") {
     return "답변완료";
   }
@@ -72,10 +72,10 @@ function toDisplayDate(value: string): string {
 
 // 문의 상태별 페이지 응답을 재사용 가능한 함수로 분리한다.
 async function fetchContactPage(
-  status: ContactMessageStatus,
+  status: ContactStatus,
   page: number,
   pageSize: number,
-): Promise<PaginatedResult<ContactMessage>> {
+): Promise<PaginatedResult<Contact>> {
   const response = await fetch(
     `/api/admin/contact?page=${page}&pageSize=${pageSize}&status=${status}`,
     { method: "GET" },
@@ -85,7 +85,7 @@ async function fetchContactPage(
     throw new Error("문의 목록을 불러오지 못했습니다.");
   }
 
-  return (await response.json()) as PaginatedResult<ContactMessage>;
+  return (await response.json()) as PaginatedResult<Contact>;
 }
 
 export function ContactManager({
@@ -98,11 +98,11 @@ export function ContactManager({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [newContacts, setNewContacts] = useState<ContactMessage[]>(initialNewPage.items);
+  const [newContacts, setNewContacts] = useState<Contact[]>(initialNewPage.items);
   const [newPage, setNewPage] = useState(initialNewPage.page);
   const [newTotal, setNewTotal] = useState(initialNewPage.total);
   const [newTotalPages, setNewTotalPages] = useState(initialNewPage.totalPages);
-  const [repliedContacts, setRepliedContacts] = useState<ContactMessage[]>(
+  const [repliedContacts, setRepliedContacts] = useState<Contact[]>(
     initialRepliedPage.items,
   );
   const [repliedPage, setRepliedPage] = useState(initialRepliedPage.page);
@@ -110,8 +110,8 @@ export function ContactManager({
   const [repliedTotalPages, setRepliedTotalPages] = useState(initialRepliedPage.totalPages);
   const [pageSize, setPageSize] = useState(initialNewPage.pageSize);
   const [statusFilter, setStatusFilter] = useState<ContactListFilter>(initialStatusFilter);
-  const [selected, setSelected] = useState<ContactMessage | null>(null);
-  const [nextStatus, setNextStatus] = useState<ContactMessageStatus>("new");
+  const [selected, setSelected] = useState<Contact | null>(null);
+  const [nextStatus, setNextStatus] = useState<ContactStatus>("new");
   const [adminNote, setAdminNote] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -181,7 +181,7 @@ export function ContactManager({
 
   // 상세 패널을 열 때 상태/메모의 기준값을 동기화해 dirty 판단 기준을 고정한다.
   const openDetail = useCallback(
-    (contact: ContactMessage) => {
+    (contact: Contact) => {
       if (selected && selected.id !== contact.id && !confirmProceedIfDirty()) {
         return;
       }
@@ -285,7 +285,7 @@ export function ContactManager({
         throw new Error(payload.error ?? "문의 업데이트에 실패했습니다.");
       }
 
-      const payload = (await response.json()) as { contact?: ContactMessage };
+      const payload = (await response.json()) as { contact?: Contact };
 
       if (payload.contact) {
         setSelected(payload.contact);
@@ -579,7 +579,7 @@ export function ContactManager({
               name="contact-status"
               value={nextStatus}
               options={STATUS_OPTIONS}
-              onChange={(value) => setNextStatus(value as ContactMessageStatus)}
+              onChange={(value) => setNextStatus(value as ContactStatus)}
             />
 
             <Button

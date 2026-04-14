@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
   }
 
   const dictionary = getDictionary(lang);
-  const post = await getPublishedPostBySlug(normalizedSlug);
+  const post = await getPublishedPostBySlug(normalizedSlug, lang);
 
   if (!post) {
     return {
@@ -51,7 +51,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   }
 
   const dictionary = getDictionary(lang);
-  const post = await getPublishedPostBySlug(normalizedSlug);
+  const post = await getPublishedPostBySlug(normalizedSlug, lang);
   const comments = await getApprovedCommentsByPostSlug(normalizedSlug);
 
   if (!post) {

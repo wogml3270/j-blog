@@ -1,6 +1,14 @@
-import type { AdminPost, AdminPostInput, BlogPostDetail, BlogPostSummary } from "@/types/blog";
+import type {
+  AdminPost,
+  AdminPostInput,
+  BlogPostDetail,
+  BlogPostSummary,
+  BlogTranslationInput,
+  BlogTranslationMap,
+} from "@/types/blog";
 import type { AdminListFilter, PaginatedResult } from "@/types/admin";
 import type { PublishStatus } from "@/types/db";
+import type { Locale } from "@/lib/i18n/config";
 import {
   getAllPosts as getFallbackPosts,
   getPostBySlug as getFallbackPostBySlug,
@@ -30,6 +38,15 @@ type PostRow = {
   scheduled_publish_at: string | null;
   updated_at: string;
   post_tag_map?: unknown;
+};
+
+type PostTranslationRow = {
+  post_id: string;
+  locale: "ko" | "en" | "ja";
+  title: string | null;
+  description: string | null;
+  body_markdown: string | null;
+  tags: unknown;
 };
 
 type RepoResult<T> = {
@@ -84,6 +101,47 @@ function relationToTagNames(value: unknown): string[] {
   return normalizeTags(names);
 }
 
+// 번역 테이블의 tags(json/text[]) 값을 string[]로 안전하게 정규화한다.
+function toTranslationTags(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return normalizeTags(value.map((item) => String(item)));
+}
+
+function toNormalizedText(value: string | null | undefined): string {
+  return value?.trim() ?? "";
+}
+
+function toBlogTranslationInput(row: PostTranslationRow): BlogTranslationInput {
+  return {
+    title: toNormalizedText(row.title),
+    description: toNormalizedText(row.description),
+    bodyMarkdown: row.body_markdown ?? "",
+    tags: toTranslationTags(row.tags),
+  };
+}
+
+// locale 번역이 있으면 제목/설명/태그를 우선 적용하고, 없으면 KO 원문을 유지한다.
+function applySummaryTranslation(
+  summary: BlogPostSummary,
+  translation: PostTranslationRow | null | undefined,
+): BlogPostSummary {
+  if (!translation) {
+    return summary;
+  }
+
+  const translatedTags = toTranslationTags(translation.tags);
+
+  return {
+    ...summary,
+    title: toNormalizedText(translation.title) || summary.title,
+    description: toNormalizedText(translation.description) || summary.description,
+    tags: translatedTags.length > 0 ? translatedTags : summary.tags,
+  };
+}
+
 function rowToSummary(row: PostRow): BlogPostSummary {
   const date = row.published_at ?? row.updated_at;
 
@@ -99,7 +157,7 @@ function rowToSummary(row: PostRow): BlogPostSummary {
   };
 }
 
-function rowToAdminPost(row: PostRow): AdminPost {
+function rowToAdminPost(row: PostRow, translations: BlogTranslationMap = {}): AdminPost {
   return {
     id: row.id,
     slug: row.slug,
@@ -115,6 +173,7 @@ function rowToAdminPost(row: PostRow): AdminPost {
     publishedAt: row.published_at,
     scheduledPublishAt: row.scheduled_publish_at,
     updatedAt: row.updated_at,
+    translations,
   };
 }
 
@@ -233,7 +292,93 @@ async function getAdminPostById(id: string): Promise<AdminPost | null> {
     return null;
   }
 
-  return rowToAdminPost(data);
+  const { data: translationRows } = await service
+    .from("posts_translations")
+    .select("post_id,locale,title,description,body_markdown,tags")
+    .eq("post_id", id)
+    .in("locale", ["en", "ja"]);
+
+  const translations: BlogTranslationMap = {};
+
+  for (const row of (translationRows ?? []) as PostTranslationRow[]) {
+    if (row.locale === "en" || row.locale === "ja") {
+      translations[row.locale] = toBlogTranslationInput(row);
+    }
+  }
+
+  return rowToAdminPost(data, translations);
+}
+
+// 관리자 목록용 번역 맵은 post_id 기준으로 EN/JA를 묶어 반환한다.
+async function getAdminPostTranslationMapByPostIds(
+  service: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
+  postIds: string[],
+): Promise<Map<string, BlogTranslationMap>> {
+  if (postIds.length === 0) {
+    return new Map();
+  }
+
+  const { data, error } = await service
+    .from("posts_translations")
+    .select("post_id,locale,title,description,body_markdown,tags")
+    .in("post_id", postIds)
+    .in("locale", ["en", "ja"]);
+
+  if (error || !data) {
+    return new Map();
+  }
+
+  const map = new Map<string, BlogTranslationMap>();
+
+  for (const row of data as PostTranslationRow[]) {
+    if (row.locale !== "en" && row.locale !== "ja") {
+      continue;
+    }
+
+    const current = map.get(row.post_id) ?? {};
+    current[row.locale] = toBlogTranslationInput(row);
+    map.set(row.post_id, current);
+  }
+
+  return map;
+}
+
+// 관리자 입력 번역은 EN/JA 두 로케일을 upsert해 로컬라이즈 콘텐츠를 저장한다.
+async function upsertPostTranslations(
+  service: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
+  postId: string,
+  translations: BlogTranslationMap | undefined,
+) {
+  if (!translations) {
+    return;
+  }
+
+  const rows = (["en", "ja"] as const)
+    .map((locale) => {
+      const target = translations[locale];
+
+      if (!target) {
+        return null;
+      }
+
+      return {
+        post_id: postId,
+        locale,
+        title: target.title.trim(),
+        description: target.description.trim(),
+        body_markdown: target.bodyMarkdown,
+        tags: normalizeTags(target.tags),
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null);
+
+  if (rows.length === 0) {
+    return;
+  }
+
+  await service.from("posts_translations").upsert(rows, {
+    onConflict: "post_id,locale",
+  });
 }
 
 function fallbackPostList(): BlogPostSummary[] {
@@ -247,7 +392,30 @@ function fallbackPostList(): BlogPostSummary[] {
   }));
 }
 
-export async function getAllPublishedPosts(): Promise<BlogPostSummary[]> {
+// 게시글 목록 번역은 EN/JA locale일 때만 조회하고, 미번역 필드는 KO 원문으로 fallback한다.
+async function getPostTranslationMap(
+  service: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
+  postIds: string[],
+  locale: Locale,
+): Promise<Map<string, PostTranslationRow>> {
+  if (locale === "ko" || postIds.length === 0) {
+    return new Map();
+  }
+
+  const { data, error } = await service
+    .from("posts_translations")
+    .select("post_id,locale,title,description,body_markdown,tags")
+    .eq("locale", locale)
+    .in("post_id", postIds);
+
+  if (error || !data) {
+    return new Map();
+  }
+
+  return new Map((data as PostTranslationRow[]).map((row) => [row.post_id, row]));
+}
+
+export async function getAllPublishedPosts(locale: Locale = "ko"): Promise<BlogPostSummary[]> {
   const service = createSupabaseServiceClient();
 
   if (!service) {
@@ -267,15 +435,30 @@ export async function getAllPublishedPosts(): Promise<BlogPostSummary[]> {
     return fallbackPostList();
   }
 
-  return (data as PostRow[]).map(rowToSummary);
+  const summaries = (data as PostRow[]).map(rowToSummary);
+  const translationMap = await getPostTranslationMap(
+    service,
+    summaries.map((item) => item.id ?? "").filter(Boolean),
+    locale,
+  );
+
+  return summaries.map((summary) =>
+    applySummaryTranslation(summary, summary.id ? translationMap.get(summary.id) : null),
+  );
 }
 
-export async function getRecentPublishedPosts(limit = 3): Promise<BlogPostSummary[]> {
-  const posts = await getAllPublishedPosts();
+export async function getRecentPublishedPosts(
+  limit = 3,
+  locale: Locale = "ko",
+): Promise<BlogPostSummary[]> {
+  const posts = await getAllPublishedPosts(locale);
   return posts.slice(0, limit);
 }
 
-export async function getFeaturedPublishedPosts(limit?: number): Promise<BlogPostSummary[]> {
+export async function getFeaturedPublishedPosts(
+  limit?: number,
+  locale: Locale = "ko",
+): Promise<BlogPostSummary[]> {
   const service = createSupabaseServiceClient();
   const safeLimit =
     typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : null;
@@ -305,17 +488,28 @@ export async function getFeaturedPublishedPosts(limit?: number): Promise<BlogPos
     return safeLimit ? fallback.slice(0, safeLimit) : fallback;
   }
 
-  const featuredPosts = (data as PostRow[]).map(rowToSummary);
+  const featuredSummaries = (data as PostRow[]).map(rowToSummary);
+  const translationMap = await getPostTranslationMap(
+    service,
+    featuredSummaries.map((item) => item.id ?? "").filter(Boolean),
+    locale,
+  );
+  const featuredPosts = featuredSummaries.map((summary) =>
+    applySummaryTranslation(summary, summary.id ? translationMap.get(summary.id) : null),
+  );
 
   if (featuredPosts.length > 0) {
     return featuredPosts;
   }
 
-  const allPublished = await getAllPublishedPosts();
+  const allPublished = await getAllPublishedPosts(locale);
   return safeLimit ? allPublished.slice(0, safeLimit) : allPublished;
 }
 
-export async function getPublishedPostBySlug(slug: string): Promise<BlogPostDetail | null> {
+export async function getPublishedPostBySlug(
+  slug: string,
+  locale: Locale = "ko",
+): Promise<BlogPostDetail | null> {
   const service = createSupabaseServiceClient();
 
   if (!service) {
@@ -375,10 +569,13 @@ export async function getPublishedPostBySlug(slug: string): Promise<BlogPostDeta
   }
 
   const summary = rowToSummary(data);
-  const bodyMarkdown = data.body_markdown || "";
+  const translationMap = await getPostTranslationMap(service, [data.id], locale);
+  const translation = translationMap.get(data.id);
+  const localizedSummary = applySummaryTranslation(summary, translation);
+  const bodyMarkdown = toNormalizedText(translation?.body_markdown) || data.body_markdown || "";
 
   return {
-    ...summary,
+    ...localizedSummary,
     source: "supabase",
     bodyMarkdown,
     toc: extractTocFromMarkdown(bodyMarkdown),
@@ -390,7 +587,7 @@ export async function getPublishedPostBySlug(slug: string): Promise<BlogPostDeta
 }
 
 export async function getPostSlugsForSitemap(): Promise<string[]> {
-  const posts = await getAllPublishedPosts();
+  const posts = await getAllPublishedPosts("ko");
   return posts.map((post) => post.slug);
 }
 
@@ -411,7 +608,13 @@ export async function getAdminPosts(): Promise<AdminPost[]> {
     return [];
   }
 
-  return (data as PostRow[]).map(rowToAdminPost);
+  const rows = data as PostRow[];
+  const translationMap = await getAdminPostTranslationMapByPostIds(
+    service,
+    rows.map((row) => row.id),
+  );
+
+  return rows.map((row) => rowToAdminPost(row, translationMap.get(row.id) ?? {}));
 }
 
 export async function getAdminPostsPaginated(
@@ -459,8 +662,14 @@ export async function getAdminPostsPaginated(
     return buildPaginatedResult([], safePage, safePageSize, 0);
   }
 
+  const rows = data as PostRow[];
+  const translationMap = await getAdminPostTranslationMapByPostIds(
+    service,
+    rows.map((row) => row.id),
+  );
+
   return buildPaginatedResult(
-    (data as PostRow[]).map(rowToAdminPost),
+    rows.map((row) => rowToAdminPost(row, translationMap.get(row.id) ?? {})),
     safePage,
     safePageSize,
     count ?? 0,
@@ -515,6 +724,7 @@ export async function createAdminPost(
   }
 
   await syncPostTags(data.id, input.tags);
+  await upsertPostTranslations(service, data.id, input.translations);
   await syncHomeHighlightSource({
     sourceType: "post",
     sourceId: data.id,
@@ -578,6 +788,7 @@ export async function updateAdminPost(
   }
 
   await syncPostTags(id, input.tags);
+  await upsertPostTranslations(service, id, input.translations);
   await syncHomeHighlightSource({
     sourceType: "post",
     sourceId: id,

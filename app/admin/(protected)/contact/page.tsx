@@ -1,5 +1,5 @@
 import { ContactManager } from "@/components/admin/contact/contact-manager";
-import { getAdminContactMessagesPaginated } from "@/lib/contact/repository";
+import { getAdminContactsPaginated } from "@/lib/contact/repository";
 import { normalizePagination } from "@/lib/utils/pagination";
 import { normalizeContactListFilter, pickSingleQueryValue } from "@/lib/utils/search-params";
 import type { AdminSearchParams } from "@/types/admin";
@@ -24,8 +24,8 @@ export default async function AdminContactPage({
   ).page;
   const initialStatusFilter = normalizeContactListFilter(pickSingleQueryValue(query.status));
   const [initialNewPage, initialRepliedPage] = await Promise.all([
-    getAdminContactMessagesPaginated(newPage, pageSize, "new"),
-    getAdminContactMessagesPaginated(repliedPage, pageSize, "replied"),
+    getAdminContactsPaginated(newPage, pageSize, "new"),
+    getAdminContactsPaginated(repliedPage, pageSize, "replied"),
   ]);
   const initialSelectedId = pickSingleQueryValue(query.id);
 
