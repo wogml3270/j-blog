@@ -3,7 +3,12 @@ import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { revalidateProjectPaths } from "@/lib/cache/revalidate";
 import { deleteAdminProject, updateAdminProject } from "@/lib/projects/repository";
 import { normalizeSlug } from "@/lib/utils/slug";
-import type { AdminProjectInput, ProjectLinkItem, ProjectLinks } from "@/types/projects";
+import type {
+  AdminProjectInput,
+  ProjectLinkItem,
+  ProjectLinks,
+  ProjectTranslationMap,
+} from "@/types/projects";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -83,6 +88,42 @@ function toLinks(value: unknown): ProjectLinks {
   return normalize(legacy);
 }
 
+// 번역 payload는 EN/JA만 저장 대상으로 정규화한다.
+function parseTranslations(source: Record<string, unknown>): ProjectTranslationMap {
+  const raw = source.translations;
+
+  if (!raw || typeof raw !== "object") {
+    return {};
+  }
+
+  const map = raw as Record<string, unknown>;
+  const result: ProjectTranslationMap = {};
+
+  for (const locale of ["en", "ja"] as const) {
+    const item = map[locale];
+
+    if (!item || typeof item !== "object") {
+      continue;
+    }
+
+    const row = item as Record<string, unknown>;
+    result[locale] = {
+      title: typeof row.title === "string" ? row.title.trim() : "",
+      subtitle: typeof row.subtitle === "string" ? row.subtitle.trim() : "",
+      contentMarkdown: typeof row.contentMarkdown === "string" ? row.contentMarkdown : "",
+      tags: Array.isArray(row.tags) ? row.tags.map((tag) => String(tag).trim()).filter(Boolean) : [],
+      achievements: Array.isArray(row.achievements)
+        ? row.achievements.map((item) => String(item).trim()).filter(Boolean)
+        : [],
+      contributions: Array.isArray(row.contributions)
+        ? row.contributions.map((item) => String(item).trim()).filter(Boolean)
+        : [],
+    };
+  }
+
+  return result;
+}
+
 // 관리자 프로젝트 수정 payload를 타입/정책 기준으로 정규화한다.
 function parseBody(body: unknown): AdminProjectInput | null {
   if (!body || typeof body !== "object") {
@@ -137,6 +178,7 @@ function parseBody(body: unknown): AdminProjectInput | null {
     links: toLinks(source.links),
     featured: Boolean(source.featured),
     status,
+    translations: parseTranslations(source),
   };
 }
 

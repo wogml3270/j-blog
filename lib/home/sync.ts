@@ -1,20 +1,20 @@
 import type { PublishStatus } from "@/types/db";
-import type { HomeHighlightSourceType } from "@/types/home";
+import type { HomeSlideSourceType } from "@/types/home-slide";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
-type HomeHighlightSyncInput = {
-  sourceType: HomeHighlightSourceType;
+type HomeSlideSyncInput = {
+  sourceType: HomeSlideSourceType;
   sourceId: string;
   featured: boolean;
   status: PublishStatus;
 };
 
-type HomeHighlightExistingRow = {
+type HomeSlideExistingRow = {
   id: string;
   is_active: boolean;
 };
 
-type HomeHighlightOrderRow = {
+type HomeSlideOrderRow = {
   order_index: number;
 };
 
@@ -26,11 +26,11 @@ async function getNextOrderIndex(): Promise<number> {
   }
 
   const { data, error } = await service
-    .from("home_highlights")
+    .from("home_slide")
     .select("order_index")
     .order("order_index", { ascending: false })
     .limit(1)
-    .maybeSingle<HomeHighlightOrderRow>();
+    .maybeSingle<HomeSlideOrderRow>();
 
   if (error || !data) {
     return 0;
@@ -40,7 +40,8 @@ async function getNextOrderIndex(): Promise<number> {
 }
 
 // source 상태(featured/published)에 맞춰 홈 하이라이트 연결을 자동 동기화한다.
-export async function syncHomeHighlightSource(input: HomeHighlightSyncInput): Promise<void> {
+// source(featured/published) 상태를 기준으로 home_slide 연결을 자동 동기화한다.
+export async function syncHomeSlideSource(input: HomeSlideSyncInput): Promise<void> {
   const service = createSupabaseServiceClient();
 
   if (!service) {
@@ -57,7 +58,7 @@ export async function syncHomeHighlightSource(input: HomeHighlightSyncInput): Pr
 
   if (!shouldInclude) {
     await service
-      .from("home_highlights")
+      .from("home_slide")
       .delete()
       .eq("source_type", input.sourceType)
       .eq("source_id", sourceId);
@@ -65,22 +66,22 @@ export async function syncHomeHighlightSource(input: HomeHighlightSyncInput): Pr
   }
 
   const { data: existing } = await service
-    .from("home_highlights")
+    .from("home_slide")
     .select("id,is_active")
     .eq("source_type", input.sourceType)
     .eq("source_id", sourceId)
-    .maybeSingle<HomeHighlightExistingRow>();
+    .maybeSingle<HomeSlideExistingRow>();
 
   if (existing) {
     if (!existing.is_active) {
-      await service.from("home_highlights").update({ is_active: true }).eq("id", existing.id);
+      await service.from("home_slide").update({ is_active: true }).eq("id", existing.id);
     }
     return;
   }
 
   const nextOrderIndex = await getNextOrderIndex();
 
-  await service.from("home_highlights").insert({
+  await service.from("home_slide").insert({
     source_type: input.sourceType,
     source_id: sourceId,
     order_index: nextOrderIndex,
@@ -89,8 +90,9 @@ export async function syncHomeHighlightSource(input: HomeHighlightSyncInput): Pr
 }
 
 // 원본 데이터가 삭제되면 홈 하이라이트 연결도 함께 제거한다.
-export async function removeHomeHighlightSource(
-  sourceType: HomeHighlightSourceType,
+// 원본 콘텐츠 삭제 시 home_slide 연결도 함께 정리한다.
+export async function removeHomeSlideSource(
+  sourceType: HomeSlideSourceType,
   sourceId: string,
 ): Promise<void> {
   const service = createSupabaseServiceClient();
@@ -106,8 +108,12 @@ export async function removeHomeHighlightSource(
   }
 
   await service
-    .from("home_highlights")
+    .from("home_slide")
     .delete()
     .eq("source_type", sourceType)
     .eq("source_id", normalizedSourceId);
 }
+
+// v1 호출처 호환을 위해 기존 함수명을 alias로 유지한다.
+export const syncHomeHighlightSource = syncHomeSlideSource;
+export const removeHomeHighlightSource = removeHomeSlideSource;

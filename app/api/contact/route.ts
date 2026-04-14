@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { SITE_CONFIG } from "@/lib/site/profile";
-import type { ContactPayload } from "@/types/contact";
+import type { ContactPayload } from "@/types/contacts";
 
 function parseBody(body: unknown): ContactPayload | null {
   if (!body || typeof body !== "object") {
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Supabase is not configured." }, { status: 503 });
   }
 
-  const { error } = await service.from("contact_messages").insert({
+  const { error } = await service.from("contacts").insert({
     name: payload.name,
     email: payload.email,
     subject: payload.subject,

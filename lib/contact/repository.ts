@@ -1,6 +1,6 @@
 import type { ContactListFilter, PaginatedResult } from "@/types/admin";
-import type { ContactMessage } from "@/types/contact";
-import type { ContactMessageStatus } from "@/types/db";
+import type { Contact } from "@/types/contacts";
+import type { ContactStatus } from "@/types/db";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
   ADMIN_PAGE_SIZE_OPTIONS,
@@ -8,7 +8,7 @@ import {
   DEFAULT_ADMIN_PAGE_SIZE,
 } from "@/lib/utils/pagination";
 
-type ContactMessageRow = {
+type ContactRow = {
   id: string;
   name: string;
   email: string;
@@ -25,7 +25,7 @@ type RepoResult<T> = {
   error: string | null;
 };
 
-function normalizeContactStatus(status: string): ContactMessageStatus {
+function normalizeContactStatus(status: string): ContactStatus {
   if (status === "replied") {
     return "replied";
   }
@@ -33,7 +33,7 @@ function normalizeContactStatus(status: string): ContactMessageStatus {
   return "new";
 }
 
-function rowToContactMessage(row: ContactMessageRow): ContactMessage {
+function rowToContact(row: ContactRow): Contact {
   return {
     id: row.id,
     name: row.name,
@@ -47,7 +47,8 @@ function rowToContactMessage(row: ContactMessageRow): ContactMessage {
   };
 }
 
-export async function getAdminContactMessages(): Promise<ContactMessage[]> {
+// 관리자 문의 전체 목록을 최신순으로 조회한다.
+export async function getAdminContacts(): Promise<Contact[]> {
   const service = createSupabaseServiceClient();
 
   if (!service) {
@@ -55,7 +56,7 @@ export async function getAdminContactMessages(): Promise<ContactMessage[]> {
   }
 
   const { data, error } = await service
-    .from("contact_messages")
+    .from("contacts")
     .select("id,name,email,subject,message,admin_note,status,created_at,updated_at")
     .order("created_at", { ascending: false });
 
@@ -63,14 +64,15 @@ export async function getAdminContactMessages(): Promise<ContactMessage[]> {
     return [];
   }
 
-  return (data as ContactMessageRow[]).map(rowToContactMessage);
+  return (data as ContactRow[]).map(rowToContact);
 }
 
-export async function getAdminContactMessagesPaginated(
+// 관리자 문의 목록을 상태/페이지 기준으로 조회한다.
+export async function getAdminContactsPaginated(
   page = 1,
   pageSize = 10,
   statusFilter: ContactListFilter = "all",
-): Promise<PaginatedResult<ContactMessage>> {
+): Promise<PaginatedResult<Contact>> {
   const service = createSupabaseServiceClient();
 
   if (!service) {
@@ -86,7 +88,7 @@ export async function getAdminContactMessagesPaginated(
   const to = from + safePageSize - 1;
 
   let query = service
-    .from("contact_messages")
+    .from("contacts")
     .select("id,name,email,subject,message,admin_note,status,created_at,updated_at", {
       count: "exact",
     })
@@ -103,14 +105,15 @@ export async function getAdminContactMessagesPaginated(
   }
 
   return buildPaginatedResult(
-    (data as ContactMessageRow[]).map(rowToContactMessage),
+    (data as ContactRow[]).map(rowToContact),
     safePage,
     safePageSize,
     count ?? 0,
   );
 }
 
-export async function getAdminContactMessageById(id: string): Promise<ContactMessage | null> {
+// 관리자 문의 상세를 단건 조회한다.
+export async function getAdminContactById(id: string): Promise<Contact | null> {
   const service = createSupabaseServiceClient();
 
   if (!service) {
@@ -118,22 +121,23 @@ export async function getAdminContactMessageById(id: string): Promise<ContactMes
   }
 
   const { data, error } = await service
-    .from("contact_messages")
+    .from("contacts")
     .select("id,name,email,subject,message,admin_note,status,created_at,updated_at")
     .eq("id", id)
-    .maybeSingle<ContactMessageRow>();
+    .maybeSingle<ContactRow>();
 
   if (error || !data) {
     return null;
   }
 
-  return rowToContactMessage(data);
+  return rowToContact(data);
 }
 
-export async function updateAdminContactMessage(
+// 관리자 문의 상태/메모를 업데이트한다.
+export async function updateAdminContact(
   id: string,
-  input: { status: ContactMessageStatus; adminNote: string },
-): Promise<RepoResult<ContactMessage>> {
+  input: { status: ContactStatus; adminNote: string },
+): Promise<RepoResult<Contact>> {
   const service = createSupabaseServiceClient();
 
   if (!service) {
@@ -144,7 +148,7 @@ export async function updateAdminContactMessage(
   }
 
   const { error } = await service
-    .from("contact_messages")
+    .from("contacts")
     .update({
       status: input.status,
       admin_note: input.adminNote,
@@ -158,7 +162,7 @@ export async function updateAdminContactMessage(
     };
   }
 
-  const row = await getAdminContactMessageById(id);
+  const row = await getAdminContactById(id);
 
   if (!row) {
     return {
@@ -172,3 +176,9 @@ export async function updateAdminContactMessage(
     error: null,
   };
 }
+
+// v1 호출처 호환을 위해 기존 함수명을 alias로 유지한다.
+export const getAdminContactMessages = getAdminContacts;
+export const getAdminContactMessagesPaginated = getAdminContactsPaginated;
+export const getAdminContactMessageById = getAdminContactById;
+export const updateAdminContactMessage = updateAdminContact;

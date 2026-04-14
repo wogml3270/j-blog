@@ -36,7 +36,7 @@ export default async function BlogListPage({ params }: BlogListPageProps) {
   }
 
   const dictionary = getDictionary(lang);
-  const posts = await getAllPublishedPosts();
+  const posts = await getAllPublishedPosts(lang);
 
   return (
     <ContentListLayout

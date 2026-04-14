@@ -3,11 +3,41 @@ import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { deleteAdminPost, updateAdminPost } from "@/lib/blog/repository";
 import { revalidateBlogPaths } from "@/lib/cache/revalidate";
 import { normalizeSlug } from "@/lib/utils/slug";
-import type { AdminPostInput } from "@/types/blog";
+import type { AdminPostInput, BlogTranslationMap } from "@/types/blog";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
+
+// 번역 payload는 EN/JA만 저장 대상으로 정규화한다.
+function parseTranslations(source: Record<string, unknown>): BlogTranslationMap {
+  const raw = source.translations;
+
+  if (!raw || typeof raw !== "object") {
+    return {};
+  }
+
+  const map = raw as Record<string, unknown>;
+  const result: BlogTranslationMap = {};
+
+  for (const locale of ["en", "ja"] as const) {
+    const item = map[locale];
+
+    if (!item || typeof item !== "object") {
+      continue;
+    }
+
+    const row = item as Record<string, unknown>;
+    result[locale] = {
+      title: typeof row.title === "string" ? row.title.trim() : "",
+      description: typeof row.description === "string" ? row.description.trim() : "",
+      bodyMarkdown: typeof row.bodyMarkdown === "string" ? row.bodyMarkdown : "",
+      tags: Array.isArray(row.tags) ? row.tags.map((tag) => String(tag).trim()).filter(Boolean) : [],
+    };
+  }
+
+  return result;
+}
 
 // 관리자 게시글 수정 payload를 타입/정책 기준으로 정규화한다.
 function parseBody(body: unknown): AdminPostInput | null {
@@ -50,6 +80,7 @@ function parseBody(body: unknown): AdminPostInput | null {
     scheduledPublishAt:
       typeof source.scheduledPublishAt === "string" ? source.scheduledPublishAt : null,
     tags,
+    translations: parseTranslations(source),
   };
 }
 

@@ -1,13 +1,13 @@
-import type { ContactMessageStatus } from "@/types/db";
+import type { ContactStatus } from "@/types/db";
 
-export type ContactMessage = {
+export type Contact = {
   id: string;
   name: string;
   email: string;
   subject: string;
   message: string;
   adminNote: string;
-  status: ContactMessageStatus;
+  status: ContactStatus;
   createdAt: string;
   updatedAt: string;
 };

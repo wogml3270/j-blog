@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AdminLocaleTabs, type AdminLocale } from "@/components/admin/common/locale-tabs";
 import { ManagerShell } from "@/components/admin/common/manager-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,11 +27,11 @@ import { uploadAdminMediaFile } from "@/lib/admin/upload-client";
 import { cn } from "@/lib/utils/cn";
 import { useBeforeUnloadUnsavedChanges } from "@/lib/utils/unsaved-changes";
 import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
-import type { ProfileContent } from "@/types/profile";
+import type { AboutContent, AboutTranslationMap } from "@/types/about";
 import type { ThumbnailInputMode } from "@/types/ui";
 
 type AboutManagerProps = {
-  initialAbout: ProfileContent;
+  initialAbout: AboutContent;
 };
 
 type AboutTechFormItem = {
@@ -51,20 +52,37 @@ type AboutFormState = {
   techLogoUrlInput: string;
 };
 
+type TranslationLocale = Exclude<AdminLocale, "ko">;
+
+type AboutTranslationFormState = {
+  name: string;
+  title: string;
+  summary: string;
+  aboutTechItems: AboutTechFormItem[];
+  techNameInput: string;
+  techDescriptionInput: string;
+  techLogoUrlInput: string;
+};
+
+const EMPTY_ABOUT_TRANSLATION_FORM: AboutTranslationFormState = {
+  name: "",
+  title: "",
+  summary: "",
+  aboutTechItems: [],
+  techNameInput: "",
+  techDescriptionInput: "",
+  techLogoUrlInput: "",
+};
+
 type AboutTechLogoInputMode = ThumbnailInputMode | "svg";
 
-function toFormState(profile: ProfileContent): AboutFormState {
+function toFormState(profile: AboutContent): AboutFormState {
   return {
     name: profile.name,
     title: profile.title,
     summary: profile.summary,
     aboutPhotoUrl: profile.aboutPhotoUrl,
-    aboutTechItems: profile.aboutTechItems.map((item, index) => ({
-      id: `${item.name}-${index}`,
-      name: item.name,
-      description: item.description,
-      logoUrl: item.logoUrl,
-    })),
+    aboutTechItems: toTechFormItems(profile.aboutTechItems),
     techNameInput: "",
     techDescriptionInput: "",
     techLogoUrlInput: "",
@@ -83,6 +101,97 @@ function serializeForm(form: AboutFormState): string {
       logoUrl: item.logoUrl.trim(),
     })),
   });
+}
+
+// EN/JA 번역 변경 여부를 안정적으로 비교하기 위해 문자열로 직렬화한다.
+function serializeTranslations(translations: Record<TranslationLocale, AboutTranslationFormState>): string {
+  return JSON.stringify({
+    en: {
+      name: translations.en.name.trim(),
+      title: translations.en.title.trim(),
+      summary: translations.en.summary.trim(),
+      aboutTechItems: translations.en.aboutTechItems.map((item) => ({
+        name: item.name.trim(),
+        description: item.description.trim(),
+        logoUrl: item.logoUrl.trim(),
+      })),
+      techNameInput: translations.en.techNameInput.trim(),
+      techDescriptionInput: translations.en.techDescriptionInput.trim(),
+      techLogoUrlInput: translations.en.techLogoUrlInput.trim(),
+    },
+    ja: {
+      name: translations.ja.name.trim(),
+      title: translations.ja.title.trim(),
+      summary: translations.ja.summary.trim(),
+      aboutTechItems: translations.ja.aboutTechItems.map((item) => ({
+        name: item.name.trim(),
+        description: item.description.trim(),
+        logoUrl: item.logoUrl.trim(),
+      })),
+      techNameInput: translations.ja.techNameInput.trim(),
+      techDescriptionInput: translations.ja.techDescriptionInput.trim(),
+      techLogoUrlInput: translations.ja.techLogoUrlInput.trim(),
+    },
+  });
+}
+
+function toTechFormItems(items: AboutContent["aboutTechItems"]): AboutTechFormItem[] {
+  return items.map((item, index) => ({
+    id: `${item.name}-${index}`,
+    name: item.name,
+    description: item.description,
+    logoUrl: item.logoUrl,
+  }));
+}
+
+// about 번역 응답을 EN/JA 폼 상태로 정규화한다.
+function toTranslationState(
+  translations: AboutTranslationMap | undefined,
+): Record<TranslationLocale, AboutTranslationFormState> {
+  return {
+    en: {
+      ...EMPTY_ABOUT_TRANSLATION_FORM,
+      name: translations?.en?.name ?? "",
+      title: translations?.en?.title ?? "",
+      summary: translations?.en?.summary ?? "",
+      aboutTechItems: toTechFormItems(translations?.en?.aboutTechItems ?? []),
+    },
+    ja: {
+      ...EMPTY_ABOUT_TRANSLATION_FORM,
+      name: translations?.ja?.name ?? "",
+      title: translations?.ja?.title ?? "",
+      summary: translations?.ja?.summary ?? "",
+      aboutTechItems: toTechFormItems(translations?.ja?.aboutTechItems ?? []),
+    },
+  };
+}
+
+// EN/JA 번역 폼 상태를 API 저장 payload 형식으로 변환한다.
+function toTranslationPayload(
+  translations: Record<TranslationLocale, AboutTranslationFormState>,
+): AboutTranslationMap {
+  return {
+    en: {
+      name: translations.en.name.trim(),
+      title: translations.en.title.trim(),
+      summary: translations.en.summary.trim(),
+      aboutTechItems: translations.en.aboutTechItems.map((item) => ({
+        name: item.name.trim(),
+        description: item.description.trim(),
+        logoUrl: item.logoUrl.trim(),
+      })),
+    },
+    ja: {
+      name: translations.ja.name.trim(),
+      title: translations.ja.title.trim(),
+      summary: translations.ja.summary.trim(),
+      aboutTechItems: translations.ja.aboutTechItems.map((item) => ({
+        name: item.name.trim(),
+        description: item.description.trim(),
+        logoUrl: item.logoUrl.trim(),
+      })),
+    },
+  };
 }
 
 function reorderById<T extends { id: string }>(items: T[], event: DragEndEvent): T[] {
@@ -216,8 +325,19 @@ function SortableAboutTechItem({
 
 export function AboutManager({ initialAbout }: AboutManagerProps) {
   const initialForm = useMemo(() => toFormState(initialAbout), [initialAbout]);
+  const initialTranslations = useMemo(
+    () => toTranslationState(initialAbout.translations),
+    [initialAbout],
+  );
   const [form, setForm] = useState<AboutFormState>(initialForm);
   const [savedForm, setSavedForm] = useState<AboutFormState>(initialForm);
+  const [translations, setTranslations] = useState<Record<TranslationLocale, AboutTranslationFormState>>(
+    initialTranslations,
+  );
+  const [savedTranslations, setSavedTranslations] = useState<
+    Record<TranslationLocale, AboutTranslationFormState>
+  >(initialTranslations);
+  const [activeLocale, setActiveLocale] = useState<AdminLocale>("ko");
   const [isPending, setIsPending] = useState(false);
   const [notice, setNotice] = useState<{
     kind: "success" | "error";
@@ -234,7 +354,9 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
   const techLogoUploadRequestRef = useRef(0);
   const setUnsavedDirty = useAdminUnsavedStore((state) => state.setDirty);
 
-  const isDirty = serializeForm(form) !== serializeForm(savedForm);
+  const isDirty =
+    serializeForm(form) !== serializeForm(savedForm) ||
+    serializeTranslations(translations) !== serializeTranslations(savedTranslations);
   useBeforeUnloadUnsavedChanges(isDirty);
 
   useEffect(() => {
@@ -253,26 +375,92 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
     }),
   );
 
+  const localeName =
+    activeLocale === "ko" ? form.name : translations[activeLocale as TranslationLocale].name;
+  const localeTitle =
+    activeLocale === "ko" ? form.title : translations[activeLocale as TranslationLocale].title;
+  const localeSummary =
+    activeLocale === "ko" ? form.summary : translations[activeLocale as TranslationLocale].summary;
+  const localeTechItems =
+    activeLocale === "ko"
+      ? form.aboutTechItems
+      : translations[activeLocale as TranslationLocale].aboutTechItems;
+  const localeTechNameInput =
+    activeLocale === "ko"
+      ? form.techNameInput
+      : translations[activeLocale as TranslationLocale].techNameInput;
+  const localeTechDescriptionInput =
+    activeLocale === "ko"
+      ? form.techDescriptionInput
+      : translations[activeLocale as TranslationLocale].techDescriptionInput;
+  const localeTechLogoUrlInput =
+    activeLocale === "ko"
+      ? form.techLogoUrlInput
+      : translations[activeLocale as TranslationLocale].techLogoUrlInput;
+
+  // KO/EN/JA 탭에서 기본 텍스트 필드를 동일 UI로 편집한다.
+  const setLocaleBasicField = (field: "name" | "title" | "summary", value: string) => {
+    if (activeLocale === "ko") {
+      setForm((prev) => ({ ...prev, [field]: value }));
+      return;
+    }
+
+    setTranslations((prev) => ({
+      ...prev,
+      [activeLocale]: {
+        ...prev[activeLocale],
+        [field]: value,
+      },
+    }));
+  };
+
+  const setLocaleTechInput = (
+    field: "techNameInput" | "techDescriptionInput" | "techLogoUrlInput",
+    value: string,
+  ) => {
+    if (activeLocale === "ko") {
+      setForm((prev) => ({ ...prev, [field]: value }));
+      return;
+    }
+
+    setTranslations((prev) => ({
+      ...prev,
+      [activeLocale]: {
+        ...prev[activeLocale],
+        [field]: value,
+      },
+    }));
+  };
+
+  const setLocaleTechItems = (nextItems: AboutTechFormItem[]) => {
+    if (activeLocale === "ko") {
+      setForm((prev) => ({ ...prev, aboutTechItems: nextItems }));
+      return;
+    }
+
+    setTranslations((prev) => ({
+      ...prev,
+      [activeLocale]: {
+        ...prev[activeLocale],
+        aboutTechItems: nextItems,
+      },
+    }));
+  };
+
   // 기술 항목은 이름/설명/로고 URL이 모두 채워졌을 때만 추가한다.
   const addTechItem = () => {
-    const name = form.techNameInput.trim();
-    const description = form.techDescriptionInput.trim();
-    const logoUrl = form.techLogoUrlInput.trim();
+    const name = localeTechNameInput.trim();
+    const description = localeTechDescriptionInput.trim();
+    const logoUrl = localeTechLogoUrlInput.trim();
 
     if (!name || !description || !logoUrl) {
       return;
     }
 
-    setForm((prev) => ({
-      ...prev,
-      aboutTechItems: [
-        ...prev.aboutTechItems,
-        { id: `${name}-${Date.now()}`, name, description, logoUrl },
-      ],
-      techNameInput: "",
-      techDescriptionInput: "",
-      techLogoUrlInput: "",
-    }));
+    setLocaleTechItems([...localeTechItems, { id: `${name}-${Date.now()}`, name, description, logoUrl }]);
+    setLocaleTechInput("techNameInput", "");
+    setLocaleTechInput("techDescriptionInput", "");
+    setLocaleTechInput("techLogoUrlInput", "");
 
     setTechLogoSvgInput("");
     setTechLogoMode("url");
@@ -286,18 +474,12 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
   };
 
   const removeTechItem = (id: string) => {
-    setForm((prev) => ({
-      ...prev,
-      aboutTechItems: prev.aboutTechItems.filter((item) => item.id !== id),
-    }));
+    setLocaleTechItems(localeTechItems.filter((item) => item.id !== id));
   };
 
   // 기술 항목 순서를 드래그 결과 순서로 재배치한다.
   const onTechItemsDragEnd = (event: DragEndEvent) => {
-    setForm((prev) => ({
-      ...prev,
-      aboutTechItems: reorderById(prev.aboutTechItems, event),
-    }));
+    setLocaleTechItems(reorderById(localeTechItems, event));
   };
 
   // 프로필 사진 파일을 선택하면 로컬 미리보기를 먼저 보여주고 즉시 업로드한다.
@@ -382,10 +564,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
         return;
       }
 
-      setForm((prev) => ({
-        ...prev,
-        techLogoUrlInput: payload.url,
-      }));
+      setLocaleTechInput("techLogoUrlInput", payload.url);
       setNotice({ kind: "success", text: "기술 로고 이미지를 업로드했습니다." });
     } catch (error) {
       if (requestId !== techLogoUploadRequestRef.current) {
@@ -478,6 +657,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
             description: item.description.trim(),
             logoUrl: item.logoUrl.trim(),
           })),
+          translations: toTranslationPayload(translations),
         }),
       });
 
@@ -486,10 +666,15 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
         throw new Error(payload.error ?? "소개 데이터 저장에 실패했습니다.");
       }
 
-      const payload = (await response.json()) as { about?: ProfileContent };
+      const payload = (await response.json()) as { about?: AboutContent };
       const next = payload.about ? toFormState(payload.about) : form;
+      const nextTranslations = payload.about
+        ? toTranslationState(payload.about.translations)
+        : translations;
       setForm(next);
       setSavedForm(next);
+      setTranslations(nextTranslations);
+      setSavedTranslations(nextTranslations);
       setNotice({ kind: "success", text: "소개 정보를 저장했습니다." });
     } catch (error) {
       setNotice({
@@ -608,27 +793,31 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
               <h3 className="text-sm font-semibold text-foreground">기본 정보</h3>
               <p className="text-xs text-muted">소개 카드의 핵심 텍스트를 관리합니다.</p>
             </div>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">콘텐츠 언어</p>
+              <AdminLocaleTabs value={activeLocale} onChange={setActiveLocale} />
+            </div>
             <div className="grid gap-2 sm:grid-cols-2">
               <Input
-                value={form.name}
-                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                value={localeName}
+                onChange={(event) => setLocaleBasicField("name", event.target.value)}
                 placeholder="이름"
-                required
+                required={activeLocale === "ko"}
               />
               <Input
-                value={form.title}
-                onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+                value={localeTitle}
+                onChange={(event) => setLocaleBasicField("title", event.target.value)}
                 placeholder="직함"
-                required
+                required={activeLocale === "ko"}
               />
             </div>
 
             <textarea
-              value={form.summary}
-              onChange={(event) => setForm((prev) => ({ ...prev, summary: event.target.value }))}
+              value={localeSummary}
+              onChange={(event) => setLocaleBasicField("summary", event.target.value)}
               className="min-h-[110px] w-full rounded-md border border-border bg-surface p-3 text-sm leading-7 transition-colors focus:border-foreground/30"
               placeholder="한 줄 소개/자기소개"
-              required
+              required={activeLocale === "ko"}
             />
           </SurfaceCard>
 
@@ -703,15 +892,15 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
               <p className="truncate text-xs text-muted">
                 현재 로고:{" "}
-                {isUploadingTechLogo ? "업로드 중..." : form.techLogoUrlInput || "설정되지 않음"}
+                {isUploadingTechLogo ? "업로드 중..." : localeTechLogoUrlInput || "설정되지 않음"}
               </p>
             </div>
 
-            {localTechLogoPreview || form.techLogoUrlInput.trim() ? (
+            {localTechLogoPreview || localeTechLogoUrlInput.trim() ? (
               <div className="overflow-hidden rounded-md border border-border bg-surface p-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={localTechLogoPreview || form.techLogoUrlInput}
+                  src={localTechLogoPreview || localeTechLogoUrlInput}
                   alt="기술 로고 미리보기"
                   className="h-12 w-12 rounded-sm object-contain"
                 />
@@ -720,35 +909,20 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
             <div className="grid gap-2 sm:grid-cols-2">
               <Input
-                value={form.techNameInput}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    techNameInput: event.target.value,
-                  }))
-                }
+                value={localeTechNameInput}
+                onChange={(event) => setLocaleTechInput("techNameInput", event.target.value)}
                 placeholder="기술명"
               />
               <Input
-                value={form.techLogoUrlInput}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    techLogoUrlInput: event.target.value,
-                  }))
-                }
+                value={localeTechLogoUrlInput}
+                onChange={(event) => setLocaleTechInput("techLogoUrlInput", event.target.value)}
                 placeholder="로고 URL"
               />
             </div>
 
             <textarea
-              value={form.techDescriptionInput}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  techDescriptionInput: event.target.value,
-                }))
-              }
+              value={localeTechDescriptionInput}
+              onChange={(event) => setLocaleTechInput("techDescriptionInput", event.target.value)}
               className="min-h-[78px] w-full rounded-md border border-border bg-surface p-3 text-sm transition-colors focus:border-foreground/30"
               placeholder="기술 설명"
             />
@@ -763,21 +937,18 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
               onDragEnd={onTechItemsDragEnd}
             >
               <SortableContext
-                items={form.aboutTechItems.map((item) => item.id)}
+                items={localeTechItems.map((item) => item.id)}
                 strategy={verticalListSortingStrategy}
               >
                 <ul className="space-y-2">
-                  {form.aboutTechItems.map((item) => (
+                  {localeTechItems.map((item) => (
                     <SortableAboutTechItem
                       key={item.id}
                       item={item}
                       onChange={(next) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          aboutTechItems: prev.aboutTechItems.map((target) =>
-                            target.id === item.id ? next : target,
-                          ),
-                        }))
+                        setLocaleTechItems(
+                          localeTechItems.map((target) => (target.id === item.id ? next : target)),
+                        )
                       }
                       onRemove={() => removeTechItem(item.id)}
                     />

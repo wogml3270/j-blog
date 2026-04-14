@@ -45,11 +45,11 @@ export function AdminSidebar({ email, avatarUrl }: AdminSidebarProps) {
   return (
     <aside className="w-full rounded-xl border border-border bg-surface p-3.5 sm:p-4 xl:sticky xl:top-6 xl:h-[calc(100dvh-3rem)] xl:w-[272px] xl:self-start">
       <div className="space-y-3.5">
-        <div className="flex flex-col items-start justify-between gap-2">
+        <div className="flex flex-row lg:flex-col items-start justify-between gap-2">
           <BrandLogo
             href="/admin/dashboard"
             title="Jaehee Park"
-            subtitle="frontend engineer"
+            subtitle="frontend developer"
             onClick={guardNavigation}
           />
           <div className="flex gap-3">

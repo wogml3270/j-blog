@@ -1,7 +1,7 @@
 import { AboutManager } from "@/components/admin/about/about-manager";
-import { getAdminProfileContent } from "@/lib/profile/repository";
+import { getAdminAboutContent } from "@/lib/profile/repository";
 
 export default async function AdminAboutPage() {
-  const profile = await getAdminProfileContent("ko");
-  return <AboutManager initialAbout={profile} />;
+  const about = await getAdminAboutContent("ko");
+  return <AboutManager initialAbout={about} />;
 }

@@ -1,12 +1,12 @@
 import type { Locale } from "@/lib/i18n/config";
 
-export type HomeHighlightSourceType = "project" | "post";
-export type HomeSourceFilter = "all" | HomeHighlightSourceType;
+export type HomeSlideSourceType = "project" | "post";
+export type HomeSourceFilter = "all" | HomeSlideSourceType;
 export type HomeActiveFilter = "all" | "active" | "inactive";
 
-export type HomeHighlight = {
+export type HomeSlide = {
   id: string;
-  sourceType: HomeHighlightSourceType;
+  sourceType: HomeSlideSourceType;
   sourceId: string;
   orderIndex: number;
   isActive: boolean;
@@ -15,9 +15,9 @@ export type HomeHighlight = {
   updatedAt: string;
 };
 
-export type HomeHighlightSourceOption = {
+export type HomeSlideSourceOption = {
   id: string;
-  sourceType: HomeHighlightSourceType;
+  sourceType: HomeSlideSourceType;
   title: string;
   description: string;
   slug: string;
@@ -27,9 +27,9 @@ export type HomeHighlightSourceOption = {
   updatedAt: string;
 };
 
-export type HomeHighlightResolvedSlide = {
+export type HomeSlideResolved = {
   id: string;
-  sourceType: HomeHighlightSourceType;
+  sourceType: HomeSlideSourceType;
   sourceId: string;
   orderIndex: number;
   title: string;
@@ -40,8 +40,8 @@ export type HomeHighlightResolvedSlide = {
   locale: Locale;
 };
 
-export type HomeHighlightInput = {
-  sourceType: HomeHighlightSourceType;
+export type HomeSlideInput = {
+  sourceType: HomeSlideSourceType;
   sourceId: string;
   orderIndex: number;
   isActive: boolean;

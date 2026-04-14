@@ -1,5 +1,16 @@
 import type { ComponentType } from "react";
 import type { PublishStatus } from "@/types/db";
+import type { ContentLocale } from "@/types/content-locale";
+
+export type BlogTranslationInput = {
+  title: string;
+  description: string;
+  bodyMarkdown: string;
+  tags: string[];
+};
+
+// 번역은 일부 로케일만 먼저 저장될 수 있으므로 부분 맵으로 관리한다.
+export type BlogTranslationMap = Partial<Record<ContentLocale, BlogTranslationInput>>;
 
 export type TocItem = {
   id: string;
@@ -58,6 +69,7 @@ export type AdminPost = {
   publishedAt: string | null;
   scheduledPublishAt: string | null;
   updatedAt: string;
+  translations?: BlogTranslationMap;
 };
 
 export type AdminPostInput = {
@@ -73,6 +85,7 @@ export type AdminPostInput = {
   publishedAt?: string | null;
   scheduledPublishAt?: string | null;
   tags: string[];
+  translations?: BlogTranslationMap;
 };
 
 export type BlogComment = {

@@ -5,7 +5,48 @@ import { createAdminProject, getAdminProjectsPaginated } from "@/lib/projects/re
 import { normalizePagination } from "@/lib/utils/pagination";
 import { normalizeAdminListFilter, normalizeStatusScope } from "@/lib/utils/search-params";
 import { normalizeSlug } from "@/lib/utils/slug";
-import type { AdminProjectInput, ProjectLinkItem, ProjectLinks } from "@/types/projects";
+import type {
+  AdminProjectInput,
+  ProjectLinkItem,
+  ProjectLinks,
+  ProjectTranslationMap,
+} from "@/types/projects";
+
+// 번역 payload는 EN/JA만 저장 대상으로 정규화한다.
+function parseTranslations(source: Record<string, unknown>): ProjectTranslationMap {
+  const raw = source.translations;
+
+  if (!raw || typeof raw !== "object") {
+    return {};
+  }
+
+  const map = raw as Record<string, unknown>;
+  const result: ProjectTranslationMap = {};
+
+  for (const locale of ["en", "ja"] as const) {
+    const item = map[locale];
+
+    if (!item || typeof item !== "object") {
+      continue;
+    }
+
+    const row = item as Record<string, unknown>;
+    result[locale] = {
+      title: typeof row.title === "string" ? row.title.trim() : "",
+      subtitle: typeof row.subtitle === "string" ? row.subtitle.trim() : "",
+      contentMarkdown: typeof row.contentMarkdown === "string" ? row.contentMarkdown : "",
+      tags: Array.isArray(row.tags) ? row.tags.map((tag) => String(tag).trim()).filter(Boolean) : [],
+      achievements: Array.isArray(row.achievements)
+        ? row.achievements.map((item) => String(item).trim()).filter(Boolean)
+        : [],
+      contributions: Array.isArray(row.contributions)
+        ? row.contributions.map((item) => String(item).trim()).filter(Boolean)
+        : [],
+    };
+  }
+
+  return result;
+}
 
 function toLinks(value: unknown): ProjectLinks {
   const normalize = (items: ProjectLinkItem[]): ProjectLinks => {
@@ -135,6 +176,7 @@ function parseBody(body: unknown): AdminProjectInput | null {
     links: toLinks(source.links),
     featured: Boolean(source.featured),
     status,
+    translations: parseTranslations(source),
   };
 }
 

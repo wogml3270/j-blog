@@ -32,22 +32,22 @@ import { useBeforeUnloadUnsavedChanges } from "@/lib/utils/unsaved-changes";
 import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
 import type {
   HomeActiveFilter,
-  HomeHighlightInput,
-  HomeHighlightSourceType,
+  HomeSlideInput,
+  HomeSlideSourceType,
   HomeSourceFilter,
-} from "@/types/home";
+} from "@/types/home-slide";
 import type { HomeManagerProps } from "@/types/ui";
 
 type EditableHighlight = {
   id: string;
-  sourceType: HomeHighlightSourceType;
+  sourceType: HomeSlideSourceType;
   sourceId: string;
   orderIndex: number;
   isActive: boolean;
   overrideCtaLabel: string;
 };
 
-function sourceKey(sourceType: HomeHighlightSourceType, sourceId: string): string {
+function sourceKey(sourceType: HomeSlideSourceType, sourceId: string): string {
   return `${sourceType}:${sourceId}`;
 }
 
@@ -62,7 +62,7 @@ function toEditableList(items: HomeManagerProps["initialHighlights"]): EditableH
   }));
 }
 
-function normalizePayload(items: EditableHighlight[]): HomeHighlightInput[] {
+function normalizePayload(items: EditableHighlight[]): HomeSlideInput[] {
   return items.map((item, index) => ({
     sourceType: item.sourceType,
     sourceId: item.sourceId,
@@ -206,8 +206,8 @@ export function HomeManager({
     }),
   );
 
-  // 대시보드 홈 항목 순서를 드래그 결과 순서로 재배치한다.
-  const onHighlightsDragEnd = (event: DragEndEvent) => {
+  // 홈 슬라이드 항목 순서를 드래그 결과 순서로 재배치한다.
+  const onSlidesDragEnd = (event: DragEndEvent) => {
     setItems((prev) =>
       reorderByVisibleSubset(
         prev,
@@ -223,7 +223,7 @@ export function HomeManager({
     setNotice(null);
 
     try {
-      const response = await fetch("/api/admin/highlights", {
+      const response = await fetch("/api/admin/home-slide", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: normalizePayload(items) }),
@@ -234,10 +234,8 @@ export function HomeManager({
         throw new Error(payload.error ?? "대시보드 홈 저장에 실패했습니다.");
       }
 
-      const payload = (await response.json()) as {
-        highlights?: HomeManagerProps["initialHighlights"];
-      };
-      const next = toEditableList(payload.highlights ?? []);
+      const payload = (await response.json()) as { slides?: HomeManagerProps["initialHighlights"] };
+      const next = toEditableList(payload.slides ?? []);
       setItems(next);
       setSavedItems(next);
       setNotice({ kind: "success", text: "대시보드 홈 구성을 저장했습니다." });
@@ -293,7 +291,7 @@ export function HomeManager({
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
-            onDragEnd={onHighlightsDragEnd}
+            onDragEnd={onSlidesDragEnd}
           >
             <SortableContext
               items={filteredItems.map((item) => item.id)}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
-import { getAdminContactMessagesPaginated } from "@/lib/contact/repository";
+import { getAdminContactsPaginated } from "@/lib/contact/repository";
 import { normalizePagination } from "@/lib/utils/pagination";
 import { normalizeContactListFilter } from "@/lib/utils/search-params";
 
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     url.searchParams.get("pageSize"),
   );
   const statusFilter = normalizeContactListFilter(url.searchParams.get("status"));
-  const result = await getAdminContactMessagesPaginated(page, pageSize, statusFilter);
+  const result = await getAdminContactsPaginated(page, pageSize, statusFilter);
 
   return NextResponse.json(result);
 }

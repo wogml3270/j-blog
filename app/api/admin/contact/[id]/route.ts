@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
-import { updateAdminContactMessage } from "@/lib/contact/repository";
-import type { ContactMessageStatus } from "@/types/db";
+import { updateAdminContact } from "@/lib/contact/repository";
+import type { ContactStatus } from "@/types/db";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-function parseStatus(value: unknown): ContactMessageStatus | null {
+function parseStatus(value: unknown): ContactStatus | null {
   if (value === "new" || value === "replied") {
     return value;
   }
@@ -45,7 +45,7 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
-  const result = await updateAdminContactMessage(id, { status, adminNote });
+  const result = await updateAdminContact(id, { status, adminNote });
 
   if (result.error || !result.data) {
     return NextResponse.json(

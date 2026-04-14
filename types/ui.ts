@@ -2,15 +2,11 @@ import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/config";
 import type { AdminListFilter } from "@/types/admin";
 import type { AdminPost } from "@/types/blog";
-import type { ContactMessage } from "@/types/contact";
+import type { Contact } from "@/types/contacts";
 import type { PublishStatus } from "@/types/db";
-import type {
-  HomeHighlight,
-  HomeHighlightResolvedSlide,
-  HomeHighlightSourceOption,
-} from "@/types/home";
+import type { HomeSlide, HomeSlideResolved, HomeSlideSourceOption } from "@/types/home-slide";
 import type { AdminProject } from "@/types/projects";
-import type { ProfileContent } from "@/types/profile";
+import type { AboutContent } from "@/types/about";
 
 export type HeaderProps = {
   locale: Locale;
@@ -68,8 +64,8 @@ export type BlogManagerProps = {
 };
 
 export type ContactManagerProps = {
-  initialNewPage: import("@/types/admin").PaginatedResult<ContactMessage>;
-  initialRepliedPage: import("@/types/admin").PaginatedResult<ContactMessage>;
+  initialNewPage: import("@/types/admin").PaginatedResult<Contact>;
+  initialRepliedPage: import("@/types/admin").PaginatedResult<Contact>;
   initialStatusFilter?: "all" | "new" | "replied";
   initialSelectedId?: string | null;
 };
@@ -82,8 +78,8 @@ export type ProjectsManagerProps = {
 };
 
 export type HomeManagerProps = {
-  initialHighlights: HomeHighlight[];
-  initialSources: HomeHighlightSourceOption[];
+  initialHighlights: HomeSlide[];
+  initialSources: HomeSlideSourceOption[];
 };
 
 export type ToolbarSelectOption = {
@@ -215,15 +211,14 @@ export type FeaturedProjectsProps = {
 };
 
 export type HomeHeroSliderProps = {
-  slides: HomeHighlightResolvedSlide[];
+  slides: HomeSlideResolved[];
   viewProjectsLabel: string;
   viewBlogLabel: string;
 };
 
 export type InteractiveAboutRevealProps = {
-  profile: ProfileContent;
+  profile: AboutContent;
   labels: {
-    aboutBadge: string;
     headline: string;
     techStack: string;
   };

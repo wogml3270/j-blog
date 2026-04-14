@@ -61,14 +61,11 @@ export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutReve
           className={cn(
             "w-full overflow-hidden transform-gpu transition-[max-height,opacity,transform] duration-2400 ease-[cubic-bezier(0.22,1,0.36,1)] lg:max-w-[58%]",
             isExpanded
-              ? "pointer-events-auto opacity-100 max-h-[1300px] translate-y-0 lg:translate-x-0"
+              ? "pointer-events-auto opacity-100 translate-y-0 lg:translate-x-0"
               : "pointer-events-none max-h-0 opacity-0 translate-y-4 lg:-translate-x-12",
           )}
         >
           <article className="w-full rounded-3xl border border-border/70 bg-background/70 p-4 pt-60 shadow-lg backdrop-blur-sm lg:pt-5">
-            <span className="inline-flex rounded-full border border-accent/35 bg-accent/12 px-3 py-1 text-xs font-semibold tracking-wide text-foreground">
-              {labels.aboutBadge}
-            </span>
             <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
               {labels.headline}
             </h1>
