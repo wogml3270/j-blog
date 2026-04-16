@@ -10,11 +10,6 @@ import type {
   ProjectTranslationMap,
 } from "@/types/projects";
 import type { Locale } from "@/lib/i18n/config";
-import {
-  getAllProjects as getFallbackProjects,
-  getFeaturedProjects as getFallbackFeaturedProjects,
-  getProjectBySlug as getFallbackProjectBySlug,
-} from "@/lib/projects/data";
 import { stripMarkdownToPlainText } from "@/lib/blog/markdown";
 import { removeHomeHighlightSource, syncHomeHighlightSource } from "@/lib/home/sync";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
@@ -64,6 +59,24 @@ type RepoResult<T> = {
 
 const PROJECT_SELECT_FIELDS =
   "id,slug,title,home_summary,summary,sync_slug_with_title,use_markdown_editor,thumbnail,role,period,start_date,end_date,tech_stack,achievements,contributions,links,featured,status,updated_at";
+
+export class ProjectServiceUnavailableError extends Error {
+  constructor(message = "Project database is unavailable.") {
+    super(message);
+    this.name = "ProjectServiceUnavailableError";
+  }
+}
+
+// 프로젝트는 DB를 단일 소스로 사용하므로 연결 실패 시 즉시 장애 에러를 노출한다.
+function requireProjectService() {
+  const service = createSupabaseServiceClient();
+
+  if (!service) {
+    throw new ProjectServiceUnavailableError("Supabase service client is not configured.");
+  }
+
+  return service;
+}
 
 function deriveHomeSummary(source: string): string {
   const plain = stripMarkdownToPlainText(source);
@@ -308,15 +321,6 @@ function normalizeStatus(value: PublishStatus): PublishStatus {
   return value === "published" ? "published" : "draft";
 }
 
-function fallbackAll(locale: Locale): Project[] {
-  return getFallbackProjects(locale).map((project) => ({
-    ...project,
-    id: project.slug,
-    status: "published",
-    updatedAt: new Date().toISOString(),
-  }));
-}
-
 // 프로젝트 번역은 locale에 맞는 projects_en/projects_ja에서만 조회한다.
 async function getProjectTranslationMap(
   service: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
@@ -341,11 +345,7 @@ async function getProjectTranslationMap(
 }
 
 export async function getAllPublishedProjects(locale: Locale): Promise<Project[]> {
-  const service = createSupabaseServiceClient();
-
-  if (!service) {
-    return fallbackAll(locale);
-  }
+  const service = requireProjectService();
 
   const { data, error } = await service
     .from("projects")
@@ -355,7 +355,7 @@ export async function getAllPublishedProjects(locale: Locale): Promise<Project[]
     .order("updated_at", { ascending: false });
 
   if (error || !data) {
-    return fallbackAll(locale);
+    throw new ProjectServiceUnavailableError(error?.message ?? "Failed to load published projects.");
   }
 
   const projects = (data as ProjectRow[]).map(rowToProject);
@@ -371,18 +371,9 @@ export async function getAllPublishedProjects(locale: Locale): Promise<Project[]
 }
 
 export async function getFeaturedProjects(locale: Locale, limit?: number): Promise<Project[]> {
-  const service = createSupabaseServiceClient();
+  const service = requireProjectService();
   const safeLimit =
     typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : null;
-
-  if (!service) {
-    return getFallbackFeaturedProjects(locale, safeLimit ?? undefined).map((project) => ({
-      ...project,
-      id: project.slug,
-      status: "published",
-      updatedAt: new Date().toISOString(),
-    }));
-  }
 
   let query = service
     .from("projects")
@@ -398,12 +389,7 @@ export async function getFeaturedProjects(locale: Locale, limit?: number): Promi
   const { data, error } = await query;
 
   if (error || !data) {
-    return getFallbackFeaturedProjects(locale, safeLimit ?? undefined).map((project) => ({
-      ...project,
-      id: project.slug,
-      status: "published",
-      updatedAt: new Date().toISOString(),
-    }));
+    throw new ProjectServiceUnavailableError(error?.message ?? "Failed to load featured projects.");
   }
 
   const projects = (data as ProjectRow[]).map(rowToProject);
@@ -422,19 +408,7 @@ export async function getPublishedProjectBySlug(
   slug: string,
   locale: Locale,
 ): Promise<Project | null> {
-  const service = createSupabaseServiceClient();
-
-  if (!service) {
-    const fallback = getFallbackProjectBySlug(slug, locale);
-    return fallback
-      ? {
-          ...fallback,
-          id: fallback.slug,
-          status: "published",
-          updatedAt: new Date().toISOString(),
-        }
-      : null;
-  }
+  const service = requireProjectService();
 
   const { data, error } = await service
     .from("projects")
@@ -443,16 +417,12 @@ export async function getPublishedProjectBySlug(
     .eq("status", "published")
     .maybeSingle<ProjectRow>();
 
-  if (error || !data) {
-    const fallback = getFallbackProjectBySlug(slug, locale);
-    return fallback
-      ? {
-          ...fallback,
-          id: fallback.slug,
-          status: "published",
-          updatedAt: new Date().toISOString(),
-        }
-      : null;
+  if (error) {
+    throw new ProjectServiceUnavailableError(error.message);
+  }
+
+  if (!data) {
+    return null;
   }
 
   const base = rowToProject(data);

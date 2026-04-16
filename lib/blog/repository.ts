@@ -9,10 +9,6 @@ import type {
 import type { AdminListFilter, PaginatedResult } from "@/types/admin";
 import type { PublishStatus } from "@/types/db";
 import type { Locale } from "@/lib/i18n/config";
-import {
-  getAllPosts as getFallbackPosts,
-  getPostBySlug as getFallbackPostBySlug,
-} from "@/lib/blog/registry";
 import { extractTocFromMarkdown } from "@/lib/blog/markdown";
 import { removeHomeHighlightSource, syncHomeHighlightSource } from "@/lib/home/sync";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
@@ -55,6 +51,24 @@ type RepoResult<T> = {
 
 const POST_SELECT_FIELDS =
   "id,slug,title,description,thumbnail,featured,sync_slug_with_title,body_markdown,use_markdown_editor,status,published_at,scheduled_publish_at,updated_at,post_tag_map(post_tags(name))";
+
+export class BlogServiceUnavailableError extends Error {
+  constructor(message = "Blog database is unavailable.") {
+    super(message);
+    this.name = "BlogServiceUnavailableError";
+  }
+}
+
+// 블로그는 DB를 단일 소스로 사용하므로 연결 실패 시 즉시 장애 에러를 노출한다.
+function requireBlogService() {
+  const service = createSupabaseServiceClient();
+
+  if (!service) {
+    throw new BlogServiceUnavailableError("Supabase service client is not configured.");
+  }
+
+  return service;
+}
 
 function normalizeTags(tags: string[]): string[] {
   return [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
@@ -398,17 +412,6 @@ async function upsertPostTranslations(
   }
 }
 
-function fallbackPostList(): BlogPostSummary[] {
-  return getFallbackPosts().map((item) => ({
-    slug: item.meta.slug,
-    title: item.meta.title,
-    description: item.meta.description,
-    date: item.meta.date,
-    featured: true,
-    tags: item.meta.tags,
-  }));
-}
-
 // 게시글 목록 번역은 locale에 맞는 posts_en/posts_ja만 조회한다.
 async function getPostTranslationMap(
   service: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
@@ -433,11 +436,7 @@ async function getPostTranslationMap(
 }
 
 export async function getAllPublishedPosts(locale: Locale = "ko"): Promise<BlogPostSummary[]> {
-  const service = createSupabaseServiceClient();
-
-  if (!service) {
-    return fallbackPostList();
-  }
+  const service = requireBlogService();
 
   const nowIso = new Date().toISOString();
   const { data, error } = await service
@@ -449,7 +448,7 @@ export async function getAllPublishedPosts(locale: Locale = "ko"): Promise<BlogP
     .order("updated_at", { ascending: false });
 
   if (error || !data) {
-    return fallbackPostList();
+    throw new BlogServiceUnavailableError(error?.message ?? "Failed to load published posts.");
   }
 
   const summaries = (data as PostRow[]).map(rowToSummary);
@@ -476,14 +475,9 @@ export async function getFeaturedPublishedPosts(
   limit?: number,
   locale: Locale = "ko",
 ): Promise<BlogPostSummary[]> {
-  const service = createSupabaseServiceClient();
+  const service = requireBlogService();
   const safeLimit =
     typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : null;
-
-  if (!service) {
-    const fallback = fallbackPostList();
-    return safeLimit ? fallback.slice(0, safeLimit) : fallback;
-  }
 
   let query = service
     .from("posts")
@@ -501,8 +495,7 @@ export async function getFeaturedPublishedPosts(
   const { data, error } = await query;
 
   if (error || !data) {
-    const fallback = fallbackPostList();
-    return safeLimit ? fallback.slice(0, safeLimit) : fallback;
+    throw new BlogServiceUnavailableError(error?.message ?? "Failed to load featured posts.");
   }
 
   const featuredSummaries = (data as PostRow[]).map(rowToSummary);
@@ -527,31 +520,7 @@ export async function getPublishedPostBySlug(
   slug: string,
   locale: Locale = "ko",
 ): Promise<BlogPostDetail | null> {
-  const service = createSupabaseServiceClient();
-
-  if (!service) {
-    const fallback = getFallbackPostBySlug(slug);
-
-    if (!fallback) {
-      return null;
-    }
-
-    return {
-      source: "mdx",
-      slug: fallback.meta.slug,
-      title: fallback.meta.title,
-      description: fallback.meta.description,
-      thumbnail: null,
-      date: fallback.meta.date,
-      tags: fallback.meta.tags,
-      toc: fallback.meta.toc,
-      Component: fallback.Component,
-      status: "published",
-      publishedAt: fallback.meta.date,
-      scheduledPublishAt: null,
-      updatedAt: fallback.meta.date,
-    };
-  }
+  const service = requireBlogService();
 
   const { data, error } = await service
     .from("posts")
@@ -561,28 +530,12 @@ export async function getPublishedPostBySlug(
     .or(`scheduled_publish_at.is.null,scheduled_publish_at.lte.${new Date().toISOString()}`)
     .maybeSingle<PostRow>();
 
-  if (error || !data) {
-    const fallback = getFallbackPostBySlug(slug);
+  if (error) {
+    throw new BlogServiceUnavailableError(error.message);
+  }
 
-    if (!fallback) {
-      return null;
-    }
-
-    return {
-      source: "mdx",
-      slug: fallback.meta.slug,
-      title: fallback.meta.title,
-      description: fallback.meta.description,
-      thumbnail: null,
-      date: fallback.meta.date,
-      tags: fallback.meta.tags,
-      toc: fallback.meta.toc,
-      Component: fallback.Component,
-      status: "published",
-      publishedAt: fallback.meta.date,
-      scheduledPublishAt: null,
-      updatedAt: fallback.meta.date,
-    };
+  if (!data) {
+    return null;
   }
 
   const summary = rowToSummary(data);
@@ -735,8 +688,7 @@ export async function createAdminPost(
   if (error || !data) {
     return {
       data: null,
-      error:
-        toSlugConflictMessage(error, "블로그") ?? error?.message ?? "Failed to create post.",
+      error: toSlugConflictMessage(error, "블로그") ?? error?.message ?? "Failed to create post.",
     };
   }
 

@@ -1,12 +1,7 @@
-import createMDX from "@next/mdx";
 import type { NextConfig } from "next";
 
-const withMDX = createMDX({
-  extension: /\.mdx?$/,
-});
-
 const nextConfig: NextConfig = {
-  pageExtensions: ["ts", "tsx", "md", "mdx"],
+  pageExtensions: ["ts", "tsx", "md"],
   images: {
     // 관리자 외부 썸네일 + 소셜 로그인 아바타 도메인을 함께 허용한다.
     remotePatterns: [
@@ -34,4 +29,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withMDX(nextConfig);
+export default nextConfig;

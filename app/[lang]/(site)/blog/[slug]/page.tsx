@@ -26,7 +26,16 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
   }
 
   const dictionary = getDictionary(lang);
-  const post = await getPublishedPostBySlug(normalizedSlug, lang);
+  let post = null;
+
+  try {
+    post = await getPublishedPostBySlug(normalizedSlug, lang);
+  } catch {
+    return {
+      title: dictionary.blog.title,
+      description: dictionary.blog.description,
+    };
+  }
 
   if (!post) {
     return {
@@ -81,11 +90,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
       </header>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_240px]">
-        {post.source === "supabase" ? (
-          <MarkdownContent markdown={post.bodyMarkdown ?? ""} />
-        ) : (
-          <div className="prose">{post.Component ? <post.Component /> : null}</div>
-        )}
+        <MarkdownContent markdown={post.bodyMarkdown ?? ""} />
         <div className="lg:sticky lg:top-24 lg:self-start">
           <TableOfContents items={post.toc} title={dictionary.blog.tableOfContents} />
         </div>

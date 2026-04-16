@@ -25,7 +25,16 @@ export async function generateMetadata({ params }: ProjectDetailPageProps): Prom
   }
 
   const dictionary = getDictionary(lang);
-  const project = await getPublishedProjectBySlug(normalizedSlug, lang);
+  let project = null;
+
+  try {
+    project = await getPublishedProjectBySlug(normalizedSlug, lang);
+  } catch {
+    return {
+      title: dictionary.projects.title,
+      description: dictionary.projects.description,
+    };
+  }
 
   if (!project) {
     return {

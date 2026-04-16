@@ -1,4 +1,3 @@
-import type { ComponentType } from "react";
 import type { PublishStatus } from "@/types/db";
 import type { ContentLocale } from "@/types/content-locale";
 
@@ -39,19 +38,13 @@ export type BlogPostSummary = {
 };
 
 export type BlogPostDetail = BlogPostSummary & {
-  source: "supabase" | "mdx";
+  source: "supabase";
   bodyMarkdown?: string;
-  Component?: ComponentType;
   toc: TocItem[];
   status?: PublishStatus;
   publishedAt?: string | null;
   scheduledPublishAt?: string | null;
   updatedAt?: string;
-};
-
-export type BlogRegistryItem = {
-  meta: BlogPostMeta;
-  Component: ComponentType;
 };
 
 export type AdminPost = {

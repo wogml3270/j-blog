@@ -1,6 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import { promises as fs } from "node:fs";
-import path from "node:path";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -124,30 +122,6 @@ const profile = {
   status: "published",
 };
 
-function parseMdxMetadata(source) {
-  const match = source.match(/export const metadata = ({[\s\S]*?});/);
-
-  if (!match) {
-    return null;
-  }
-
-  const metadata = Function(`"use strict"; return (${match[1]});`)();
-  const body = source.slice(match.index + match[0].length).trim();
-
-  const markdown = body
-    .replace(
-      /<h([2-4]) id="[^"]*">([^<]+)<\/h\1>/g,
-      (_, level, text) => `${"#".repeat(Number(level))} ${text}`,
-    )
-    .replace(/<[^>]+>/g, "")
-    .trim();
-
-  return {
-    metadata,
-    markdown,
-  };
-}
-
 async function ensureAllowlist() {
   const envEmails = (process.env.ADMIN_ALLOWED_EMAILS ?? "wogml3270@gmail.com")
     .split(",")
@@ -218,31 +192,21 @@ async function syncPostTags(postId, tags) {
   }
 }
 
-async function seedPostsFromMdx() {
-  const contentDir = path.join(process.cwd(), "content", "blog");
-  const files = (await fs.readdir(contentDir)).filter((file) => file.endsWith(".mdx"));
+async function seedPosts() {
+  // MDX 파일 기반 시드는 제거하고 DB 직접 입력/관리 방식을 기본으로 유지한다.
+  const posts = [];
 
-  for (const file of files) {
-    const filePath = path.join(contentDir, file);
-    const source = await fs.readFile(filePath, "utf8");
-    const parsed = parseMdxMetadata(source);
-
-    if (!parsed) {
-      continue;
-    }
-
-    const { metadata, markdown } = parsed;
-
+  for (const post of posts) {
     const { data, error } = await supabase
       .from("posts")
       .upsert(
         {
-          slug: metadata.slug,
-          title: metadata.title,
-          description: metadata.description,
-          body_markdown: markdown,
-          status: "published",
-          published_at: metadata.date,
+          slug: post.slug,
+          title: post.title,
+          description: post.description,
+          body_markdown: post.body_markdown,
+          status: post.status ?? "published",
+          published_at: post.published_at ?? new Date().toISOString(),
         },
         { onConflict: "slug" },
       )
@@ -250,10 +214,10 @@ async function seedPostsFromMdx() {
       .single();
 
     if (error || !data) {
-      throw error ?? new Error(`Failed to upsert post: ${metadata.slug}`);
+      throw error ?? new Error(`Failed to upsert post: ${post.slug}`);
     }
 
-    await syncPostTags(data.id, metadata.tags ?? []);
+    await syncPostTags(data.id, post.tags ?? []);
   }
 }
 
@@ -261,7 +225,7 @@ async function run() {
   await ensureAllowlist();
   await seedProfile();
   await seedProjects();
-  await seedPostsFromMdx();
+  await seedPosts();
 
   console.log("Supabase seed completed.");
 }

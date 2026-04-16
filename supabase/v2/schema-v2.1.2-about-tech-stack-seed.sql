@@ -1,0 +1,88 @@
+-- Schema Version: v2.1.2
+-- Purpose: about_tech_stack CSV 동기화 (KO/EN/JA 전체 교체)
+-- Source: ~/Downloads/about_tech_stack_rows.csv
+
+begin;
+
+-- about locale row(1=ko,2=en,3=ja)의 기술스택을 CSV 기준으로 재적재한다.
+delete from public.about_tech_stack
+where about_id in (1, 2, 3);
+
+insert into public.about_tech_stack (
+  about_id,
+  name,
+  description,
+  logo_url,
+  order_index,
+  category
+)
+values
+  (1, 'Javascript', '동적인 인터랙션과 브라우저 로직을 안정적으로 구현합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-14/1776147793303-e1f7979b-about-tech-logo-1776147792248.svg', 0, 'frontend'::public.about_tech_category),
+  (1, 'TypeScript', '도메인 타입을 먼저 설계해 런타임 오류를 빌드 단계에서 줄입니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775791990814-e1f7979b-about-tech-logo-1775791990587.svg', 1, 'frontend'::public.about_tech_category),
+  (1, 'React', '컴포넌트 단위 UI 설계와 상태 분리를 구조적으로 관리합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775791928465-e1f7979b-about-tech-logo-1775791927721.svg', 2, 'frontend'::public.about_tech_category),
+  (1, 'AWS', '서비스 규모에 맞춘 배포·스토리지·운영 환경을 설계합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-13/1776070032078-9466c23c-about-tech-logo-1776070031559.svg', 3, 'infrastructure'::public.about_tech_category),
+  (1, 'Supabase', 'Postgres/RLS/Auth 기반으로 백엔드 기능을 빠르게 구축합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775792123436-e1f7979b-about-tech-logo-1775792123271.svg', 4, 'infrastructure'::public.about_tech_category),
+  (1, 'Next.js', 'App Router 기반 SSR/SEO 최적화와 서버-클라이언트 경계를 설계합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775791180510-e1f7979b-about-tech-logo-1775791180005.svg', 5, 'frontend'::public.about_tech_category),
+  (1, 'Tailwind CSS', '디자인 토큰 중심 유틸리티 패턴으로 일관된 화면을 빠르게 구현합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775792082555-e1f7979b-about-tech-logo-1775792081804.svg', 6, 'frontend'::public.about_tech_category),
+  (1, 'SASS', '변수·믹스인 기반 스타일 구조화로 유지보수성을 높입니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299011394-e1f7979b-about-tech-logo-1776299010472.svg', 7, 'frontend'::public.about_tech_category),
+  (1, 'Styled-components', '컴포넌트 단위 스타일 캡슐화로 재사용성과 일관성을 강화합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299075023-e1f7979b-about-tech-logo-1776299074805.svg', 8, 'frontend'::public.about_tech_category),
+  (1, 'MariaDB', '관계형 데이터 모델링과 쿼리 최적화를 바탕으로 데이터를 운영합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299615465-e1f7979b-about-tech-logo-1776299614725.svg', 9, 'database'::public.about_tech_category),
+  (1, 'MySQL', '인덱스와 쿼리 튜닝을 통해 안정적인 데이터 처리를 구현합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776304247033-9466c23c-about-tech-logo-1776304244925.svg', 10, 'database'::public.about_tech_category),
+  (1, 'PostgreSQL', '복잡한 쿼리와 스키마 설계를 통해 서비스 데이터 정합성을 유지합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299755168-e1f7979b-about-tech-logo-1776299754274.svg', 11, 'database'::public.about_tech_category),
+  (1, 'Git', '브랜치 전략과 코드 리뷰 흐름을 기준으로 변경 이력을 관리합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299826467-e1f7979b-about-tech-logo-1776299826290.svg', 12, 'version_control'::public.about_tech_category),
+  (1, 'Github', 'Pull Request 중심 협업과 이슈 트래킹으로 개발 흐름을 관리합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299986610-e1f7979b-about-tech-logo-1776299986106.svg', 13, 'version_control'::public.about_tech_category),
+  (1, 'Gitlab', 'CI/CD 파이프라인과 저장소 관리를 통해 배포 자동화를 구성합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776300021007-e1f7979b-about-tech-logo-1776300020822.svg', 14, 'version_control'::public.about_tech_category),
+  (1, 'Filezilla', '서버 파일 업로드와 배포 리소스 관리를 신속하게 처리합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776300057255-e1f7979b-about-tech-logo-1776300057089.svg', 15, 'version_control'::public.about_tech_category),
+  (1, 'Docker', '컨테이너 기반 실행 환경 표준화로 배포 일관성을 확보합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776301024491-e1f7979b-about-tech-logo-1776301024276.svg', 16, 'infrastructure'::public.about_tech_category),
+  (1, 'PM2', 'Node.js 프로세스 모니터링과 무중단 재시작으로 운영 안정성을 높입니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776300963015-e1f7979b-about-tech-logo-1776300962177.svg', 17, 'infrastructure'::public.about_tech_category),
+  (1, 'Cafe24', '호스팅 환경 설정과 운영 배포 작업을 안정적으로 관리합니다.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIQfQuKm9nf82dkF_d2itUPtEQyPJZGEzFLg&s', 18, 'infrastructure'::public.about_tech_category),
+  (1, 'Gabia', '도메인/네임서버/SSL 설정 등 서비스 인프라 기본 구성을 담당합니다.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQKQ6YzYAFz0t-WZtvpSxo0V_oBwxGUk4ALQQ&s', 19, 'infrastructure'::public.about_tech_category),
+  (1, 'Node.js', '서버 런타임 기반 API 및 백엔드 로직을 구현합니다.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776301191254-e1f7979b-about-tech-logo-1776301190659.svg', 20, 'backend'::public.about_tech_category),
+  (2, 'Javascript', 'Implements dynamic interactions and browser logic in a stable, maintainable way.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-14/1776147793303-e1f7979b-about-tech-logo-1776147792248.svg', 0, 'frontend'::public.about_tech_category),
+  (2, 'TypeScript', 'Designs domain types first to reduce runtime errors at build time.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775791990814-e1f7979b-about-tech-logo-1775791990587.svg', 1, 'frontend'::public.about_tech_category),
+  (2, 'React', 'Builds component-driven UIs with clear state separation and reusable structure.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775791928465-e1f7979b-about-tech-logo-1775791927721.svg', 2, 'frontend'::public.about_tech_category),
+  (2, 'AWS', 'Designs deployment, storage, and operations architecture suited to product scale.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-13/1776070032078-9466c23c-about-tech-logo-1776070031559.svg', 3, 'infrastructure'::public.about_tech_category),
+  (2, 'Supabase', 'Builds backend features quickly with Postgres, RLS, and Auth workflows.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775792123436-e1f7979b-about-tech-logo-1775792123271.svg', 4, 'infrastructure'::public.about_tech_category),
+  (2, 'Next.js', 'Designs SSR/SEO optimization and server-client boundaries with the App Router.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775791180510-e1f7979b-about-tech-logo-1775791180005.svg', 5, 'frontend'::public.about_tech_category),
+  (2, 'Tailwind CSS', 'Ships consistent screens quickly with utility-first patterns and design tokens.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775792082555-e1f7979b-about-tech-logo-1775792081804.svg', 6, 'frontend'::public.about_tech_category),
+  (2, 'SASS', 'Improves maintainability with structured styles using variables and mixins.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299011394-e1f7979b-about-tech-logo-1776299010472.svg', 7, 'frontend'::public.about_tech_category),
+  (2, 'Styled-components', 'Strengthens reuse and consistency through component-scoped styling.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299075023-e1f7979b-about-tech-logo-1776299074805.svg', 8, 'frontend'::public.about_tech_category),
+  (2, 'MariaDB', 'Operates relational data with solid modeling and query optimization practices.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299615465-e1f7979b-about-tech-logo-1776299614725.svg', 9, 'database'::public.about_tech_category),
+  (2, 'MySQL', 'Delivers stable data handling through indexing and query tuning.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776304247033-9466c23c-about-tech-logo-1776304244925.svg', 10, 'database'::public.about_tech_category),
+  (2, 'PostgreSQL', 'Maintains data integrity with robust schema design and advanced SQL queries.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299755168-e1f7979b-about-tech-logo-1776299754274.svg', 11, 'database'::public.about_tech_category),
+  (2, 'Git', 'Manages change history with branching strategy and review-based workflow.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299826467-e1f7979b-about-tech-logo-1776299826290.svg', 12, 'version_control'::public.about_tech_category),
+  (2, 'Github', 'Runs collaboration through pull requests, issues, and repository-based workflows.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299986610-e1f7979b-about-tech-logo-1776299986106.svg', 13, 'version_control'::public.about_tech_category),
+  (2, 'Gitlab', 'Builds automated delivery with CI/CD pipelines and repository management.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776300021007-e1f7979b-about-tech-logo-1776300020822.svg', 14, 'version_control'::public.about_tech_category),
+  (2, 'Filezilla', 'Handles server file transfers and deployment assets quickly and reliably.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776300057255-e1f7979b-about-tech-logo-1776300057089.svg', 15, 'version_control'::public.about_tech_category),
+  (2, 'Docker', 'Ensures deployment consistency with standardized container runtime environments.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776301024491-e1f7979b-about-tech-logo-1776301024276.svg', 16, 'infrastructure'::public.about_tech_category),
+  (2, 'PM2', 'Improves operational stability with Node.js process monitoring and zero-downtime restarts.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776300963015-e1f7979b-about-tech-logo-1776300962177.svg', 17, 'infrastructure'::public.about_tech_category),
+  (2, 'Cafe24', 'Manages hosting configuration and operational deployment tasks reliably.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIQfQuKm9nf82dkF_d2itUPtEQyPJZGEzFLg&s', 18, 'infrastructure'::public.about_tech_category),
+  (2, 'Gabia', 'Handles domain, DNS, and SSL setup as part of core infrastructure operations.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQKQ6YzYAFz0t-WZtvpSxo0V_oBwxGUk4ALQQ&s', 19, 'infrastructure'::public.about_tech_category),
+  (2, 'Node.js', 'Implements APIs and backend logic on a production-ready server runtime.', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776301191254-e1f7979b-about-tech-logo-1776301190659.svg', 20, 'backend'::public.about_tech_category),
+  (3, 'Javascript', '動的なインタラクションとブラウザロジックを安定して実装します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-14/1776147793303-e1f7979b-about-tech-logo-1776147792248.svg', 0, 'frontend'::public.about_tech_category),
+  (3, 'TypeScript', 'ドメイン型を先に設計し、実行時エラーをビルド段階で減らします。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775791990814-e1f7979b-about-tech-logo-1775791990587.svg', 1, 'frontend'::public.about_tech_category),
+  (3, 'React', 'コンポーネント中心のUI設計と状態分離を構造的に管理します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775791928465-e1f7979b-about-tech-logo-1775791927721.svg', 2, 'frontend'::public.about_tech_category),
+  (3, 'AWS', 'サービス規模に合わせて配備・ストレージ・運用基盤を設計します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-13/1776070032078-9466c23c-about-tech-logo-1776070031559.svg', 3, 'infrastructure'::public.about_tech_category),
+  (3, 'Supabase', 'Postgres/RLS/Authを活用し、バックエンド機能を迅速に構築します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775792123436-e1f7979b-about-tech-logo-1775792123271.svg', 4, 'infrastructure'::public.about_tech_category),
+  (3, 'Next.js', 'App RouterベースでSSR/SEO最適化とサーバー・クライアント境界を設計します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775791180510-e1f7979b-about-tech-logo-1775791180005.svg', 5, 'frontend'::public.about_tech_category),
+  (3, 'Tailwind CSS', 'デザイントークンとユーティリティ手法で一貫した画面を素早く実装します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-10/1775792082555-e1f7979b-about-tech-logo-1775792081804.svg', 6, 'frontend'::public.about_tech_category),
+  (3, 'SASS', '変数とミックスインでスタイル構造を整理し、保守性を高めます。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299011394-e1f7979b-about-tech-logo-1776299010472.svg', 7, 'frontend'::public.about_tech_category),
+  (3, 'Styled-components', 'コンポーネント単位のスタイル分離で再利用性と一貫性を強化します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299075023-e1f7979b-about-tech-logo-1776299074805.svg', 8, 'frontend'::public.about_tech_category),
+  (3, 'MariaDB', 'リレーショナル設計とクエリ最適化を基盤にデータを運用します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299615465-e1f7979b-about-tech-logo-1776299614725.svg', 9, 'database'::public.about_tech_category),
+  (3, 'MySQL', 'インデックス設計とクエリチューニングで安定したデータ処理を実現します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776304247033-9466c23c-about-tech-logo-1776304244925.svg', 10, 'database'::public.about_tech_category),
+  (3, 'PostgreSQL', '複雑なクエリとスキーマ設計でデータ整合性を維持します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299755168-e1f7979b-about-tech-logo-1776299754274.svg', 11, 'database'::public.about_tech_category),
+  (3, 'Git', 'ブランチ戦略とレビュー中心フローで変更履歴を管理します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299826467-e1f7979b-about-tech-logo-1776299826290.svg', 12, 'version_control'::public.about_tech_category),
+  (3, 'Github', 'Pull RequestとIssueを中心に開発コラボレーションを進めます。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776299986610-e1f7979b-about-tech-logo-1776299986106.svg', 13, 'version_control'::public.about_tech_category),
+  (3, 'Gitlab', 'CI/CDパイプラインとリポジトリ管理で配備自動化を構築します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776300021007-e1f7979b-about-tech-logo-1776300020822.svg', 14, 'version_control'::public.about_tech_category),
+  (3, 'Filezilla', 'サーバーファイル転送と配備リソース管理を迅速に行います。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776300057255-e1f7979b-about-tech-logo-1776300057089.svg', 15, 'version_control'::public.about_tech_category),
+  (3, 'Docker', 'コンテナ実行環境を標準化し、配備の一貫性を確保します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776301024491-e1f7979b-about-tech-logo-1776301024276.svg', 16, 'infrastructure'::public.about_tech_category),
+  (3, 'PM2', 'Node.jsプロセス監視と無停止再起動で運用安定性を高めます。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776300963015-e1f7979b-about-tech-logo-1776300962177.svg', 17, 'infrastructure'::public.about_tech_category),
+  (3, 'Cafe24', 'ホスティング設定と運用配備作業を安定して管理します。', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIQfQuKm9nf82dkF_d2itUPtEQyPJZGEzFLg&s', 18, 'infrastructure'::public.about_tech_category),
+  (3, 'Gabia', 'ドメイン・DNS・SSL設定など基盤の初期構成を担当します。', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQKQ6YzYAFz0t-WZtvpSxo0V_oBwxGUk4ALQQ&s', 19, 'infrastructure'::public.about_tech_category),
+  (3, 'Node.js', 'サーバーランタイム上でAPIとバックエンドロジックを実装します。', 'https://tzlmxnxmqjprycxbfiwj.supabase.co/storage/v1/object/public/project-thumbnails/about/2026-04-16/1776301191254-e1f7979b-about-tech-logo-1776301190659.svg', 20, 'backend'::public.about_tech_category);
+
+insert into public.schema_migrations (version, description)
+values ('v2.1.2', 'about_tech_stack CSV 동기화(ko/en/ja 63건)')
+on conflict (version) do nothing;
+
+commit;

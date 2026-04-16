@@ -3,9 +3,20 @@
   "description": "Technical posts powered by MDX",
   "listTitle": "Blog",
   "listDescription": "MDX posts with tags, publish date, and table-of-contents metadata.",
+  "searchPlaceholder": "Search by title, description, or tags",
+  "searchButton": "Search",
+  "searchReset": "Reset",
+  "searchNoResult": "No results found. Try a different keyword.",
   "tableOfContents": "Table of Contents",
   "backToList": "← Back to blog",
   "postNotFound": "Post not found.",
+  "error": {
+    "unavailableTitle": "Blog service is temporarily unavailable.",
+    "unexpectedTitle": "Something went wrong.",
+    "unavailableDescription": "The database connection is unstable. Please try again in a moment.",
+    "unexpectedDescription": "An unexpected error occurred while loading the blog page.",
+    "retry": "Retry"
+  },
   "comments": {
     "title": "Comments",
     "description": "You can leave a comment after signing in.",

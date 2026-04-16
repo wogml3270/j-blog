@@ -3,9 +3,20 @@
   "description": "MDXベースの技術ブログ一覧",
   "listTitle": "ブログ",
   "listDescription": "タグ・公開日・目次メタデータを含むMDXベースの記事一覧です。",
+  "searchPlaceholder": "タイトル・説明・タグで検索",
+  "searchButton": "検索",
+  "searchReset": "リセット",
+  "searchNoResult": "検索結果がありません。別のキーワードをお試しください。",
   "tableOfContents": "目次",
   "backToList": "← ブログ一覧へ",
   "postNotFound": "記事が見つかりません。",
+  "error": {
+    "unavailableTitle": "ブログサービスを一時的に利用できません。",
+    "unexpectedTitle": "エラーが発生しました。",
+    "unavailableDescription": "データベース接続が不安定です。しばらくしてから再試行してください。",
+    "unexpectedDescription": "ブログページの読み込み中に予期しないエラーが発生しました。",
+    "retry": "再試行"
+  },
   "comments": {
     "title": "コメント",
     "description": "ログイン後にコメントを投稿できます。",
