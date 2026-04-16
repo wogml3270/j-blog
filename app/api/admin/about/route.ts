@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
+import { normalizeAboutTechCategory } from "@/lib/about/tech-categories";
 import { revalidateProfilePaths } from "@/lib/cache/revalidate";
 import {
   getAdminAboutContent,
   type AdminAboutInput,
   upsertAdminAboutContent,
 } from "@/lib/profile/repository";
-import type { AboutTranslationMap } from "@/types/about";
+import type { AboutTechCategory, AboutTranslationMap } from "@/types/about";
 
 // 번역 payload는 EN/JA만 저장 대상으로 정규화한다.
 function parseTranslations(source: Record<string, unknown>): AboutTranslationMap {
@@ -32,14 +33,18 @@ function parseTranslations(source: Record<string, unknown>): AboutTranslationMap
           .filter((tech) => tech && typeof tech === "object")
           .map((tech) => {
             const target = tech as Record<string, unknown>;
+            const category = normalizeAboutTechCategory(
+              typeof target.category === "string" ? target.category : "",
+            );
 
             return {
+              category,
               name: typeof target.name === "string" ? target.name.trim() : "",
               description: typeof target.description === "string" ? target.description.trim() : "",
               logoUrl: typeof target.logoUrl === "string" ? target.logoUrl.trim() : "",
             };
           })
-          .filter((tech) => tech.name && tech.description && tech.logoUrl)
+          .filter((tech) => tech.category && tech.name && tech.description && tech.logoUrl)
       : [];
 
     result[locale] = {
@@ -77,6 +82,9 @@ function parseBody(body: unknown): AdminAboutInput | null {
           }
 
           const raw = item as Record<string, unknown>;
+          const category = normalizeAboutTechCategory(
+            typeof raw.category === "string" ? raw.category : "",
+          );
           const name = typeof raw.name === "string" ? raw.name.trim() : "";
           const description = typeof raw.description === "string" ? raw.description.trim() : "";
           const logoUrl = typeof raw.logoUrl === "string" ? raw.logoUrl.trim() : "";
@@ -85,10 +93,15 @@ function parseBody(body: unknown): AdminAboutInput | null {
             return null;
           }
 
-          return { name, description, logoUrl };
+          return { category, name, description, logoUrl };
         })
         .filter(
-          (item): item is { name: string; description: string; logoUrl: string } => item !== null,
+          (item): item is {
+            category: AboutTechCategory;
+            name: string;
+            description: string;
+            logoUrl: string;
+          } => item !== null,
         )
     : [];
 

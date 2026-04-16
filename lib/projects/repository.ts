@@ -49,7 +49,6 @@ type ProjectRow = {
 
 type ProjectTranslationRow = {
   project_id: string;
-  locale: "ko" | "en" | "ja";
   title: string | null;
   subtitle: string | null;
   content_markdown: string | null;
@@ -318,7 +317,7 @@ function fallbackAll(locale: Locale): Project[] {
   }));
 }
 
-// 프로젝트 번역은 EN/JA locale일 때만 조회하고, 미번역 필드는 KO 원문으로 fallback한다.
+// 프로젝트 번역은 locale에 맞는 projects_en/projects_ja에서만 조회한다.
 async function getProjectTranslationMap(
   service: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
   projectIds: string[],
@@ -328,10 +327,10 @@ async function getProjectTranslationMap(
     return new Map();
   }
 
+  const table = locale === "en" ? "projects_en" : "projects_ja";
   const { data, error } = await service
-    .from("projects_translations")
-    .select("project_id,locale,title,subtitle,content_markdown,tags,achievements,contributions")
-    .eq("locale", locale)
+    .from(table)
+    .select("project_id,title,subtitle,content_markdown,tags,achievements,contributions")
     .in("project_id", projectIds);
 
   if (error || !data) {
@@ -476,25 +475,32 @@ async function getAdminProjectTranslationMapByIds(
     return new Map();
   }
 
-  const { data, error } = await service
-    .from("projects_translations")
-    .select("project_id,locale,title,subtitle,content_markdown,tags,achievements,contributions")
-    .in("project_id", projectIds)
-    .in("locale", ["en", "ja"]);
+  const [{ data: enRows, error: enError }, { data: jaRows, error: jaError }] = await Promise.all([
+    service
+      .from("projects_en")
+      .select("project_id,title,subtitle,content_markdown,tags,achievements,contributions")
+      .in("project_id", projectIds),
+    service
+      .from("projects_ja")
+      .select("project_id,title,subtitle,content_markdown,tags,achievements,contributions")
+      .in("project_id", projectIds),
+  ]);
 
-  if (error || !data) {
+  if (enError || jaError) {
     return new Map();
   }
 
   const map = new Map<string, ProjectTranslationMap>();
 
-  for (const row of data as ProjectTranslationRow[]) {
-    if (row.locale !== "en" && row.locale !== "ja") {
-      continue;
-    }
-
+  for (const row of (enRows ?? []) as ProjectTranslationRow[]) {
     const current = map.get(row.project_id) ?? {};
-    current[row.locale] = toProjectTranslationInput(row);
+    current.en = toProjectTranslationInput(row);
+    map.set(row.project_id, current);
+  }
+
+  for (const row of (jaRows ?? []) as ProjectTranslationRow[]) {
+    const current = map.get(row.project_id) ?? {};
+    current.ja = toProjectTranslationInput(row);
     map.set(row.project_id, current);
   }
 
@@ -607,7 +613,7 @@ async function getAdminProjectById(id: string): Promise<AdminProject | null> {
   return rowToAdminProject(data, translationMap.get(id) ?? {});
 }
 
-// 관리자 입력 번역은 EN/JA 두 로케일을 upsert해 로컬라이즈 콘텐츠를 저장한다.
+// 관리자 입력 번역은 EN/JA를 각각 projects_en/projects_ja에 upsert한다.
 async function upsertProjectTranslations(
   service: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
   projectId: string,
@@ -617,34 +623,38 @@ async function upsertProjectTranslations(
     return;
   }
 
-  const rows = (["en", "ja"] as const)
-    .map((locale) => {
-      const target = translations[locale];
+  const en = translations.en;
+  const ja = translations.ja;
 
-      if (!target) {
-        return null;
-      }
-
-      return {
+  if (en) {
+    await service.from("projects_en").upsert(
+      {
         project_id: projectId,
-        locale,
-        title: target.title.trim(),
-        subtitle: target.subtitle.trim(),
-        content_markdown: target.contentMarkdown,
-        tags: uniqueStringList(target.tags),
-        achievements: uniqueStringList(target.achievements),
-        contributions: uniqueStringList(target.contributions),
-      };
-    })
-    .filter((row): row is NonNullable<typeof row> => row !== null);
-
-  if (rows.length === 0) {
-    return;
+        title: en.title.trim(),
+        subtitle: en.subtitle.trim(),
+        content_markdown: en.contentMarkdown,
+        tags: uniqueStringList(en.tags),
+        achievements: uniqueStringList(en.achievements),
+        contributions: uniqueStringList(en.contributions),
+      },
+      { onConflict: "project_id" },
+    );
   }
 
-  await service.from("projects_translations").upsert(rows, {
-    onConflict: "project_id,locale",
-  });
+  if (ja) {
+    await service.from("projects_ja").upsert(
+      {
+        project_id: projectId,
+        title: ja.title.trim(),
+        subtitle: ja.subtitle.trim(),
+        content_markdown: ja.contentMarkdown,
+        tags: uniqueStringList(ja.tags),
+        achievements: uniqueStringList(ja.achievements),
+        contributions: uniqueStringList(ja.contributions),
+      },
+      { onConflict: "project_id" },
+    );
+  }
 }
 
 export async function createAdminProject(

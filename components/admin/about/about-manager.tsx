@@ -18,6 +18,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ABOUT_TECH_CATEGORY_ORDER,
+  getAboutTechCategoryLabel,
+  normalizeAboutTechCategory,
+} from "@/lib/about/tech-categories";
 import { AdminLocaleTabs, type AdminLocale } from "@/components/admin/common/locale-tabs";
 import { ManagerShell } from "@/components/admin/common/manager-shell";
 import { Button } from "@/components/ui/button";
@@ -27,7 +32,7 @@ import { uploadAdminMediaFile } from "@/lib/admin/upload-client";
 import { cn } from "@/lib/utils/cn";
 import { useBeforeUnloadUnsavedChanges } from "@/lib/utils/unsaved-changes";
 import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
-import type { AboutContent, AboutTranslationMap } from "@/types/about";
+import type { AboutContent, AboutTechCategory, AboutTranslationMap } from "@/types/about";
 import type { ThumbnailInputMode } from "@/types/ui";
 
 type AboutManagerProps = {
@@ -36,6 +41,7 @@ type AboutManagerProps = {
 
 type AboutTechFormItem = {
   id: string;
+  category: AboutTechCategory;
   name: string;
   description: string;
   logoUrl: string;
@@ -47,6 +53,7 @@ type AboutFormState = {
   summary: string;
   aboutPhotoUrl: string;
   aboutTechItems: AboutTechFormItem[];
+  techCategoryInput: AboutTechCategory;
   techNameInput: string;
   techDescriptionInput: string;
   techLogoUrlInput: string;
@@ -59,6 +66,7 @@ type AboutTranslationFormState = {
   title: string;
   summary: string;
   aboutTechItems: AboutTechFormItem[];
+  techCategoryInput: AboutTechCategory;
   techNameInput: string;
   techDescriptionInput: string;
   techLogoUrlInput: string;
@@ -69,6 +77,7 @@ const EMPTY_ABOUT_TRANSLATION_FORM: AboutTranslationFormState = {
   title: "",
   summary: "",
   aboutTechItems: [],
+  techCategoryInput: "frontend",
   techNameInput: "",
   techDescriptionInput: "",
   techLogoUrlInput: "",
@@ -83,6 +92,7 @@ function toFormState(profile: AboutContent): AboutFormState {
     summary: profile.summary,
     aboutPhotoUrl: profile.aboutPhotoUrl,
     aboutTechItems: toTechFormItems(profile.aboutTechItems),
+    techCategoryInput: "frontend",
     techNameInput: "",
     techDescriptionInput: "",
     techLogoUrlInput: "",
@@ -96,10 +106,12 @@ function serializeForm(form: AboutFormState): string {
     summary: form.summary.trim(),
     aboutPhotoUrl: form.aboutPhotoUrl.trim(),
     aboutTechItems: form.aboutTechItems.map((item) => ({
+      category: item.category,
       name: item.name.trim(),
       description: item.description.trim(),
       logoUrl: item.logoUrl.trim(),
     })),
+    techCategoryInput: form.techCategoryInput,
   });
 }
 
@@ -111,10 +123,12 @@ function serializeTranslations(translations: Record<TranslationLocale, AboutTran
       title: translations.en.title.trim(),
       summary: translations.en.summary.trim(),
       aboutTechItems: translations.en.aboutTechItems.map((item) => ({
+        category: item.category,
         name: item.name.trim(),
         description: item.description.trim(),
         logoUrl: item.logoUrl.trim(),
       })),
+      techCategoryInput: translations.en.techCategoryInput,
       techNameInput: translations.en.techNameInput.trim(),
       techDescriptionInput: translations.en.techDescriptionInput.trim(),
       techLogoUrlInput: translations.en.techLogoUrlInput.trim(),
@@ -124,10 +138,12 @@ function serializeTranslations(translations: Record<TranslationLocale, AboutTran
       title: translations.ja.title.trim(),
       summary: translations.ja.summary.trim(),
       aboutTechItems: translations.ja.aboutTechItems.map((item) => ({
+        category: item.category,
         name: item.name.trim(),
         description: item.description.trim(),
         logoUrl: item.logoUrl.trim(),
       })),
+      techCategoryInput: translations.ja.techCategoryInput,
       techNameInput: translations.ja.techNameInput.trim(),
       techDescriptionInput: translations.ja.techDescriptionInput.trim(),
       techLogoUrlInput: translations.ja.techLogoUrlInput.trim(),
@@ -138,6 +154,7 @@ function serializeTranslations(translations: Record<TranslationLocale, AboutTran
 function toTechFormItems(items: AboutContent["aboutTechItems"]): AboutTechFormItem[] {
   return items.map((item, index) => ({
     id: `${item.name}-${index}`,
+    category: normalizeAboutTechCategory(item.category),
     name: item.name,
     description: item.description,
     logoUrl: item.logoUrl,
@@ -176,6 +193,7 @@ function toTranslationPayload(
       title: translations.en.title.trim(),
       summary: translations.en.summary.trim(),
       aboutTechItems: translations.en.aboutTechItems.map((item) => ({
+        category: item.category,
         name: item.name.trim(),
         description: item.description.trim(),
         logoUrl: item.logoUrl.trim(),
@@ -186,6 +204,7 @@ function toTranslationPayload(
       title: translations.ja.title.trim(),
       summary: translations.ja.summary.trim(),
       aboutTechItems: translations.ja.aboutTechItems.map((item) => ({
+        category: item.category,
         name: item.name.trim(),
         description: item.description.trim(),
         logoUrl: item.logoUrl.trim(),
@@ -209,6 +228,32 @@ function reorderById<T extends { id: string }>(items: T[], event: DragEndEvent):
   }
 
   return arrayMove(items, oldIndex, newIndex);
+}
+
+// 선택한 카테고리 범위에서만 순서를 재정렬하고, 다른 카테고리 항목 순서는 보존한다.
+function reorderByCategory(
+  items: AboutTechFormItem[],
+  category: AboutTechCategory,
+  event: DragEndEvent,
+) {
+  const scopedItems = items.filter((item) => item.category === category);
+  const reorderedScoped = reorderById(scopedItems, event);
+
+  if (scopedItems.length === 0) {
+    return items;
+  }
+
+  let scopedIndex = 0;
+
+  return items.map((item) => {
+    if (item.category !== category) {
+      return item;
+    }
+
+    const nextItem = reorderedScoped[scopedIndex];
+    scopedIndex += 1;
+    return nextItem ?? item;
+  });
 }
 
 function validateSvgMarkup(markup: string): { valid: boolean; message?: string } {
@@ -300,7 +345,23 @@ function SortableAboutTechItem({
         </div>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-3">
+        <select
+          value={item.category}
+          onChange={(event) =>
+            onChange({
+              ...item,
+              category: normalizeAboutTechCategory(event.target.value),
+            })
+          }
+          className="h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground"
+        >
+          {ABOUT_TECH_CATEGORY_ORDER.map((category) => (
+            <option key={category} value={category}>
+              {getAboutTechCategoryLabel("ko", category)}
+            </option>
+          ))}
+        </select>
         <Input
           value={item.name}
           onChange={(event) => onChange({ ...item, name: event.target.value })}
@@ -338,6 +399,13 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
     Record<TranslationLocale, AboutTranslationFormState>
   >(initialTranslations);
   const [activeLocale, setActiveLocale] = useState<AdminLocale>("ko");
+  const [activeTechCategoryByLocale, setActiveTechCategoryByLocale] = useState<
+    Record<AdminLocale, AboutTechCategory>
+  >({
+    ko: "frontend",
+    en: "frontend",
+    ja: "frontend",
+  });
   const [isPending, setIsPending] = useState(false);
   const [notice, setNotice] = useState<{
     kind: "success" | "error";
@@ -389,6 +457,10 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
     activeLocale === "ko"
       ? form.techNameInput
       : translations[activeLocale as TranslationLocale].techNameInput;
+  const localeTechCategoryInput =
+    activeLocale === "ko"
+      ? form.techCategoryInput
+      : translations[activeLocale as TranslationLocale].techCategoryInput;
   const localeTechDescriptionInput =
     activeLocale === "ko"
       ? form.techDescriptionInput
@@ -397,6 +469,9 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
     activeLocale === "ko"
       ? form.techLogoUrlInput
       : translations[activeLocale as TranslationLocale].techLogoUrlInput;
+  const localeCategories = ABOUT_TECH_CATEGORY_ORDER;
+  const activeTechCategory = activeTechCategoryByLocale[activeLocale];
+  const visibleLocaleTechItems = localeTechItems.filter((item) => item.category === activeTechCategory);
 
   // KO/EN/JA 탭에서 기본 텍스트 필드를 동일 UI로 편집한다.
   const setLocaleBasicField = (field: "name" | "title" | "summary", value: string) => {
@@ -432,6 +507,21 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
     }));
   };
 
+  const setLocaleTechCategoryInput = (value: AboutTechCategory) => {
+    if (activeLocale === "ko") {
+      setForm((prev) => ({ ...prev, techCategoryInput: value }));
+      return;
+    }
+
+    setTranslations((prev) => ({
+      ...prev,
+      [activeLocale]: {
+        ...prev[activeLocale],
+        techCategoryInput: value,
+      },
+    }));
+  };
+
   const setLocaleTechItems = (nextItems: AboutTechFormItem[]) => {
     if (activeLocale === "ko") {
       setForm((prev) => ({ ...prev, aboutTechItems: nextItems }));
@@ -449,6 +539,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
   // 기술 항목은 이름/설명/로고 URL이 모두 채워졌을 때만 추가한다.
   const addTechItem = () => {
+    const category = localeTechCategoryInput || activeTechCategory || "frontend";
     const name = localeTechNameInput.trim();
     const description = localeTechDescriptionInput.trim();
     const logoUrl = localeTechLogoUrlInput.trim();
@@ -457,7 +548,11 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
       return;
     }
 
-    setLocaleTechItems([...localeTechItems, { id: `${name}-${Date.now()}`, name, description, logoUrl }]);
+    setLocaleTechItems([
+      ...localeTechItems,
+      { id: `${name}-${Date.now()}`, category, name, description, logoUrl },
+    ]);
+    setLocaleTechCategoryInput(category);
     setLocaleTechInput("techNameInput", "");
     setLocaleTechInput("techDescriptionInput", "");
     setLocaleTechInput("techLogoUrlInput", "");
@@ -477,9 +572,9 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
     setLocaleTechItems(localeTechItems.filter((item) => item.id !== id));
   };
 
-  // 기술 항목 순서를 드래그 결과 순서로 재배치한다.
+  // 기술 항목은 현재 선택한 카테고리 내부에서만 순서를 재배치한다.
   const onTechItemsDragEnd = (event: DragEndEvent) => {
-    setLocaleTechItems(reorderById(localeTechItems, event));
+    setLocaleTechItems(reorderByCategory(localeTechItems, activeTechCategory, event));
   };
 
   // 프로필 사진 파일을 선택하면 로컬 미리보기를 먼저 보여주고 즉시 업로드한다.
@@ -653,6 +748,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
           summary: form.summary,
           aboutPhotoUrl: form.aboutPhotoUrl,
           aboutTechItems: form.aboutTechItems.map((item) => ({
+            category: item.category,
             name: item.name.trim(),
             description: item.description.trim(),
             logoUrl: item.logoUrl.trim(),
@@ -907,7 +1003,20 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
               </div>
             ) : null}
 
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-3">
+              <select
+                value={localeTechCategoryInput}
+                onChange={(event) =>
+                  setLocaleTechCategoryInput(normalizeAboutTechCategory(event.target.value))
+                }
+                className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-foreground"
+              >
+                {ABOUT_TECH_CATEGORY_ORDER.map((category) => (
+                  <option key={category} value={category}>
+                    {getAboutTechCategoryLabel(activeLocale, category)}
+                  </option>
+                ))}
+              </select>
               <Input
                 value={localeTechNameInput}
                 onChange={(event) => setLocaleTechInput("techNameInput", event.target.value)}
@@ -931,17 +1040,36 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
               기술 항목 추가
             </Button>
 
+            <div className="flex flex-wrap gap-2">
+              {localeCategories.map((category) => (
+                <Button
+                  key={category}
+                  type="button"
+                  size="sm"
+                  variant={activeTechCategory === category ? "solid" : "ghost"}
+                  onClick={() =>
+                    setActiveTechCategoryByLocale((prev) => ({
+                      ...prev,
+                      [activeLocale]: category,
+                    }))
+                  }
+                >
+                  {getAboutTechCategoryLabel(activeLocale, category)}
+                </Button>
+              ))}
+            </div>
+
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={onTechItemsDragEnd}
             >
               <SortableContext
-                items={localeTechItems.map((item) => item.id)}
+                items={visibleLocaleTechItems.map((item) => item.id)}
                 strategy={verticalListSortingStrategy}
               >
                 <ul className="space-y-2">
-                  {localeTechItems.map((item) => (
+                  {visibleLocaleTechItems.map((item) => (
                     <SortableAboutTechItem
                       key={item.id}
                       item={item}

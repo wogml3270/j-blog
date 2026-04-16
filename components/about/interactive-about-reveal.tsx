@@ -1,14 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Keyboard, Pagination } from "swiper/modules";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { ABOUT_TECH_CATEGORY_ORDER } from "@/lib/about/tech-categories";
 import { useDevice } from "@/lib/hooks/use-device";
+import { useHydrated } from "@/lib/hooks/use-hydrated";
 import { cn } from "@/lib/utils/cn";
+import type { AboutTechCategory } from "@/types/about";
 import type { InteractiveAboutRevealProps } from "@/types/ui";
 
 export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutRevealProps) {
   const { isMobile, isDesktop } = useDevice();
+  const isClientMounted = useHydrated();
   const [isAvatarVisible, setIsAvatarVisible] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<AboutTechCategory>("frontend");
 
   // 초기 진입 시 프로필 이미지를 먼저 작게 등장시키고, 딜레이 뒤 콘텐츠를 천천히 펼친다.
   useEffect(() => {
@@ -49,6 +56,28 @@ export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutReve
       ),
     [profile.aboutTechItems],
   );
+  const techCategories = useMemo(
+    () =>
+      ABOUT_TECH_CATEGORY_ORDER.filter((category) =>
+        techItems.some((item) => item.category === category),
+      ),
+    [techItems],
+  );
+  const resolvedCategory = techCategories.includes(activeCategory)
+    ? activeCategory
+    : techCategories[0] || "other";
+  const filteredTechItems = techItems.filter((item) => item.category === resolvedCategory);
+  const useTechSlider = isClientMounted && filteredTechItems.length > 4;
+  const techSlides = useMemo(() => {
+    const chunkSize = 4;
+    const chunks: Array<typeof filteredTechItems> = [];
+
+    for (let index = 0; index < filteredTechItems.length; index += chunkSize) {
+      chunks.push(filteredTechItems.slice(index, index + chunkSize));
+    }
+
+    return chunks;
+  }, [filteredTechItems]);
 
   return (
     <section className="">
@@ -80,34 +109,102 @@ export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutReve
             <h2 className="mt-5 text-xs font-semibold uppercase tracking-wide text-muted">
               {labels.techStack}
             </h2>
-            <ul className="mt-3 grid gap-2.5 sm:grid-cols-2">
-              {techItems.map((item, index) => (
-                <li
-                  key={`${item.name}-${index}`}
-                  style={{ transitionDelay: isExpanded ? `${260 + index * 70}ms` : "0ms" }}
+            <div className="mt-2 flex flex-wrap gap-2">
+              {techCategories.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setActiveCategory(category)}
                   className={cn(
-                    "rounded-xl border border-border bg-surface/85 p-2.5 transition-all duration-500",
-                    isExpanded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3",
+                    "cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                    resolvedCategory === category
+                      ? "border-foreground/30 bg-foreground/10 text-foreground"
+                      : "border-border bg-surface/80 text-muted hover:border-foreground/30 hover:text-foreground",
                   )}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/90">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.logoUrl}
-                        alt={`${item.name} logo`}
-                        className="h-5 w-5 object-contain"
-                        loading="lazy"
-                      />
-                    </span>
-                    <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
-                  </div>
-                  <p className="mt-2 line-clamp-2 text-xs leading-6 text-muted">
-                    {item.description}
-                  </p>
-                </li>
+                  {labels.techCategory[category]}
+                </button>
               ))}
-            </ul>
+            </div>
+
+            {useTechSlider ? (
+              <Swiper
+                modules={[Pagination, Keyboard]}
+                className="about-tech-swiper mt-3 pb-8!"
+                spaceBetween={12}
+                slidesPerView={1}
+                keyboard={{ enabled: true }}
+                pagination={{ clickable: true }}
+              >
+                {techSlides.map((slideItems, slideIndex) => (
+                  <SwiperSlide key={`tech-slide-${slideIndex}`} className="h-full">
+                    <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                      {slideItems.map((item, itemIndex) => {
+                        const animationIndex = slideIndex * 4 + itemIndex;
+
+                        return (
+                          <li
+                            key={`${item.category}-${item.name}-${animationIndex}`}
+                            style={{
+                              transitionDelay: isExpanded ? `${260 + animationIndex * 70}ms` : "0ms",
+                            }}
+                            className={cn(
+                              "rounded-xl border border-border bg-surface/85 p-2.5 transition-all duration-500",
+                              isExpanded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3",
+                            )}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/90">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={item.logoUrl}
+                                  alt={`${item.name} logo`}
+                                  className="h-5 w-5 object-contain"
+                                  loading="lazy"
+                                />
+                              </span>
+                              <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                            </div>
+                            <p className="mt-2 line-clamp-2 text-xs leading-6 text-muted">
+                              {item.description}
+                            </p>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            ) : (
+              <ul className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                {filteredTechItems.map((item, index) => (
+                  <li
+                    key={`${item.category}-${item.name}-${index}`}
+                    style={{ transitionDelay: isExpanded ? `${260 + index * 70}ms` : "0ms" }}
+                    className={cn(
+                      "rounded-xl border border-border bg-surface/85 p-2.5 transition-all duration-500",
+                      isExpanded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3",
+                    )}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/90">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={item.logoUrl}
+                          alt={`${item.name} logo`}
+                          className="h-5 w-5 object-contain"
+                          loading="lazy"
+                        />
+                      </span>
+                      <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                    </div>
+                    <p className="mt-2 line-clamp-2 text-xs leading-6 text-muted">
+                      {item.description}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </article>
         </div>
 

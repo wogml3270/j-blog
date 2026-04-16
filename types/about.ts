@@ -1,7 +1,15 @@
 import type { ContentLocale } from "@/types/content-locale";
 
+export type AboutTechCategory =
+  | "frontend"
+  | "backend"
+  | "database"
+  | "infrastructure"
+  | "version_control"
+  | "other";
+
 export type AboutTechItem = {
-  category: string;
+  category: AboutTechCategory;
   name: string;
   description: string;
   logoUrl: string;

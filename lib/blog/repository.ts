@@ -42,7 +42,6 @@ type PostRow = {
 
 type PostTranslationRow = {
   post_id: string;
-  locale: "ko" | "en" | "ja";
   title: string | null;
   description: string | null;
   body_markdown: string | null;
@@ -292,18 +291,27 @@ async function getAdminPostById(id: string): Promise<AdminPost | null> {
     return null;
   }
 
-  const { data: translationRows } = await service
-    .from("posts_translations")
-    .select("post_id,locale,title,description,body_markdown,tags")
-    .eq("post_id", id)
-    .in("locale", ["en", "ja"]);
+  const [{ data: enRow }, { data: jaRow }] = await Promise.all([
+    service
+      .from("posts_en")
+      .select("post_id,title,description,body_markdown,tags")
+      .eq("post_id", id)
+      .maybeSingle<PostTranslationRow>(),
+    service
+      .from("posts_ja")
+      .select("post_id,title,description,body_markdown,tags")
+      .eq("post_id", id)
+      .maybeSingle<PostTranslationRow>(),
+  ]);
 
   const translations: BlogTranslationMap = {};
 
-  for (const row of (translationRows ?? []) as PostTranslationRow[]) {
-    if (row.locale === "en" || row.locale === "ja") {
-      translations[row.locale] = toBlogTranslationInput(row);
-    }
+  if (enRow) {
+    translations.en = toBlogTranslationInput(enRow);
+  }
+
+  if (jaRow) {
+    translations.ja = toBlogTranslationInput(jaRow);
   }
 
   return rowToAdminPost(data, translations);
@@ -318,32 +326,39 @@ async function getAdminPostTranslationMapByPostIds(
     return new Map();
   }
 
-  const { data, error } = await service
-    .from("posts_translations")
-    .select("post_id,locale,title,description,body_markdown,tags")
-    .in("post_id", postIds)
-    .in("locale", ["en", "ja"]);
+  const [{ data: enRows, error: enError }, { data: jaRows, error: jaError }] = await Promise.all([
+    service
+      .from("posts_en")
+      .select("post_id,title,description,body_markdown,tags")
+      .in("post_id", postIds),
+    service
+      .from("posts_ja")
+      .select("post_id,title,description,body_markdown,tags")
+      .in("post_id", postIds),
+  ]);
 
-  if (error || !data) {
+  if (enError || jaError) {
     return new Map();
   }
 
   const map = new Map<string, BlogTranslationMap>();
 
-  for (const row of data as PostTranslationRow[]) {
-    if (row.locale !== "en" && row.locale !== "ja") {
-      continue;
-    }
-
+  for (const row of (enRows ?? []) as PostTranslationRow[]) {
     const current = map.get(row.post_id) ?? {};
-    current[row.locale] = toBlogTranslationInput(row);
+    current.en = toBlogTranslationInput(row);
+    map.set(row.post_id, current);
+  }
+
+  for (const row of (jaRows ?? []) as PostTranslationRow[]) {
+    const current = map.get(row.post_id) ?? {};
+    current.ja = toBlogTranslationInput(row);
     map.set(row.post_id, current);
   }
 
   return map;
 }
 
-// 관리자 입력 번역은 EN/JA 두 로케일을 upsert해 로컬라이즈 콘텐츠를 저장한다.
+// 관리자 입력 번역은 EN/JA를 각각 posts_en/posts_ja에 upsert한다.
 async function upsertPostTranslations(
   service: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
   postId: string,
@@ -353,32 +368,34 @@ async function upsertPostTranslations(
     return;
   }
 
-  const rows = (["en", "ja"] as const)
-    .map((locale) => {
-      const target = translations[locale];
+  const en = translations.en;
+  const ja = translations.ja;
 
-      if (!target) {
-        return null;
-      }
-
-      return {
+  if (en) {
+    await service.from("posts_en").upsert(
+      {
         post_id: postId,
-        locale,
-        title: target.title.trim(),
-        description: target.description.trim(),
-        body_markdown: target.bodyMarkdown,
-        tags: normalizeTags(target.tags),
-      };
-    })
-    .filter((row): row is NonNullable<typeof row> => row !== null);
-
-  if (rows.length === 0) {
-    return;
+        title: en.title.trim(),
+        description: en.description.trim(),
+        body_markdown: en.bodyMarkdown,
+        tags: normalizeTags(en.tags),
+      },
+      { onConflict: "post_id" },
+    );
   }
 
-  await service.from("posts_translations").upsert(rows, {
-    onConflict: "post_id,locale",
-  });
+  if (ja) {
+    await service.from("posts_ja").upsert(
+      {
+        post_id: postId,
+        title: ja.title.trim(),
+        description: ja.description.trim(),
+        body_markdown: ja.bodyMarkdown,
+        tags: normalizeTags(ja.tags),
+      },
+      { onConflict: "post_id" },
+    );
+  }
 }
 
 function fallbackPostList(): BlogPostSummary[] {
@@ -392,7 +409,7 @@ function fallbackPostList(): BlogPostSummary[] {
   }));
 }
 
-// 게시글 목록 번역은 EN/JA locale일 때만 조회하고, 미번역 필드는 KO 원문으로 fallback한다.
+// 게시글 목록 번역은 locale에 맞는 posts_en/posts_ja만 조회한다.
 async function getPostTranslationMap(
   service: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
   postIds: string[],
@@ -402,10 +419,10 @@ async function getPostTranslationMap(
     return new Map();
   }
 
+  const table = locale === "en" ? "posts_en" : "posts_ja";
   const { data, error } = await service
-    .from("posts_translations")
-    .select("post_id,locale,title,description,body_markdown,tags")
-    .eq("locale", locale)
+    .from(table)
+    .select("post_id,title,description,body_markdown,tags")
     .in("post_id", postIds);
 
   if (error || !data) {

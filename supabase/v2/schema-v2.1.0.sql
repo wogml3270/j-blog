@@ -7,6 +7,15 @@
 
 begin;
 
+-- 일부 기존 정책/스크립트 호환을 위해 is_admin_user()를 is_admin_email() 별칭으로 제공한다.
+create or replace function public.is_admin_user()
+returns boolean
+language sql
+stable
+as $$
+  select public.is_admin_email();
+$$;
+
 -- =========================================================
 -- [ABOUT] locale row 모델 전환
 -- =========================================================
@@ -183,37 +192,74 @@ create table if not exists public.projects_ja (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
-insert into public.projects_en (project_id, title, subtitle, content_markdown, tags, achievements, contributions)
-select project_id, title, subtitle, content_markdown, tags,
-       coalesce(achievements, '{}'::text[]),
-       coalesce(contributions, '{}'::text[])
-from public.projects_translations
-where locale = 'en'
-on conflict (project_id) do update
-set
-  title = excluded.title,
-  subtitle = excluded.subtitle,
-  content_markdown = excluded.content_markdown,
-  tags = excluded.tags,
-  achievements = excluded.achievements,
-  contributions = excluded.contributions,
-  updated_at = timezone('utc', now());
+do $$
+declare
+  has_achievements boolean := false;
+  has_contributions boolean := false;
+  achievements_expr text := '''{}''::text[]';
+  contributions_expr text := '''{}''::text[]';
+begin
+  if to_regclass('public.projects_translations') is null then
+    raise notice 'projects_translations 테이블이 없어 projects_en/projects_ja 데이터 이관을 건너뜁니다.';
+    return;
+  end if;
 
-insert into public.projects_ja (project_id, title, subtitle, content_markdown, tags, achievements, contributions)
-select project_id, title, subtitle, content_markdown, tags,
-       coalesce(achievements, '{}'::text[]),
-       coalesce(contributions, '{}'::text[])
-from public.projects_translations
-where locale = 'ja'
-on conflict (project_id) do update
-set
-  title = excluded.title,
-  subtitle = excluded.subtitle,
-  content_markdown = excluded.content_markdown,
-  tags = excluded.tags,
-  achievements = excluded.achievements,
-  contributions = excluded.contributions,
-  updated_at = timezone('utc', now());
+  select exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'projects_translations'
+      and column_name = 'achievements'
+  ) into has_achievements;
+
+  select exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'projects_translations'
+      and column_name = 'contributions'
+  ) into has_contributions;
+
+  if has_achievements then
+    achievements_expr := 'coalesce(achievements, ''{}''::text[])';
+  end if;
+
+  if has_contributions then
+    contributions_expr := 'coalesce(contributions, ''{}''::text[])';
+  end if;
+
+  execute format($sql$
+    insert into public.projects_en (project_id, title, subtitle, content_markdown, tags, achievements, contributions)
+    select project_id, title, subtitle, content_markdown, tags, %s, %s
+    from public.projects_translations
+    where locale = 'en'
+    on conflict (project_id) do update
+    set
+      title = excluded.title,
+      subtitle = excluded.subtitle,
+      content_markdown = excluded.content_markdown,
+      tags = excluded.tags,
+      achievements = excluded.achievements,
+      contributions = excluded.contributions,
+      updated_at = timezone('utc', now());
+  $sql$, achievements_expr, contributions_expr);
+
+  execute format($sql$
+    insert into public.projects_ja (project_id, title, subtitle, content_markdown, tags, achievements, contributions)
+    select project_id, title, subtitle, content_markdown, tags, %s, %s
+    from public.projects_translations
+    where locale = 'ja'
+    on conflict (project_id) do update
+    set
+      title = excluded.title,
+      subtitle = excluded.subtitle,
+      content_markdown = excluded.content_markdown,
+      tags = excluded.tags,
+      achievements = excluded.achievements,
+      contributions = excluded.contributions,
+      updated_at = timezone('utc', now());
+  $sql$, achievements_expr, contributions_expr);
+end $$;
 
 -- =========================================================
 -- [TRIGGER] updated_at

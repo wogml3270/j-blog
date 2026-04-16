@@ -65,37 +65,37 @@ export const DEFAULT_ABOUT_PHOTO_URL = "/profile/default-photo.svg";
 
 export const DEFAULT_ABOUT_TECH_ITEMS: AboutTechItem[] = [
   {
-    category: "프론트엔드",
+    category: "frontend",
     name: "React",
     description: "컴포넌트 중심 UI 설계와 상태 분리를 구조적으로 관리합니다.",
     logoUrl: "https://cdn.simpleicons.org/react/61DAFB",
   },
   {
-    category: "프론트엔드",
+    category: "frontend",
     name: "Next.js",
     description: "App Router 기반 SSR/SEO 최적화와 서버-클라이언트 경계를 설계합니다.",
     logoUrl: "https://cdn.simpleicons.org/nextdotjs/FFFFFF",
   },
   {
-    category: "프론트엔드",
+    category: "frontend",
     name: "TypeScript",
     description: "도메인 타입을 먼저 정의해 런타임 오류를 빌드 타임에 줄입니다.",
     logoUrl: "https://cdn.simpleicons.org/typescript/3178C6",
   },
   {
-    category: "프론트엔드",
+    category: "frontend",
     name: "Tailwind CSS",
     description: "디자인 토큰과 유틸리티 패턴으로 빠르게 일관된 화면을 구현합니다.",
     logoUrl: "https://cdn.simpleicons.org/tailwindcss/06B6D4",
   },
   {
-    category: "운영 환경",
+    category: "infrastructure",
     name: "AWS",
     description: "배포/스토리지/운영 환경을 서비스 요구사항에 맞게 구성합니다.",
     logoUrl: "https://cdn.simpleicons.org/amazonwebservices/FF9900",
   },
   {
-    category: "데이터베이스",
+    category: "database",
     name: "Supabase",
     description: "Postgres/RLS/Auth를 활용해 실서비스 운영 흐름을 안정적으로 구축합니다.",
     logoUrl: "https://cdn.simpleicons.org/supabase/3FCF8E",

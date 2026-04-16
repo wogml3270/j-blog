@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { InteractiveAboutReveal } from "@/components/about/interactive-about-reveal";
+import { getAboutTechCategoryLabelMap } from "@/lib/about/tech-categories";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getPublishedAboutContent } from "@/lib/profile/repository";
@@ -11,10 +12,13 @@ type AboutPageProps = {
 };
 
 function copyLabels(lang: "ko" | "en" | "ja") {
+  const techCategory = getAboutTechCategoryLabelMap(lang);
+
   if (lang === "en") {
     return {
       headline: "About",
       techStack: "Tech Stack",
+      techCategory,
     };
   }
 
@@ -22,11 +26,13 @@ function copyLabels(lang: "ko" | "en" | "ja") {
     return {
       headline: "紹介",
       techStack: "技術スタック",
+      techCategory,
     };
   }
   return {
     headline: "소개",
     techStack: "기술 스택",
+    techCategory,
   };
 }
 

@@ -6,7 +6,7 @@ import type { Contact } from "@/types/contacts";
 import type { PublishStatus } from "@/types/db";
 import type { HomeSlide, HomeSlideResolved, HomeSlideSourceOption } from "@/types/home-slide";
 import type { AdminProject } from "@/types/projects";
-import type { AboutContent } from "@/types/about";
+import type { AboutContent, AboutTechCategory } from "@/types/about";
 
 export type HeaderProps = {
   locale: Locale;
@@ -221,5 +221,6 @@ export type InteractiveAboutRevealProps = {
   labels: {
     headline: string;
     techStack: string;
+    techCategory: Record<AboutTechCategory, string>;
   };
 };
