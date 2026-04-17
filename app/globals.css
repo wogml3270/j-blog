@@ -286,7 +286,6 @@ a {
 
 .markdown-viewer .toastui-editor-contents {
   width: 100%;
-  max-width: 82ch;
   margin-inline: auto;
   font-size: 1.03rem;
   line-height: 1.9;

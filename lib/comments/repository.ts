@@ -19,6 +19,17 @@ export type CreateCommentInput = {
   status?: CommentStatus;
 };
 
+export type UpdateCommentByAuthorInput = {
+  commentId: string;
+  authorUserId: string;
+  content: string;
+};
+
+export type DeleteCommentByAuthorInput = {
+  commentId: string;
+  authorUserId: string;
+};
+
 function sanitizeText(value: unknown): string {
   if (typeof value !== "string") {
     return "";
@@ -41,6 +52,7 @@ function rowToComment(row: CommentRow): BlogComment | null {
   const authorUserId = sanitizeText(row.author_user_id);
   const content = sanitizeText(row.content);
   const createdAt = sanitizeText(row.created_at) || new Date().toISOString();
+  const updatedAt = sanitizeText(row.updated_at) || null;
 
   if (!id || !postId || !authorUserId || !content) {
     return null;
@@ -59,6 +71,7 @@ function rowToComment(row: CommentRow): BlogComment | null {
     content,
     status: normalizeStatus(row.status),
     createdAt,
+    updatedAt,
   };
 }
 
@@ -185,6 +198,157 @@ export async function createCommentForPost(
 
   return {
     data: mapped,
+    error: null,
+  };
+}
+
+export async function updateCommentByAuthor(
+  input: UpdateCommentByAuthorInput,
+): Promise<RepoResult<BlogComment>> {
+  const service = createSupabaseServiceClient();
+
+  if (!service) {
+    return {
+      data: null,
+      error: "Supabase service role key is not configured.",
+    };
+  }
+
+  const { data, error } = await service
+    .from("comments")
+    .update({
+      content: input.content,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.commentId)
+    .eq("author_user_id", input.authorUserId)
+    .select("*")
+    .maybeSingle<CommentRow>();
+
+  if (error) {
+    return {
+      data: null,
+      error: error.message || "Failed to update comment.",
+    };
+  }
+
+  if (!data) {
+    return {
+      data: null,
+      error: "Comment not found or unauthorized.",
+    };
+  }
+
+  const mapped = rowToComment(data);
+
+  if (!mapped) {
+    return {
+      data: null,
+      error: "Failed to normalize comment data.",
+    };
+  }
+
+  return {
+    data: mapped,
+    error: null,
+  };
+}
+
+export async function deleteCommentByAuthor(
+  input: DeleteCommentByAuthorInput,
+): Promise<RepoResult<{ id: string }>> {
+  const service = createSupabaseServiceClient();
+
+  if (!service) {
+    return {
+      data: null,
+      error: "Supabase service role key is not configured.",
+    };
+  }
+
+  const { data, error } = await service
+    .from("comments")
+    .delete()
+    .eq("id", input.commentId)
+    .eq("author_user_id", input.authorUserId)
+    .select("id")
+    .maybeSingle<{ id: string }>();
+
+  if (error) {
+    return {
+      data: null,
+      error: error.message || "Failed to delete comment.",
+    };
+  }
+
+  if (!data?.id) {
+    return {
+      data: null,
+      error: "Comment not found or unauthorized.",
+    };
+  }
+
+  return {
+    data: { id: data.id },
+    error: null,
+  };
+}
+
+export async function getCommentsByPostIdForAdmin(postId: string): Promise<BlogComment[]> {
+  const service = createSupabaseServiceClient();
+
+  if (!service) {
+    return [];
+  }
+
+  const { data, error } = await service
+    .from("comments")
+    .select("*")
+    .eq("post_id", postId)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return (data as CommentRow[])
+    .map(rowToComment)
+    .filter((item): item is BlogComment => Boolean(item));
+}
+
+export async function deleteCommentByIdForAdmin(commentId: string): Promise<RepoResult<{ id: string }>> {
+  const service = createSupabaseServiceClient();
+
+  if (!service) {
+    return {
+      data: null,
+      error: "Supabase service role key is not configured.",
+    };
+  }
+
+  const { data, error } = await service
+    .from("comments")
+    .delete()
+    .eq("id", commentId)
+    .select("id")
+    .maybeSingle<{ id: string }>();
+
+  if (error) {
+    return {
+      data: null,
+      error: error.message || "Failed to delete comment.",
+    };
+  }
+
+  if (!data?.id) {
+    return {
+      data: null,
+      error: "Comment not found.",
+    };
+  }
+
+  return {
+    data: { id: data.id },
     error: null,
   };
 }

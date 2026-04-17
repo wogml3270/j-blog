@@ -91,4 +91,5 @@ export type BlogComment = {
   content: string;
   status: import("@/types/db").CommentStatus;
   createdAt: string;
+  updatedAt?: string | null;
 };

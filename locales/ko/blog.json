@@ -36,6 +36,15 @@
     "submitting": "등록 중...",
     "empty": "첫 댓글을 남겨보세요.",
     "success": "댓글이 등록되었습니다.",
-    "loginRequired": "댓글 작성을 위해 먼저 로그인해주세요."
+    "loginRequired": "댓글 작성을 위해 먼저 로그인해주세요.",
+    "edit": "수정",
+    "delete": "삭제",
+    "save": "저장",
+    "cancel": "취소",
+    "deleteConfirm": "이 댓글을 삭제할까요?",
+    "updateSuccess": "댓글을 수정했습니다.",
+    "deleteSuccess": "댓글을 삭제했습니다.",
+    "edited": "수정됨",
+    "contentRequired": "댓글 내용을 입력해주세요."
   }
 }

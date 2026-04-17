@@ -86,16 +86,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A valid email is required." }, { status: 400 });
   }
 
-  if (payload.nickname.length < 2 || payload.nickname.length > 30) {
+  if (payload.nickname.length > 30) {
     return NextResponse.json(
-      { error: "Nickname must be between 2 and 30 characters." },
+      { error: "Nickname must be 30 characters or fewer." },
       { status: 400 },
     );
   }
 
-  if (payload.content.length < 2 || payload.content.length > 1000) {
+  if (payload.content.length > 1000) {
     return NextResponse.json(
-      { error: "Comment must be between 2 and 1000 characters." },
+      { error: "Comment must be 1000 characters or fewer." },
       { status: 400 },
     );
   }

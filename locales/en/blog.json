@@ -36,6 +36,15 @@
     "submitting": "Posting...",
     "empty": "Be the first to comment.",
     "success": "Your comment has been posted.",
-    "loginRequired": "Please sign in first to leave a comment."
+    "loginRequired": "Please sign in first to leave a comment.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "deleteConfirm": "Delete this comment?",
+    "updateSuccess": "Comment updated.",
+    "deleteSuccess": "Comment deleted.",
+    "edited": "Edited",
+    "contentRequired": "Please enter a comment."
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,12 @@ export function ContentSearchToolbar({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const currentQuery = searchParams.get("q") ?? "";
+  const [inputValue, setInputValue] = useState<string>(currentQuery);
+
+  // URL 쿼리값이 바뀌면 입력창도 동일하게 동기화한다.
+  useEffect(() => {
+    setInputValue(currentQuery);
+  }, [currentQuery]);
 
   // q 쿼리스트링을 단일 소스로 유지하면서 검색/초기화를 동일 로직으로 처리한다.
   const updateQuery = (raw: string) => {
@@ -46,15 +52,18 @@ export function ContentSearchToolbar({
     <SurfaceCard tone="surface" dashed padding="md">
       <form
         className="grid gap-3 sm:grid-cols-[1fr_auto_auto]"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const formData = new FormData(event.currentTarget);
+        onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.currentTarget);
           updateQuery(String(formData.get("q") ?? ""));
         }}
       >
         <Input
           name="q"
-          defaultValue={currentQuery}
+          value={inputValue}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+          }}
           placeholder={placeholder}
           aria-label={placeholder}
         />
@@ -64,8 +73,9 @@ export function ContentSearchToolbar({
         <Button
           type="button"
           variant="ghost"
-          disabled={isPending || !currentQuery.trim()}
+          disabled={isPending || (!currentQuery.trim() && !inputValue.trim())}
           onClick={() => {
+            setInputValue("");
             updateQuery("");
           }}
         >

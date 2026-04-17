@@ -29,7 +29,7 @@ import { useAdminDetailStore } from "@/stores/admin-detail";
 import { useAdminListUiStore } from "@/stores/admin-list-ui";
 import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
 import type { AdminListFilter, PaginatedResult } from "@/types/admin";
-import type { AdminPost, BlogTranslationMap } from "@/types/blog";
+import type { AdminPost, BlogComment, BlogTranslationMap } from "@/types/blog";
 import type { PublishStatus } from "@/types/db";
 import type { BlogManagerProps, PostFormState, ThumbnailInputMode } from "@/types/ui";
 
@@ -277,6 +277,9 @@ export function BlogManager({
     serializePostForm(EMPTY_FORM, true, EMPTY_BLOG_TRANSLATIONS),
   );
   const [message, setMessage] = useState<string | null>(null);
+  const [postComments, setPostComments] = useState<BlogComment[]>([]);
+  const [isCommentsLoading, setIsCommentsLoading] = useState(false);
+  const [pendingCommentDeleteId, setPendingCommentDeleteId] = useState<string | null>(null);
   const hasAppliedInitialSelection = useRef(false);
   const thumbnailUploadRequestRef = useRef(0);
 
@@ -341,6 +344,28 @@ export function BlogManager({
     [filter, mainPage, pageSize, pathname, privatePage, router, searchParams],
   );
 
+  // 선택한 게시글의 댓글 목록을 관리자 드로어에서 바로 관리할 수 있도록 조회한다.
+  const loadPostComments = useCallback(async (postId: string) => {
+    setIsCommentsLoading(true);
+
+    try {
+      const response = await fetch(`/api/admin/posts/${postId}/comments`, {
+        method: "GET",
+      });
+
+      if (!response.ok) {
+        throw new Error("댓글 목록을 불러오지 못했습니다.");
+      }
+
+      const payload = (await response.json()) as { comments?: BlogComment[] };
+      setPostComments(payload.comments ?? []);
+    } catch {
+      setPostComments([]);
+    } finally {
+      setIsCommentsLoading(false);
+    }
+  }, []);
+
   const openCreate = () => {
     if (!confirmProceedIfDirty()) {
       return;
@@ -361,6 +386,9 @@ export function BlogManager({
       return null;
     });
     setMessage(null);
+    setPostComments([]);
+    setIsCommentsLoading(false);
+    setPendingCommentDeleteId(null);
     setDrawerOpen(true);
     closeDetail("blog");
     syncQuery({ id: null });
@@ -389,11 +417,14 @@ export function BlogManager({
         return null;
       });
       setMessage(null);
+      setPostComments([]);
+      setPendingCommentDeleteId(null);
       setDrawerOpen(true);
       openDetail("blog", post.id);
       syncQuery({ id: post.id });
+      void loadPostComments(post.id);
     },
-    [confirmProceedIfDirty, openDetail, syncQuery],
+    [confirmProceedIfDirty, loadPostComments, openDetail, syncQuery],
   );
 
   const closeDrawer = () => {
@@ -402,6 +433,9 @@ export function BlogManager({
     }
 
     setDrawerOpen(false);
+    setPostComments([]);
+    setIsCommentsLoading(false);
+    setPendingCommentDeleteId(null);
     closeDetail("blog");
     syncQuery({ id: null });
   };
@@ -455,6 +489,33 @@ export function BlogManager({
     },
     [filter, mainPage, pageSize, privatePage, syncQuery],
   );
+
+  const onDeleteCommentByAdmin = async (commentId: string) => {
+    if (!window.confirm("이 댓글을 삭제할까요?")) {
+      return;
+    }
+
+    setPendingCommentDeleteId(commentId);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`/api/admin/comments/${commentId}`, {
+        method: "DELETE",
+      });
+      const payload = (await response.json()) as { error?: string; id?: string };
+
+      if (!response.ok || !payload.id) {
+        throw new Error(payload.error ?? "댓글 삭제에 실패했습니다.");
+      }
+
+      setPostComments((prev) => prev.filter((comment) => comment.id !== payload.id));
+      setMessage("댓글을 삭제했습니다.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "요청 중 오류가 발생했습니다.");
+    } finally {
+      setPendingCommentDeleteId(null);
+    }
+  };
 
   // 태그 입력은 기술스택과 같은 칩 UX로 통일한다.
   const addTag = () => {
@@ -726,6 +787,9 @@ export function BlogManager({
         setTranslations(EMPTY_BLOG_TRANSLATIONS);
         setActiveLocale("ko");
         setSavedFormSnapshot(serializePostForm(EMPTY_FORM, true, EMPTY_BLOG_TRANSLATIONS));
+        setPostComments([]);
+        setIsCommentsLoading(false);
+        setPendingCommentDeleteId(null);
         closeDetail("blog");
       }
       syncQuery({ id: null });
@@ -1337,6 +1401,52 @@ export function BlogManager({
             minHeight={320}
             required={activeLocale === "ko"}
           />
+
+          {editingId ? (
+            <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted">댓글 관리</p>
+                <span className="text-xs text-muted">{postComments.length}개</span>
+              </div>
+              {isCommentsLoading ? (
+                <p className="text-xs text-muted">댓글 목록을 불러오는 중...</p>
+              ) : postComments.length === 0 ? (
+                <p className="text-xs text-muted">등록된 댓글이 없습니다.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {postComments.map((comment) => (
+                    <li
+                      key={comment.id}
+                      className="rounded-md border border-border bg-surface px-3 py-2"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {comment.authorNickname}
+                          </p>
+                          <p className="text-[11px] text-muted">
+                            {toDisplayDateTime(comment.createdAt)}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => void onDeleteCommentByAdmin(comment.id)}
+                          disabled={pendingCommentDeleteId === comment.id}
+                        >
+                          삭제
+                        </Button>
+                      </div>
+                      <p className="mt-1.5 whitespace-pre-wrap text-sm text-foreground">
+                        {comment.content}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </SurfaceCard>
+          ) : null}
 
           <div className="flex gap-2">
             <Button type="submit" className="flex-1" disabled={isPending}>

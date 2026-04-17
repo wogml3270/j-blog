@@ -36,6 +36,15 @@
     "submitting": "投稿中...",
     "empty": "最初のコメントを投稿してください。",
     "success": "コメントを投稿しました。",
-    "loginRequired": "コメント投稿にはログインが必要です。"
+    "loginRequired": "コメント投稿にはログインが必要です。",
+    "edit": "編集",
+    "delete": "削除",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "deleteConfirm": "このコメントを削除しますか？",
+    "updateSuccess": "コメントを更新しました。",
+    "deleteSuccess": "コメントを削除しました。",
+    "edited": "編集済み",
+    "contentRequired": "コメント内容を入力してください。"
   }
 }
