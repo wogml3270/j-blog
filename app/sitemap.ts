@@ -1,9 +1,52 @@
 import type { MetadataRoute } from "next";
-import { getAllPublishedPosts } from "@/lib/blog/repository";
 import { localeInfo, locales, withLocalePath } from "@/lib/i18n/config";
-import { getAllPublishedProjects } from "@/lib/projects/repository";
 import { SITE_CONFIG } from "@/lib/site/profile";
+import { getSupabasePublicEnv, getSupabaseServiceRoleKey } from "@/lib/supabase/env";
 import { encodeSlugSegment } from "@/lib/utils/slug";
+import { createClient } from "@supabase/supabase-js";
+
+export const revalidate = 3600;
+
+type SitemapProjectRow = {
+  slug: string;
+  updated_at: string | null;
+};
+
+type SitemapPostRow = {
+  slug: string;
+  published_at: string | null;
+  updated_at: string | null;
+  scheduled_publish_at: string | null;
+};
+
+function createSitemapClient() {
+  const env = getSupabasePublicEnv();
+  const serviceRoleKey = getSupabaseServiceRoleKey();
+
+  if (!env || (!serviceRoleKey && !env.publishableKey)) {
+    return null;
+  }
+
+  // sitemap은 정적 생성/재검증 경로를 쓰므로 no-store 클라이언트를 사용하지 않는다.
+  return createClient(env.url, serviceRoleKey ?? env.publishableKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+    global: {
+      fetch: (input, init) =>
+        fetch(input, {
+          ...init,
+          cache: "force-cache",
+          next: {
+            ...(((init as RequestInit & { next?: Record<string, unknown> })?.next ??
+              {}) as Record<string, unknown>),
+            revalidate,
+          },
+        }),
+    },
+  });
+}
 
 function buildAlternateLanguages(pathname: string) {
   return Object.fromEntries(
@@ -44,26 +87,54 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
   );
 
-  const [projects, posts] = await Promise.all([
-    getAllPublishedProjects("ko"),
-    getAllPublishedPosts(),
-  ]);
+  const client = createSitemapClient();
 
-  const projectRoutes = projects.flatMap((project) =>
-    localizedEntries(`/projects/${encodeSlugSegment(project.slug)}`, {
-      lastModified: project.updatedAt ? new Date(project.updatedAt) : new Date(),
-      changeFrequency: "monthly",
-      priority: 0.8,
-    }),
-  );
+  if (!client) {
+    return staticRoutes;
+  }
 
-  const blogRoutes = posts.flatMap((post) =>
-    localizedEntries(`/blog/${encodeSlugSegment(post.slug)}`, {
-      lastModified: new Date(post.date),
-      changeFrequency: "monthly",
-      priority: 0.75,
-    }),
-  );
+  try {
+    const nowIso = new Date().toISOString();
+    const [{ data: projects, error: projectsError }, { data: posts, error: postsError }] =
+      await Promise.all([
+        client
+          .from("projects")
+          .select("slug,updated_at")
+          .eq("status", "published")
+          .order("updated_at", { ascending: false }),
+        client
+          .from("posts")
+          .select("slug,published_at,updated_at,scheduled_publish_at")
+          .eq("status", "published")
+          .or(`scheduled_publish_at.is.null,scheduled_publish_at.lte.${nowIso}`)
+          .order("published_at", { ascending: false, nullsFirst: false })
+          .order("updated_at", { ascending: false }),
+      ]);
 
-  return [...staticRoutes, ...projectRoutes, ...blogRoutes];
+    if (projectsError || postsError) {
+      return staticRoutes;
+    }
+
+    const projectRoutes = ((projects ?? []) as SitemapProjectRow[]).flatMap((project) =>
+      localizedEntries(`/projects/${encodeSlugSegment(project.slug)}`, {
+        lastModified: project.updated_at ? new Date(project.updated_at) : new Date(),
+        changeFrequency: "monthly",
+        priority: 0.8,
+      }),
+    );
+
+    const blogRoutes = ((posts ?? []) as SitemapPostRow[]).flatMap((post) => {
+      const lastModifiedSource = post.published_at ?? post.updated_at ?? new Date().toISOString();
+
+      return localizedEntries(`/blog/${encodeSlugSegment(post.slug)}`, {
+        lastModified: new Date(lastModifiedSource),
+        changeFrequency: "monthly",
+        priority: 0.75,
+      });
+    });
+
+    return [...staticRoutes, ...projectRoutes, ...blogRoutes];
+  } catch {
+    return staticRoutes;
+  }
 }
