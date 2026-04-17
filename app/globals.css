@@ -285,6 +285,12 @@ a {
 }
 
 .markdown-viewer .toastui-editor-contents {
+  width: 100%;
+  max-width: 82ch;
+  margin-inline: auto;
+  font-size: 1.03rem;
+  line-height: 1.9;
+  letter-spacing: 0.001em;
   color: var(--foreground);
 }
 
@@ -302,16 +308,114 @@ a {
   color: var(--foreground) !important;
 }
 
+.markdown-viewer .toastui-editor-contents h2,
+.markdown-viewer .toastui-editor-contents h3,
+.markdown-viewer .toastui-editor-contents h4 {
+  scroll-margin-top: calc(var(--site-header-height) + 20px);
+}
+
+.markdown-viewer .toastui-editor-contents h2 {
+  margin-top: 2.3rem;
+  margin-bottom: 0.85rem;
+  font-size: clamp(1.38rem, 2.1vw, 1.62rem);
+  font-weight: 700;
+  line-height: 1.34;
+}
+
+.markdown-viewer .toastui-editor-contents h3 {
+  margin-top: 1.95rem;
+  margin-bottom: 0.75rem;
+  font-size: clamp(1.18rem, 1.5vw, 1.34rem);
+  font-weight: 650;
+  line-height: 1.38;
+}
+
+.markdown-viewer .toastui-editor-contents h4 {
+  margin-top: 1.65rem;
+  margin-bottom: 0.65rem;
+  font-size: clamp(1.02rem, 1.2vw, 1.14rem);
+  font-weight: 600;
+  line-height: 1.42;
+}
+
+.markdown-viewer .toastui-editor-contents p,
+.markdown-viewer .toastui-editor-contents li {
+  color: color-mix(in srgb, var(--foreground) 93%, transparent) !important;
+}
+
 .markdown-viewer .toastui-editor-contents a {
   color: var(--accent) !important;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.markdown-viewer .toastui-editor-contents blockquote {
+  margin-top: 1.1rem;
+  margin-bottom: 1.1rem;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 65%, var(--border));
+  background: color-mix(in srgb, var(--surface) 84%, var(--background));
+  padding: 0.8rem 1rem;
+  border-radius: 0.65rem;
+}
+
+.markdown-viewer .toastui-editor-contents ul,
+.markdown-viewer .toastui-editor-contents ol {
+  margin-top: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.markdown-viewer .toastui-editor-contents table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface) 88%, var(--background));
+}
+
+.markdown-viewer .toastui-editor-contents th,
+.markdown-viewer .toastui-editor-contents td {
+  border-color: var(--border) !important;
+}
+
+.markdown-viewer .toastui-editor-contents th {
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  font-weight: 600;
 }
 
 .markdown-viewer .toastui-editor-contents code {
   font-family: var(--font-mono), monospace;
+  background: color-mix(in srgb, var(--foreground) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  border-radius: 0.35rem;
+  padding: 0.15rem 0.35rem;
+}
+
+.markdown-viewer .toastui-editor-contents pre {
+  margin-top: 1.1rem;
+  margin-bottom: 1.2rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+  border-radius: 0.72rem;
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  padding: 0.95rem 1rem;
 }
 
 .markdown-viewer .toastui-editor-contents pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: color-mix(in srgb, var(--foreground) 96%, transparent);
   white-space: pre-wrap;
+}
+
+@media (max-width: 1023px) {
+  .markdown-viewer .toastui-editor-contents {
+    max-width: 100%;
+    font-size: 1rem;
+    line-height: 1.82;
+  }
 }
 
 .admin-toast-editor .toastui-editor-defaultUI {

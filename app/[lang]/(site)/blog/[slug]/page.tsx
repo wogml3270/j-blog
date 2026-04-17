@@ -82,19 +82,25 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
         </div>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">{post.title}</h1>
         <p className="text-base text-muted">{post.description}</p>
+      </header>
+
+      <div className="grid gap-8 xl:gap-9 xl:grid-cols-[minmax(0,1fr)_220px]">
+        <MarkdownContent markdown={post.bodyMarkdown ?? ""} />
+        <div className="hidden xl:sticky xl:top-24 xl:block xl:self-start">
+          <TableOfContents items={post.toc} title={dictionary.blog.tableOfContents} />
+        </div>
+      </div>
+
+      <section className="space-y-3 border-t border-border/70 pt-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+          {dictionary.blog.tags}
+        </h2>
         <div className="flex flex-wrap gap-2">
           {post.tags.map((tag) => (
             <Tag key={`${post.slug}-${tag}`}>{tag}</Tag>
           ))}
         </div>
-      </header>
-
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_240px]">
-        <MarkdownContent markdown={post.bodyMarkdown ?? ""} />
-        <div className="lg:sticky lg:top-24 lg:self-start">
-          <TableOfContents items={post.toc} title={dictionary.blog.tableOfContents} />
-        </div>
-      </div>
+      </section>
 
       <CommentsSection
         postSlug={post.slug}

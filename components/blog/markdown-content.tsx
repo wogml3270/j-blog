@@ -5,5 +5,5 @@ interface MarkdownContentProps {
 }
 
 export function MarkdownContent({ markdown }: MarkdownContentProps) {
-  return <ToastMarkdownViewer markdown={markdown} className="markdown-viewer prose max-w-none" />;
+  return <ToastMarkdownViewer markdown={markdown} className="markdown-viewer max-w-none" />;
 }

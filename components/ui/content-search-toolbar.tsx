@@ -29,6 +29,9 @@ export function ContentSearchToolbar({
     const normalized = normalizeContentSearchQuery(raw);
     const params = new URLSearchParams(searchParams.toString());
 
+    // 검색어가 변경되면 목록 탐색 컨텍스트를 초기화하기 위해 page를 항상 1로 리셋한다.
+    params.delete("page");
+
     if (normalized) {
       params.set("q", normalized);
     } else {

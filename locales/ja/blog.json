@@ -6,8 +6,12 @@
   "searchPlaceholder": "タイトル・説明・タグで検索",
   "searchButton": "検索",
   "searchReset": "リセット",
+  "paginationPrevious": "前のページ",
+  "paginationNext": "次のページ",
+  "paginationSummary": "検索結果",
   "searchNoResult": "検索結果がありません。別のキーワードをお試しください。",
   "tableOfContents": "目次",
+  "tags": "タグ一覧",
   "backToList": "← ブログ一覧へ",
   "postNotFound": "記事が見つかりません。",
   "error": {

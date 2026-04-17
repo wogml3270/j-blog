@@ -2,6 +2,7 @@ import type { PaginatedResult } from "@/types/admin";
 
 export const ADMIN_PAGE_SIZE_OPTIONS = [3, 5, 10] as const;
 export const DEFAULT_ADMIN_PAGE_SIZE = 5;
+export const PUBLIC_CONTENT_PAGE_SIZE = 8;
 const PAGE_SIZE_SET = new Set<number>(ADMIN_PAGE_SIZE_OPTIONS);
 
 // 페이지 번호와 크기를 서버/클라이언트에서 동일하게 정규화한다.
@@ -39,4 +40,10 @@ export function buildPaginatedResult<T>(
     total: safeTotal,
     totalPages,
   };
+}
+
+// 공개 목록 페이지네이션용 page 쿼리를 정수 범위로 정규화한다.
+export function normalizePublicPage(rawPage: string | null | undefined): number {
+  const parsedPage = Number(rawPage);
+  return Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 }

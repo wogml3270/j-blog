@@ -6,8 +6,12 @@
   "searchPlaceholder": "제목, 설명, 태그로 검색",
   "searchButton": "검색",
   "searchReset": "초기화",
+  "paginationPrevious": "이전 페이지",
+  "paginationNext": "다음 페이지",
+  "paginationSummary": "검색 결과",
   "searchNoResult": "검색 결과가 없습니다. 다른 검색어를 입력해보세요.",
   "tableOfContents": "목차",
+  "tags": "태그 목록",
   "backToList": "← 블로그 목록",
   "postNotFound": "게시글을 찾을 수 없습니다.",
   "error": {

@@ -10,7 +10,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "seed:supabase": "node scripts/seed-supabase.mjs",
-    "deploy": "npx vercel --prod --yes"
+    "generate:docs-blog-translations": "node scripts/generate-docs-blog-reseed-sql.mjs --bootstrap-translations",
+    "generate:docs-blog-sql": "node scripts/generate-docs-blog-reseed-sql.mjs",
+    "deploy": "npx vercel --prod --yes",
+    "vercel:sync-alias": "node scripts/vercel-sync-production-alias.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

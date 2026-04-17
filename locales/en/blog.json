@@ -6,8 +6,12 @@
   "searchPlaceholder": "Search by title, description, or tags",
   "searchButton": "Search",
   "searchReset": "Reset",
+  "paginationPrevious": "Previous page",
+  "paginationNext": "Next page",
+  "paginationSummary": "Results",
   "searchNoResult": "No results found. Try a different keyword.",
   "tableOfContents": "Table of Contents",
+  "tags": "Tags",
   "backToList": "← Back to blog",
   "postNotFound": "Post not found.",
   "error": {
