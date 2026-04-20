@@ -3,13 +3,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MarkdownContent } from "@/components/blog/markdown-content";
+import { TableOfContents } from "@/components/blog/table-of-contents";
+import { ProjectCommentsSection } from "@/components/project/comments-section";
 import { ProjectMeta } from "@/components/project/meta";
 import { SectionTitle } from "@/components/ui/section-title";
-import { stripMarkdownToPlainText } from "@/lib/blog/markdown";
+import { extractTocFromMarkdown, stripMarkdownToPlainText } from "@/lib/blog/markdown";
+import { getApprovedCommentsByProjectSlug } from "@/lib/comments/repository";
 import { isLocale, withLocalePath } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getPublishedProjectBySlug } from "@/lib/projects/repository";
 import { buildPageMetadata } from "@/lib/seo/metadata";
+import { formatDate } from "@/lib/utils/format-date";
 import { decodeSlugSegment, encodeSlugSegment } from "@/lib/utils/slug";
 
 type ProjectDetailPageProps = {
@@ -65,6 +69,10 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
     notFound();
   }
 
+  const toc = extractTocFromMarkdown(project.summary);
+  const publicLinks = project.links.filter((item) => item.isPublic);
+  const comments = await getApprovedCommentsByProjectSlug(normalizedSlug);
+
   return (
     <article className="space-y-8">
       <div className="space-y-3">
@@ -74,7 +82,12 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         >
           {dictionary.projects.backToList}
         </Link>
+        <p className="text-xs text-muted">
+          {dictionary.projects.createdAt}:{" "}
+          {project.createdAt ? formatDate(project.createdAt, lang) : "-"}
+        </p>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">{project.title}</h1>
+        {project.homeSummary ? <p className="text-base text-muted">{project.homeSummary}</p> : null}
       </div>
 
       <section className="grid gap-5 lg:grid-cols-12 lg:items-stretch">
@@ -93,62 +106,38 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             role={project.role}
             period={project.period}
             techStack={project.techStack}
+            links={publicLinks}
             roleLabel={dictionary.projects.role}
             periodLabel={dictionary.projects.period}
             techStackLabel={dictionary.projects.techStack}
+            relatedLinksLabel={dictionary.projects.relatedLinks}
           />
         </div>
       </section>
 
-      <section className="space-y-3">
-        <SectionTitle title={dictionary.projects.review} />
-        <div className="rounded-xl border border-border bg-surface p-5">
-          <MarkdownContent markdown={project.summary} />
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_220px] xl:gap-9">
+        <section className="space-y-3">
+          <SectionTitle title={dictionary.projects.review} />
+          <div className="rounded-xl border border-border bg-surface p-5">
+            <MarkdownContent markdown={project.summary} />
+          </div>
+          <div className="flex flex-col items-end gap-y-1 text-xs text-muted">
+            <p>
+              {dictionary.projects.updatedAt}:{" "}
+              {project.updatedAt ? formatDate(project.updatedAt, lang) : "-"}
+            </p>
+          </div>
+        </section>
+        <div className="hidden xl:sticky xl:top-24 xl:block xl:self-start">
+          <TableOfContents items={toc} title={dictionary.projects.tableOfContents} />
         </div>
-      </section>
+      </div>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-3">
-          <SectionTitle title={dictionary.projects.achievements} />
-          <ul className="space-y-2">
-            {project.achievements.map((item) => (
-              <li
-                key={item}
-                className="rounded-lg border border-border bg-surface px-4 py-3 text-sm text-foreground"
-              >
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="space-y-3">
-          <SectionTitle title={dictionary.projects.contributions} />
-          <ul className="space-y-2">
-            {project.contributions.map((item) => (
-              <li
-                key={item}
-                className="rounded-lg border border-border bg-surface px-4 py-3 text-sm text-foreground"
-              >
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <SectionTitle title={dictionary.projects.relatedLinks} />
-        <ul className="flex flex-wrap gap-3 text-sm">
-          {project.links.map((item) => (
-            <li key={`${item.label}-${item.url}`}>
-              <a href={item.url} target="_blank" rel="noreferrer" className="underline">
-                {item.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <ProjectCommentsSection
+        projectSlug={project.slug}
+        labels={dictionary.projects.comments}
+        initialComments={comments}
+      />
     </article>
   );
 }

@@ -26,15 +26,15 @@ function toProjectLinks(value: ProjectSeed["links"]): ProjectLinks {
   const links: ProjectLinks = [];
 
   if (value.live) {
-    links.push({ label: "Live", url: value.live });
+    links.push({ label: "Live", url: value.live, isPublic: true });
   }
 
   if (value.repo) {
-    links.push({ label: "Repository", url: value.repo });
+    links.push({ label: "Repository", url: value.repo, isPublic: true });
   }
 
   if (value.detail) {
-    links.push({ label: "Case Study", url: value.detail });
+    links.push({ label: "Case Study", url: value.detail, isPublic: true });
   }
 
   return links;
@@ -257,8 +257,6 @@ function toLocalizedProject(seed: ProjectSeed, locale: Locale): Project {
     role: seed.role[locale],
     period: seed.period,
     techStack: seed.techStack,
-    achievements: seed.achievements[locale],
-    contributions: seed.contributions[locale],
     links: toProjectLinks(seed.links),
     featured: seed.featured,
   };

@@ -70,7 +70,10 @@ function parseBody(body: unknown): AdminPostInput | null {
     slug,
     title: source.title.trim(),
     description: source.description.trim(),
-    thumbnail: typeof source.thumbnail === "string" ? source.thumbnail.trim() || null : null,
+    thumbnail:
+      typeof source.thumbnail === "string" && source.thumbnail.trim()
+        ? source.thumbnail.trim()
+        : "/blog/default-thumbnail.svg",
     featured: Boolean(source.featured),
     syncSlugWithTitle: Boolean(source.syncSlugWithTitle),
     bodyMarkdown: source.bodyMarkdown,

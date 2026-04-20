@@ -47,13 +47,18 @@ import { useAdminListUiStore } from "@/stores/admin-list-ui";
 import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
 import type { AdminListFilter, PaginatedResult } from "@/types/admin";
 import type { PublishStatus } from "@/types/db";
-import type { AdminProject, ProjectLinkItem, ProjectLinks, ProjectTranslationMap } from "@/types/projects";
+import type {
+  AdminProject,
+  ProjectComment,
+  ProjectLinkItem,
+  ProjectLinks,
+  ProjectTranslationMap,
+} from "@/types/projects";
 import type {
   ProjectFormState,
   ProjectsManagerProps,
   SortableLinkItem,
   SortableRowProps,
-  SortableTextItem,
   ThumbnailInputMode,
 } from "@/types/ui";
 
@@ -62,7 +67,7 @@ const EMPTY_FORM: ProjectFormState = {
   title: "",
   homeSummary: "",
   summary: "",
-  thumbnail: "",
+  thumbnail: "/projects/default-thumbnail.svg",
   role: "",
   startDate: "",
   endDate: "",
@@ -70,13 +75,10 @@ const EMPTY_FORM: ProjectFormState = {
   featured: false,
   techStack: [],
   techStackInput: "",
-  achievements: [],
-  achievementInput: "",
-  contributions: [],
-  contributionInput: "",
   links: [],
   linkLabelInput: "",
   linkUrlInput: "",
+  linkPublicInput: true,
 };
 
 type TranslationLocale = Exclude<AdminLocale, "ko">;
@@ -87,10 +89,6 @@ type ProjectTranslationFormState = {
   contentMarkdown: string;
   tags: string[];
   tagInput: string;
-  achievements: SortableTextItem[];
-  achievementInput: string;
-  contributions: SortableTextItem[];
-  contributionInput: string;
 };
 
 const EMPTY_PROJECT_TRANSLATION_FORM: ProjectTranslationFormState = {
@@ -99,10 +97,6 @@ const EMPTY_PROJECT_TRANSLATION_FORM: ProjectTranslationFormState = {
   contentMarkdown: "",
   tags: [],
   tagInput: "",
-  achievements: [],
-  achievementInput: "",
-  contributions: [],
-  contributionInput: "",
 };
 
 const EMPTY_PROJECT_TRANSLATIONS: Record<TranslationLocale, ProjectTranslationFormState> = {
@@ -157,16 +151,6 @@ function uniqueStringList(items: string[]): string[] {
   return [...new Set(items.map((item) => item.trim()).filter(Boolean))];
 }
 
-function toSortableTextItems(
-  items: string[],
-  prefix: string,
-): SortableTextItem[] {
-  return uniqueStringList(items).map((value, index) => ({
-    id: createStableId(prefix, value, index),
-    value,
-  }));
-}
-
 function toSortableLinkItems(items: ProjectLinks): SortableLinkItem[] {
   const seen = new Set<string>();
   const next: SortableLinkItem[] = [];
@@ -174,6 +158,7 @@ function toSortableLinkItems(items: ProjectLinks): SortableLinkItem[] {
   for (const item of items) {
     const label = item.label.trim();
     const url = item.url.trim();
+    const isPublic = typeof item.isPublic === "boolean" ? item.isPublic : true;
 
     if (!label || !url) {
       continue;
@@ -186,7 +171,12 @@ function toSortableLinkItems(items: ProjectLinks): SortableLinkItem[] {
     }
 
     seen.add(key);
-    next.push({ id: createStableId("link", `${label}-${url}`, next.length), label, url });
+    next.push({
+      id: createStableId("link", `${label}-${url}`, next.length),
+      label,
+      url,
+      isPublic,
+    });
   }
 
   return next;
@@ -206,13 +196,10 @@ function toFormState(project: AdminProject): ProjectFormState {
     featured: project.featured,
     techStack: [...project.techStack],
     techStackInput: "",
-    achievements: toSortableTextItems(project.achievements, "achievement"),
-    achievementInput: "",
-    contributions: toSortableTextItems(project.contributions, "contribution"),
-    contributionInput: "",
     links: toSortableLinkItems(project.links),
     linkLabelInput: "",
     linkUrlInput: "",
+    linkPublicInput: true,
   };
 }
 
@@ -232,11 +219,6 @@ function toTranslationState(
       subtitle: translations?.en?.subtitle ?? "",
       contentMarkdown: translations?.en?.contentMarkdown ?? "",
       tags: normalizeTagList(translations?.en?.tags ?? []),
-      achievements: toSortableTextItems(translations?.en?.achievements ?? [], "en-achievement"),
-      contributions: toSortableTextItems(
-        translations?.en?.contributions ?? [],
-        "en-contribution",
-      ),
     },
     ja: {
       ...EMPTY_PROJECT_TRANSLATION_FORM,
@@ -244,11 +226,6 @@ function toTranslationState(
       subtitle: translations?.ja?.subtitle ?? "",
       contentMarkdown: translations?.ja?.contentMarkdown ?? "",
       tags: normalizeTagList(translations?.ja?.tags ?? []),
-      achievements: toSortableTextItems(translations?.ja?.achievements ?? [], "ja-achievement"),
-      contributions: toSortableTextItems(
-        translations?.ja?.contributions ?? [],
-        "ja-contribution",
-      ),
     },
   };
 }
@@ -263,16 +240,12 @@ function toTranslationPayload(
       subtitle: translations.en.subtitle.trim(),
       contentMarkdown: translations.en.contentMarkdown,
       tags: normalizeTagList(translations.en.tags),
-      achievements: uniqueStringList(translations.en.achievements.map((item) => item.value)),
-      contributions: uniqueStringList(translations.en.contributions.map((item) => item.value)),
     },
     ja: {
       title: translations.ja.title.trim(),
       subtitle: translations.ja.subtitle.trim(),
       contentMarkdown: translations.ja.contentMarkdown,
       tags: normalizeTagList(translations.ja.tags),
-      achievements: uniqueStringList(translations.ja.achievements.map((item) => item.value)),
-      contributions: uniqueStringList(translations.ja.contributions.map((item) => item.value)),
     },
   };
 }
@@ -281,6 +254,7 @@ function toLinks(form: ProjectFormState): ProjectLinks {
   const links: ProjectLinkItem[] = form.links.map((item) => ({
     label: item.label.trim(),
     url: item.url.trim(),
+    isPublic: item.isPublic,
   }));
 
   const unique = new Set<string>();
@@ -321,8 +295,6 @@ function serializeProjectForm(
     status: form.status,
     featured: form.featured,
     techStack: uniqueStringList(form.techStack),
-    achievements: uniqueStringList(form.achievements.map((item) => item.value)),
-    contributions: uniqueStringList(form.contributions.map((item) => item.value)),
     links: toLinks(form),
     translations: toTranslationPayload(translations),
     syncSlugWithTitle,
@@ -344,6 +316,26 @@ function toDisplayDate(value: string | null | undefined): string {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+  }).format(date);
+}
+
+function toDisplayDateTime(value: string | null | undefined): string {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(date);
 }
 
@@ -458,6 +450,9 @@ export function ProjectsManager({
     serializeProjectForm(EMPTY_FORM, true, EMPTY_PROJECT_TRANSLATIONS),
   );
   const [message, setMessage] = useState<string | null>(null);
+  const [projectComments, setProjectComments] = useState<ProjectComment[]>([]);
+  const [isCommentsLoading, setIsCommentsLoading] = useState(false);
+  const [pendingCommentDeleteId, setPendingCommentDeleteId] = useState<string | null>(null);
   const hasAppliedInitialSelection = useRef(false);
   const thumbnailUploadRequestRef = useRef(0);
   const openDetail = useAdminDetailStore((state) => state.open);
@@ -531,6 +526,55 @@ export function ProjectsManager({
     [filter, mainPage, pageSize, pathname, privatePage, router, searchParams],
   );
 
+  // 선택한 프로젝트의 댓글 목록을 관리자 드로어에서 바로 관리할 수 있도록 조회한다.
+  const loadProjectComments = useCallback(async (projectId: string) => {
+    setIsCommentsLoading(true);
+
+    try {
+      const response = await fetch(`/api/admin/projects/${projectId}/comments`, {
+        method: "GET",
+      });
+
+      if (!response.ok) {
+        throw new Error("댓글 목록을 불러오지 못했습니다.");
+      }
+
+      const payload = (await response.json()) as { comments?: ProjectComment[] };
+      setProjectComments(payload.comments ?? []);
+    } catch {
+      setProjectComments([]);
+    } finally {
+      setIsCommentsLoading(false);
+    }
+  }, []);
+
+  const onDeleteProjectCommentByAdmin = async (commentId: string) => {
+    if (!window.confirm("이 댓글을 삭제할까요?")) {
+      return;
+    }
+
+    setPendingCommentDeleteId(commentId);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`/api/admin/project-comments/${commentId}`, {
+        method: "DELETE",
+      });
+      const payload = (await response.json()) as { error?: string; id?: string };
+
+      if (!response.ok || !payload.id) {
+        throw new Error(payload.error ?? "댓글 삭제에 실패했습니다.");
+      }
+
+      setProjectComments((prev) => prev.filter((comment) => comment.id !== payload.id));
+      setMessage("댓글을 삭제했습니다.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "요청 중 오류가 발생했습니다.");
+    } finally {
+      setPendingCommentDeleteId(null);
+    }
+  };
+
   const openCreate = () => {
     if (!confirmProceedIfDirty()) {
       return;
@@ -551,6 +595,9 @@ export function ProjectsManager({
       return null;
     });
     setMessage(null);
+    setProjectComments([]);
+    setIsCommentsLoading(false);
+    setPendingCommentDeleteId(null);
     setDrawerOpen(true);
     closeDetail("projects");
     syncQuery({ id: null });
@@ -581,11 +628,15 @@ export function ProjectsManager({
         return null;
       });
       setMessage(null);
+      setProjectComments([]);
+      setIsCommentsLoading(false);
+      setPendingCommentDeleteId(null);
       setDrawerOpen(true);
       openDetail("projects", project.id);
       syncQuery({ id: project.id });
+      void loadProjectComments(project.id);
     },
-    [confirmProceedIfDirty, openDetail, syncQuery],
+    [confirmProceedIfDirty, loadProjectComments, openDetail, syncQuery],
   );
 
   const closeDrawer = () => {
@@ -594,6 +645,9 @@ export function ProjectsManager({
     }
 
     setDrawerOpen(false);
+    setProjectComments([]);
+    setIsCommentsLoading(false);
+    setPendingCommentDeleteId(null);
     closeDetail("projects");
     syncQuery({ id: null });
   };
@@ -776,22 +830,6 @@ export function ProjectsManager({
     activeLocale === "ko"
       ? form.techStackInput
       : translations[activeLocale as TranslationLocale].tagInput;
-  const localeAchievements =
-    activeLocale === "ko"
-      ? form.achievements
-      : translations[activeLocale as TranslationLocale].achievements;
-  const localeAchievementInput =
-    activeLocale === "ko"
-      ? form.achievementInput
-      : translations[activeLocale as TranslationLocale].achievementInput;
-  const localeContributions =
-    activeLocale === "ko"
-      ? form.contributions
-      : translations[activeLocale as TranslationLocale].contributions;
-  const localeContributionInput =
-    activeLocale === "ko"
-      ? form.contributionInput
-      : translations[activeLocale as TranslationLocale].contributionInput;
 
   const setLocaleField = (
     field: "title" | "subtitle" | "contentMarkdown" | "tagInput",
@@ -844,144 +882,6 @@ export function ProjectsManager({
     removeTranslationTag(activeLocale, value);
   };
 
-  // 성과 항목은 KO/EN/JA 각각 독립 리스트로 입력/정렬한다.
-  const addLocaleAchievement = () => {
-    const value =
-      activeLocale === "ko"
-        ? form.achievementInput.trim()
-        : translations[activeLocale as TranslationLocale].achievementInput.trim();
-
-    if (!value) {
-      return;
-    }
-
-    if (activeLocale === "ko") {
-      setForm((prev) => ({
-        ...prev,
-        achievements: [...prev.achievements, { id: createClientId("achievement"), value }],
-        achievementInput: "",
-      }));
-      return;
-    }
-
-    setTranslations((prev) => ({
-      ...prev,
-      [activeLocale]: {
-        ...prev[activeLocale],
-        achievements: [
-          ...prev[activeLocale].achievements,
-          { id: createClientId(`${activeLocale}-achievement`), value },
-        ],
-        achievementInput: "",
-      },
-    }));
-  };
-
-  const removeLocaleAchievement = (id: string) => {
-    if (activeLocale === "ko") {
-      setForm((prev) => ({
-        ...prev,
-        achievements: prev.achievements.filter((item) => item.id !== id),
-      }));
-      return;
-    }
-
-    setTranslations((prev) => ({
-      ...prev,
-      [activeLocale]: {
-        ...prev[activeLocale],
-        achievements: prev[activeLocale].achievements.filter((item) => item.id !== id),
-      },
-    }));
-  };
-
-  // 주요 기여 항목도 locale별로 분리해서 관리한다.
-  const addLocaleContribution = () => {
-    const value =
-      activeLocale === "ko"
-        ? form.contributionInput.trim()
-        : translations[activeLocale as TranslationLocale].contributionInput.trim();
-
-    if (!value) {
-      return;
-    }
-
-    if (activeLocale === "ko") {
-      setForm((prev) => ({
-        ...prev,
-        contributions: [...prev.contributions, { id: createClientId("contribution"), value }],
-        contributionInput: "",
-      }));
-      return;
-    }
-
-    setTranslations((prev) => ({
-      ...prev,
-      [activeLocale]: {
-        ...prev[activeLocale],
-        contributions: [
-          ...prev[activeLocale].contributions,
-          { id: createClientId(`${activeLocale}-contribution`), value },
-        ],
-        contributionInput: "",
-      },
-    }));
-  };
-
-  const removeLocaleContribution = (id: string) => {
-    if (activeLocale === "ko") {
-      setForm((prev) => ({
-        ...prev,
-        contributions: prev.contributions.filter((item) => item.id !== id),
-      }));
-      return;
-    }
-
-    setTranslations((prev) => ({
-      ...prev,
-      [activeLocale]: {
-        ...prev[activeLocale],
-        contributions: prev[activeLocale].contributions.filter((item) => item.id !== id),
-      },
-    }));
-  };
-
-  const reorderLocaleAchievements = (event: DragEndEvent) => {
-    if (activeLocale === "ko") {
-      setForm((prev) => ({
-        ...prev,
-        achievements: reorderById(prev.achievements, event),
-      }));
-      return;
-    }
-
-    setTranslations((prev) => ({
-      ...prev,
-      [activeLocale]: {
-        ...prev[activeLocale],
-        achievements: reorderById(prev[activeLocale].achievements, event),
-      },
-    }));
-  };
-
-  const reorderLocaleContributions = (event: DragEndEvent) => {
-    if (activeLocale === "ko") {
-      setForm((prev) => ({
-        ...prev,
-        contributions: reorderById(prev.contributions, event),
-      }));
-      return;
-    }
-
-    setTranslations((prev) => ({
-      ...prev,
-      [activeLocale]: {
-        ...prev[activeLocale],
-        contributions: reorderById(prev[activeLocale].contributions, event),
-      },
-    }));
-  };
-
   const addLink = () => {
     const label = form.linkLabelInput.trim();
     const url = form.linkUrlInput.trim();
@@ -992,9 +892,18 @@ export function ProjectsManager({
 
     setForm((prev) => ({
       ...prev,
-      links: [...prev.links, { id: createClientId("link"), label, url }],
+      links: [
+        ...prev.links,
+        {
+          id: createClientId("link"),
+          label,
+          url,
+          isPublic: prev.linkPublicInput,
+        },
+      ],
       linkLabelInput: "",
       linkUrlInput: "",
+      linkPublicInput: true,
     }));
   };
 
@@ -1002,6 +911,13 @@ export function ProjectsManager({
     setForm((prev) => ({
       ...prev,
       links: prev.links.filter((item) => item.id !== id),
+    }));
+  };
+
+  const setLinkPublic = (id: string, isPublic: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      links: prev.links.map((item) => (item.id === id ? { ...item, isPublic } : item)),
     }));
   };
 
@@ -1041,8 +957,6 @@ export function ProjectsManager({
         status: form.status,
         featured: form.status === "published" ? form.featured : false,
         techStack: uniqueStringList(form.techStack),
-        achievements: uniqueStringList(form.achievements.map((item) => item.value)),
-        contributions: uniqueStringList(form.contributions.map((item) => item.value)),
         links: toLinks(form),
         translations: toTranslationPayload(translations),
       };
@@ -1071,6 +985,9 @@ export function ProjectsManager({
       setSyncSlugWithTitle(true);
       setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true, EMPTY_PROJECT_TRANSLATIONS));
       setThumbnailMode("url");
+      setProjectComments([]);
+      setIsCommentsLoading(false);
+      setPendingCommentDeleteId(null);
       setLocalThumbnailPreview((prev) => {
         if (prev) {
           URL.revokeObjectURL(prev);
@@ -1113,6 +1030,9 @@ export function ProjectsManager({
         setTranslations(EMPTY_PROJECT_TRANSLATIONS);
         setActiveLocale("ko");
         setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true, EMPTY_PROJECT_TRANSLATIONS));
+        setProjectComments([]);
+        setIsCommentsLoading(false);
+        setPendingCommentDeleteId(null);
         closeDetail("projects");
       }
       syncQuery({ id: null });
@@ -1158,6 +1078,9 @@ export function ProjectsManager({
     setTranslations(EMPTY_PROJECT_TRANSLATIONS);
     setActiveLocale("ko");
     setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true, EMPTY_PROJECT_TRANSLATIONS));
+    setProjectComments([]);
+    setIsCommentsLoading(false);
+    setPendingCommentDeleteId(null);
     closeDetail("projects");
     await loadProjects(nextPage, privatePage, pageSize, filter);
   };
@@ -1177,6 +1100,9 @@ export function ProjectsManager({
     setTranslations(EMPTY_PROJECT_TRANSLATIONS);
     setActiveLocale("ko");
     setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true, EMPTY_PROJECT_TRANSLATIONS));
+    setProjectComments([]);
+    setIsCommentsLoading(false);
+    setPendingCommentDeleteId(null);
     closeDetail("projects");
     await loadProjects(1, 1, nextPageSize, filter);
   };
@@ -1195,6 +1121,9 @@ export function ProjectsManager({
     setTranslations(EMPTY_PROJECT_TRANSLATIONS);
     setActiveLocale("ko");
     setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true, EMPTY_PROJECT_TRANSLATIONS));
+    setProjectComments([]);
+    setIsCommentsLoading(false);
+    setPendingCommentDeleteId(null);
     closeDetail("projects");
     await loadProjects(mainPage, nextPage, pageSize, filter);
   };
@@ -1213,6 +1142,9 @@ export function ProjectsManager({
     setTranslations(EMPTY_PROJECT_TRANSLATIONS);
     setActiveLocale("ko");
     setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true, EMPTY_PROJECT_TRANSLATIONS));
+    setProjectComments([]);
+    setIsCommentsLoading(false);
+    setPendingCommentDeleteId(null);
     closeDetail("projects");
     await loadProjects(1, 1, pageSize, nextFilter);
   };
@@ -1714,150 +1646,8 @@ export function ProjectsManager({
           </SurfaceCard>
 
           <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">성과</p>
-            <div className="flex items-center gap-2">
-              <Input
-                className="min-w-0 flex-1"
-                value={localeAchievementInput}
-                onChange={(event) => {
-                  const nextValue = event.target.value;
-
-                  if (activeLocale === "ko") {
-                    setForm((prev) => ({
-                      ...prev,
-                      achievementInput: nextValue,
-                    }));
-                    return;
-                  }
-
-                  setTranslations((prev) => ({
-                    ...prev,
-                    [activeLocale]: {
-                      ...prev[activeLocale],
-                      achievementInput: nextValue,
-                    },
-                  }));
-                }}
-                onKeyDown={(event) => {
-                  if (event.nativeEvent.isComposing) {
-                    return;
-                  }
-
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    addLocaleAchievement();
-                  }
-                }}
-                placeholder="성과를 입력하고 Enter"
-              />
-              <Button type="button" className="h-10 shrink-0 px-4" onClick={addLocaleAchievement}>
-                추가
-              </Button>
-            </div>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={reorderLocaleAchievements}
-            >
-              <SortableContext
-                items={localeAchievements.map((item) => item.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <ul className="space-y-2">
-                  {localeAchievements.length > 0 ? (
-                    localeAchievements.map((item) => (
-                      <SortableRow
-                        key={item.id}
-                        id={item.id}
-                        onRemove={() => removeLocaleAchievement(item.id)}
-                      >
-                        <p className="truncate">{item.value}</p>
-                      </SortableRow>
-                    ))
-                  ) : (
-                    <li className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted">
-                      등록된 성과가 없습니다.
-                    </li>
-                  )}
-                </ul>
-              </SortableContext>
-            </DndContext>
-          </SurfaceCard>
-
-          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">주요 기여</p>
-            <div className="flex items-center gap-2">
-              <Input
-                className="min-w-0 flex-1"
-                value={localeContributionInput}
-                onChange={(event) => {
-                  const nextValue = event.target.value;
-
-                  if (activeLocale === "ko") {
-                    setForm((prev) => ({
-                      ...prev,
-                      contributionInput: nextValue,
-                    }));
-                    return;
-                  }
-
-                  setTranslations((prev) => ({
-                    ...prev,
-                    [activeLocale]: {
-                      ...prev[activeLocale],
-                      contributionInput: nextValue,
-                    },
-                  }));
-                }}
-                onKeyDown={(event) => {
-                  if (event.nativeEvent.isComposing) {
-                    return;
-                  }
-
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    addLocaleContribution();
-                  }
-                }}
-                placeholder="기여를 입력하고 Enter"
-              />
-              <Button type="button" className="h-10 shrink-0 px-4" onClick={addLocaleContribution}>
-                추가
-              </Button>
-            </div>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={reorderLocaleContributions}
-            >
-              <SortableContext
-                items={localeContributions.map((item) => item.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <ul className="space-y-2">
-                  {localeContributions.length > 0 ? (
-                    localeContributions.map((item) => (
-                      <SortableRow
-                        key={item.id}
-                        id={item.id}
-                        onRemove={() => removeLocaleContribution(item.id)}
-                      >
-                        <p className="truncate">{item.value}</p>
-                      </SortableRow>
-                    ))
-                  ) : (
-                    <li className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted">
-                      등록된 기여가 없습니다.
-                    </li>
-                  )}
-                </ul>
-              </SortableContext>
-            </DndContext>
-          </SurfaceCard>
-
-          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">관련 링크</p>
-            <div className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
+            <div className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto_auto]">
               <Input
                 className="min-w-0"
                 value={form.linkLabelInput}
@@ -1890,6 +1680,19 @@ export function ProjectsManager({
                 }}
                 placeholder="https://..."
               />
+              <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.linkPublicInput}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      linkPublicInput: event.target.checked,
+                    }))
+                  }
+                />
+                공개
+              </label>
               <Button type="button" className="h-10 shrink-0 px-4" onClick={addLink}>
                 추가
               </Button>
@@ -1913,8 +1716,28 @@ export function ProjectsManager({
                   {form.links.length > 0 ? (
                     form.links.map((item) => (
                       <SortableRow key={item.id} id={item.id} onRemove={() => removeLink(item.id)}>
-                        <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                          <span
+                            className={cn(
+                              "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                              item.isPublic
+                                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                                : "bg-slate-500/15 text-slate-700 dark:text-slate-300",
+                            )}
+                          >
+                            {item.isPublic ? "공개" : "비공개"}
+                          </span>
+                        </div>
                         <p className="truncate text-xs text-muted">{item.url}</p>
+                        <label className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted">
+                          <input
+                            type="checkbox"
+                            checked={item.isPublic}
+                            onChange={(event) => setLinkPublic(item.id, event.target.checked)}
+                          />
+                          공개 링크
+                        </label>
                       </SortableRow>
                     ))
                   ) : (
@@ -1926,6 +1749,52 @@ export function ProjectsManager({
               </SortableContext>
             </DndContext>
           </SurfaceCard>
+
+          {editingId ? (
+            <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted">댓글 관리</p>
+                <span className="text-xs text-muted">{projectComments.length}개</span>
+              </div>
+              {isCommentsLoading ? (
+                <p className="text-xs text-muted">댓글 목록을 불러오는 중...</p>
+              ) : projectComments.length === 0 ? (
+                <p className="text-xs text-muted">등록된 댓글이 없습니다.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {projectComments.map((comment) => (
+                    <li
+                      key={comment.id}
+                      className="rounded-md border border-border bg-surface px-3 py-2"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {comment.authorNickname}
+                          </p>
+                          <p className="text-[11px] text-muted">
+                            {toDisplayDateTime(comment.createdAt)}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => void onDeleteProjectCommentByAdmin(comment.id)}
+                          disabled={pendingCommentDeleteId === comment.id}
+                        >
+                          삭제
+                        </Button>
+                      </div>
+                      <p className="mt-1.5 whitespace-pre-wrap text-sm text-foreground">
+                        {comment.content}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </SurfaceCard>
+          ) : null}
 
           <div className="flex gap-2">
             <Button type="submit" className="flex-1" disabled={isPending}>

@@ -42,7 +42,7 @@ export function BlogCard({ post, locale, animationDelay = 0 }: BlogCardProps) {
         title={post.title}
         description={post.description}
         tags={
-          <div className="flex flex-wrap gap-2 pt-1">
+          <div className="flex flex-wrap gap-2">
             {post.tags.map((tag) => (
               <Tag key={`${post.slug}-${tag}`}>{tag}</Tag>
             ))}

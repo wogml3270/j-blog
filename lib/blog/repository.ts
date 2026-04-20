@@ -51,6 +51,7 @@ type RepoResult<T> = {
 
 const POST_SELECT_FIELDS =
   "id,slug,title,description,thumbnail,featured,sync_slug_with_title,body_markdown,use_markdown_editor,status,published_at,scheduled_publish_at,updated_at,post_tag_map(post_tags(name))";
+const BLOG_DEFAULT_THUMBNAIL = "/blog/default-thumbnail.svg";
 
 export class BlogServiceUnavailableError extends Error {
   constructor(message = "Blog database is unavailable.") {
@@ -163,7 +164,7 @@ function rowToSummary(row: PostRow): BlogPostSummary {
     slug: row.slug,
     title: row.title,
     description: row.description,
-    thumbnail: row.thumbnail,
+    thumbnail: row.thumbnail || BLOG_DEFAULT_THUMBNAIL,
     featured: row.featured,
     date,
     tags: relationToTagNames(row.post_tag_map),
@@ -176,7 +177,7 @@ function rowToAdminPost(row: PostRow, translations: BlogTranslationMap = {}): Ad
     slug: row.slug,
     title: row.title,
     description: row.description,
-    thumbnail: row.thumbnail,
+    thumbnail: row.thumbnail || BLOG_DEFAULT_THUMBNAIL,
     featured: row.featured,
     syncSlugWithTitle: Boolean(row.sync_slug_with_title),
     bodyMarkdown: row.body_markdown,
@@ -672,7 +673,7 @@ export async function createAdminPost(
       slug: input.slug,
       title: input.title,
       description: input.description,
-      thumbnail: input.thumbnail?.trim() || null,
+      thumbnail: input.thumbnail?.trim() || BLOG_DEFAULT_THUMBNAIL,
       featured: Boolean(input.featured),
       sync_slug_with_title: Boolean(input.syncSlugWithTitle),
       body_markdown: input.bodyMarkdown,
@@ -738,7 +739,7 @@ export async function updateAdminPost(
       slug: input.slug,
       title: input.title,
       description: input.description,
-      thumbnail: input.thumbnail?.trim() || null,
+      thumbnail: input.thumbnail?.trim() || BLOG_DEFAULT_THUMBNAIL,
       featured: Boolean(input.featured),
       sync_slug_with_title: Boolean(input.syncSlugWithTitle),
       body_markdown: input.bodyMarkdown,

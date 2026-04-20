@@ -34,11 +34,10 @@ type ProjectRow = {
   start_date: string | null;
   end_date: string | null;
   tech_stack: unknown;
-  achievements: unknown;
-  contributions: unknown;
   links: unknown;
   featured: boolean;
   status: PublishStatus;
+  created_at: string;
   updated_at: string;
 };
 
@@ -48,8 +47,6 @@ type ProjectTranslationRow = {
   subtitle: string | null;
   content_markdown: string | null;
   tags: unknown;
-  achievements: unknown;
-  contributions: unknown;
 };
 
 type RepoResult<T> = {
@@ -58,7 +55,7 @@ type RepoResult<T> = {
 };
 
 const PROJECT_SELECT_FIELDS =
-  "id,slug,title,home_summary,summary,sync_slug_with_title,use_markdown_editor,thumbnail,role,period,start_date,end_date,tech_stack,achievements,contributions,links,featured,status,updated_at";
+  "id,slug,title,home_summary,summary,sync_slug_with_title,use_markdown_editor,thumbnail,role,period,start_date,end_date,tech_stack,links,featured,status,created_at,updated_at";
 
 export class ProjectServiceUnavailableError extends Error {
   constructor(message = "Project database is unavailable.") {
@@ -116,31 +113,28 @@ function toProjectTranslationInput(row: ProjectTranslationRow): ProjectTranslati
     subtitle: toNormalizedText(row.subtitle),
     contentMarkdown: row.content_markdown ?? "",
     tags: toStringArray(row.tags),
-    achievements: toStringArray(row.achievements),
-    contributions: toStringArray(row.contributions),
   };
 }
 
 function normalizeProjectLinks(items: ProjectLinkItem[]): ProjectLinks {
-  const seen = new Set<string>();
+  const seen = new Map<string, ProjectLinkItem>();
   const normalized: ProjectLinks = [];
 
   for (const item of items) {
     const label = item.label.trim();
     const url = item.url.trim();
+    const isPublic = typeof item.isPublic === "boolean" ? item.isPublic : true;
 
     if (!label || !url) {
       continue;
     }
 
     const key = `${label}::${url}`;
+    seen.set(key, { label, url, isPublic });
+  }
 
-    if (seen.has(key)) {
-      continue;
-    }
-
-    seen.add(key);
-    normalized.push({ label, url });
+  for (const value of seen.values()) {
+    normalized.push(value);
   }
 
   return normalized;
@@ -157,6 +151,7 @@ function toLinks(value: unknown): ProjectLinks {
           return {
             label: typeof raw.label === "string" ? raw.label : "",
             url: typeof raw.url === "string" ? raw.url : "",
+            isPublic: typeof raw.isPublic === "boolean" ? raw.isPublic : true,
           };
         }),
     );
@@ -183,6 +178,7 @@ function toLinks(value: unknown): ProjectLinks {
     legacy.push({
       label: LEGACY_LINK_LABELS[key] ?? key,
       url,
+      isPublic: true,
     });
   }
 
@@ -256,11 +252,10 @@ function rowToProject(row: ProjectRow): Project {
     startDate,
     endDate,
     techStack: toStringArray(row.tech_stack),
-    achievements: toStringArray(row.achievements),
-    contributions: toStringArray(row.contributions),
     links: toLinks(row.links),
     featured: row.featured,
     status: row.status,
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
@@ -275,8 +270,6 @@ function applyProjectTranslation(
   }
 
   const translatedTags = toStringArray(translation.tags);
-  const translatedAchievements = toStringArray(translation.achievements);
-  const translatedContributions = toStringArray(translation.contributions);
 
   return {
     ...project,
@@ -284,8 +277,6 @@ function applyProjectTranslation(
     homeSummary: toNormalizedText(translation.subtitle) || project.homeSummary,
     summary: toNormalizedText(translation.content_markdown) || project.summary,
     techStack: translatedTags.length > 0 ? translatedTags : project.techStack,
-    achievements: translatedAchievements.length > 0 ? translatedAchievements : project.achievements,
-    contributions: translatedContributions.length > 0 ? translatedContributions : project.contributions,
   };
 }
 
@@ -307,11 +298,10 @@ function rowToAdminProject(row: ProjectRow, translations: ProjectTranslationMap 
     startDate,
     endDate,
     techStack: toStringArray(row.tech_stack),
-    achievements: toStringArray(row.achievements),
-    contributions: toStringArray(row.contributions),
     links: toLinks(row.links),
     featured: row.featured,
     status: row.status,
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
     translations,
   };
@@ -334,7 +324,7 @@ async function getProjectTranslationMap(
   const table = locale === "en" ? "projects_en" : "projects_ja";
   const { data, error } = await service
     .from(table)
-    .select("project_id,title,subtitle,content_markdown,tags,achievements,contributions")
+    .select("project_id,title,subtitle,content_markdown,tags")
     .in("project_id", projectIds);
 
   if (error || !data) {
@@ -448,11 +438,11 @@ async function getAdminProjectTranslationMapByIds(
   const [{ data: enRows, error: enError }, { data: jaRows, error: jaError }] = await Promise.all([
     service
       .from("projects_en")
-      .select("project_id,title,subtitle,content_markdown,tags,achievements,contributions")
+      .select("project_id,title,subtitle,content_markdown,tags")
       .in("project_id", projectIds),
     service
       .from("projects_ja")
-      .select("project_id,title,subtitle,content_markdown,tags,achievements,contributions")
+      .select("project_id,title,subtitle,content_markdown,tags")
       .in("project_id", projectIds),
   ]);
 
@@ -604,8 +594,6 @@ async function upsertProjectTranslations(
         subtitle: en.subtitle.trim(),
         content_markdown: en.contentMarkdown,
         tags: uniqueStringList(en.tags),
-        achievements: uniqueStringList(en.achievements),
-        contributions: uniqueStringList(en.contributions),
       },
       { onConflict: "project_id" },
     );
@@ -619,8 +607,6 @@ async function upsertProjectTranslations(
         subtitle: ja.subtitle.trim(),
         content_markdown: ja.contentMarkdown,
         tags: uniqueStringList(ja.tags),
-        achievements: uniqueStringList(ja.achievements),
-        contributions: uniqueStringList(ja.contributions),
       },
       { onConflict: "project_id" },
     );
@@ -658,8 +644,6 @@ export async function createAdminProject(
       start_date: startDate,
       end_date: endDate,
       tech_stack: input.techStack,
-      achievements: input.achievements,
-      contributions: input.contributions,
       links,
       featured: input.featured,
       status: normalizeStatus(input.status),
@@ -721,8 +705,6 @@ export async function updateAdminProject(
       start_date: startDate,
       end_date: endDate,
       tech_stack: input.techStack,
-      achievements: input.achievements,
-      contributions: input.contributions,
       links,
       featured: input.featured,
       status: normalizeStatus(input.status),

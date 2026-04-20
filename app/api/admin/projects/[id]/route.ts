@@ -22,6 +22,7 @@ function toLinks(value: unknown): ProjectLinks {
     for (const item of items) {
       const label = item.label.trim();
       const url = item.url.trim();
+      const isPublic = typeof item.isPublic === "boolean" ? item.isPublic : true;
 
       if (!label || !url) {
         continue;
@@ -34,7 +35,7 @@ function toLinks(value: unknown): ProjectLinks {
       }
 
       seen.add(key);
-      next.push({ label, url });
+      next.push({ label, url, isPublic });
     }
 
     return next;
@@ -50,6 +51,7 @@ function toLinks(value: unknown): ProjectLinks {
           return {
             label: typeof raw.label === "string" ? raw.label : "",
             url: typeof raw.url === "string" ? raw.url : "",
+            isPublic: typeof raw.isPublic === "boolean" ? raw.isPublic : true,
           };
         }),
     );
@@ -82,7 +84,7 @@ function toLinks(value: unknown): ProjectLinks {
             ? "Case Study"
             : key;
 
-    legacy.push({ label, url });
+    legacy.push({ label, url, isPublic: true });
   }
 
   return normalize(legacy);
@@ -112,12 +114,6 @@ function parseTranslations(source: Record<string, unknown>): ProjectTranslationM
       subtitle: typeof row.subtitle === "string" ? row.subtitle.trim() : "",
       contentMarkdown: typeof row.contentMarkdown === "string" ? row.contentMarkdown : "",
       tags: Array.isArray(row.tags) ? row.tags.map((tag) => String(tag).trim()).filter(Boolean) : [],
-      achievements: Array.isArray(row.achievements)
-        ? row.achievements.map((item) => String(item).trim()).filter(Boolean)
-        : [],
-      contributions: Array.isArray(row.contributions)
-        ? row.contributions.map((item) => String(item).trim()).filter(Boolean)
-        : [],
     };
   }
 
@@ -136,7 +132,6 @@ function parseBody(body: unknown): AdminProjectInput | null {
     typeof source.slug !== "string" ||
     typeof source.title !== "string" ||
     typeof source.summary !== "string" ||
-    typeof source.thumbnail !== "string" ||
     typeof source.role !== "string"
   ) {
     return null;
@@ -157,7 +152,10 @@ function parseBody(body: unknown): AdminProjectInput | null {
     summary: source.summary.trim(),
     syncSlugWithTitle: Boolean(source.syncSlugWithTitle),
     useSummaryEditor: Boolean(source.useSummaryEditor),
-    thumbnail: source.thumbnail.trim(),
+    thumbnail:
+      typeof source.thumbnail === "string" && source.thumbnail.trim()
+        ? source.thumbnail.trim()
+        : "/projects/default-thumbnail.svg",
     role: source.role.trim(),
     period: typeof source.period === "string" ? source.period.trim() : undefined,
     startDate:
@@ -168,12 +166,6 @@ function parseBody(body: unknown): AdminProjectInput | null {
       typeof source.endDate === "string" && source.endDate.trim() ? source.endDate.trim() : null,
     techStack: Array.isArray(source.techStack)
       ? source.techStack.map((item) => String(item).trim()).filter(Boolean)
-      : [],
-    achievements: Array.isArray(source.achievements)
-      ? source.achievements.map((item) => String(item).trim()).filter(Boolean)
-      : [],
-    contributions: Array.isArray(source.contributions)
-      ? source.contributions.map((item) => String(item).trim()).filter(Boolean)
       : [],
     links: toLinks(source.links),
     featured: Boolean(source.featured),

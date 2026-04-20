@@ -79,6 +79,10 @@ function resolveExtension(fileName: string, mimeType: string): string {
     return "gif";
   }
 
+  if (mimeType === "image/svg+xml") {
+    return "svg";
+  }
+
   return "jpg";
 }
 

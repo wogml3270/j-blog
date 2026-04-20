@@ -164,6 +164,7 @@ export type SortableLinkItem = {
   id: string;
   label: string;
   url: string;
+  isPublic: boolean;
 };
 
 export type ProjectFormState = {
@@ -179,13 +180,10 @@ export type ProjectFormState = {
   featured: boolean;
   techStack: string[];
   techStackInput: string;
-  achievements: SortableTextItem[];
-  achievementInput: string;
-  contributions: SortableTextItem[];
-  contributionInput: string;
   links: SortableLinkItem[];
   linkLabelInput: string;
   linkUrlInput: string;
+  linkPublicInput: boolean;
 };
 
 export type SortableRowProps = {

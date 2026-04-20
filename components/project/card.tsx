@@ -23,7 +23,7 @@ export function ProjectCard({
         href={withLocalePath(locale, `/projects/${encodeSlugSegment(project.slug)}`)}
         className="h-full"
         media={
-          <div className="aspect-video overflow-hidden border-b border-border bg-foreground/5">
+          <div className="relative aspect-video overflow-hidden border-b border-border bg-foreground/5">
             <Image
               src={project.thumbnail}
               alt={`${project.title} thumbnail`}
@@ -31,6 +31,11 @@ export function ProjectCard({
               height={675}
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             />
+            {project.homeSummary ? (
+              <div className="absolute inset-x-0 bottom-0 border-t border-white/15 bg-black/40 px-3 py-2 backdrop-blur-sm">
+                <p className="truncate text-xs font-medium text-white/90">{project.homeSummary}</p>
+              </div>
+            ) : null}
           </div>
         }
         meta={
@@ -49,12 +54,12 @@ export function ProjectCard({
         description={plainSummary}
         tags={
           <div className="flex flex-wrap gap-2">
-            {project.techStack.slice(0, 4).map((tech) => (
+            {project.techStack.map((tech) => (
               <Tag key={tech}>{tech}</Tag>
             ))}
           </div>
         }
-        bodyClassName="space-y-4 p-5"
+        bodyClassName="space-y-3.5 p-5"
       />
     </SlideIn>
   );

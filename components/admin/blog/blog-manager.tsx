@@ -37,7 +37,7 @@ const EMPTY_FORM: PostFormState = {
   title: "",
   slug: "",
   description: "",
-  thumbnail: "",
+  thumbnail: "/blog/default-thumbnail.svg",
   status: "published",
   featured: false,
   publishedAt: "",
