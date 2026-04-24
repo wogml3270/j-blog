@@ -262,9 +262,8 @@ export function BlogManager({
   const [pageSize, setPageSize] = useState(initialMainPage.pageSize);
   const [filter, setFilter] = useState<AdminListFilter>(initialFilter);
   const [form, setForm] = useState<PostFormState>(EMPTY_FORM);
-  const [translations, setTranslations] = useState<Record<TranslationLocale, BlogTranslationFormState>>(
-    EMPTY_BLOG_TRANSLATIONS,
-  );
+  const [translations, setTranslations] =
+    useState<Record<TranslationLocale, BlogTranslationFormState>>(EMPTY_BLOG_TRANSLATIONS);
   const [activeLocale, setActiveLocale] = useState<AdminLocale>("ko");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [thumbnailMode, setThumbnailMode] = useState<ThumbnailInputMode>("url");
@@ -1187,7 +1186,9 @@ export function BlogManager({
           </SurfaceCard>
           <div className="space-y-1">
             <div className="flex items-center justify-between gap-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted">콘텐츠 언어</label>
+              <label className="text-xs font-medium uppercase tracking-wide text-muted">
+                콘텐츠 언어
+              </label>
               <AdminLocaleTabs value={activeLocale} onChange={setActiveLocale} />
             </div>
           </div>
@@ -1398,7 +1399,7 @@ export function BlogManager({
             value={localeBodyMarkdown}
             onChange={(value) => setLocaleField("bodyMarkdown", value)}
             placeholder="Markdown 본문"
-            minHeight={320}
+            minHeight={600}
             required={activeLocale === "ko"}
           />
 

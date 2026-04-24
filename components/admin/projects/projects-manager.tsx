@@ -461,8 +461,7 @@ export function ProjectsManager({
   const savedPageSize = useAdminListUiStore((state) => state.pageSizeByScope.projects);
   const setSavedPageSize = useAdminListUiStore((state) => state.setPageSize);
   const isFormDirty =
-    drawerOpen &&
-    serializeProjectForm(form, syncSlugWithTitle, translations) !== savedFormSnapshot;
+    drawerOpen && serializeProjectForm(form, syncSlugWithTitle, translations) !== savedFormSnapshot;
 
   useBeforeUnloadUnsavedChanges(isFormDirty);
 
@@ -1449,7 +1448,9 @@ export function ProjectsManager({
           </SurfaceCard>
           <div className="space-y-1">
             <div className="flex items-center justify-between gap-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted">콘텐츠 언어</label>
+              <label className="text-xs font-medium uppercase tracking-wide text-muted">
+                콘텐츠 언어
+              </label>
               <AdminLocaleTabs value={activeLocale} onChange={setActiveLocale} />
             </div>
           </div>
@@ -1506,15 +1507,6 @@ export function ProjectsManager({
               required={activeLocale === "ko"}
             />
           </section>
-
-          <MarkdownField
-            label="프로젝트 내용"
-            value={localeContent}
-            onChange={(value) => setLocaleField("contentMarkdown", value)}
-            placeholder="프로젝트 내용"
-            required={activeLocale === "ko"}
-            minHeight={320}
-          />
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
@@ -1717,7 +1709,9 @@ export function ProjectsManager({
                     form.links.map((item) => (
                       <SortableRow key={item.id} id={item.id} onRemove={() => removeLink(item.id)}>
                         <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {item.label}
+                          </p>
                           <span
                             className={cn(
                               "rounded-full px-2 py-0.5 text-[11px] font-medium",
@@ -1749,6 +1743,15 @@ export function ProjectsManager({
               </SortableContext>
             </DndContext>
           </SurfaceCard>
+
+          <MarkdownField
+            label="프로젝트 본문"
+            value={localeContent}
+            onChange={(value) => setLocaleField("contentMarkdown", value)}
+            placeholder="프로젝트 본문"
+            required={activeLocale === "ko"}
+            minHeight={600}
+          />
 
           {editingId ? (
             <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
