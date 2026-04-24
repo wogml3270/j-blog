@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { isLocale, localeInfo, locales, type Locale } from "@/lib/i18n/config";
+import { isLocale, localeInfo, locales, type Locale, withLocalePath } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { buildAlternates } from "@/lib/seo/metadata";
 import { SHARE_CARD_CONFIG, SITE_CONFIG, getSiteCopy } from "@/lib/site/profile";
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: LangLayoutProps): Promise<Met
     openGraph: {
       title: site.title,
       description: site.description,
-      url: `${SITE_CONFIG.siteUrl}${localeInfo[locale].pathPrefix}`,
+      url: `${SITE_CONFIG.siteUrl}${withLocalePath(locale, "/")}`,
       locale: localeInfo[locale].ogLocale,
       type: "website",
       images: [
