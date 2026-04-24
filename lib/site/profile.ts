@@ -29,13 +29,13 @@ const SITE_COPY: Record<
   },
   en: {
     siteName: "Jaehee Park Portfolio",
-    title: "박재희 | Frontend Portfolio",
-    description: "3년차 프론트엔드 개발자의 포트폴리오",
+    title: "Jaehee Park | Frontend Portfolio",
+    description: "Portfolio of a frontend developer with 3 years of experience",
   },
   ja: {
     siteName: "パク・ジェヒ Portfolio",
-    title: "박재희 | Frontend Portfolio",
-    description: "3년차 프론트엔드 개발자의 포트폴리오",
+    title: "パク・ジェヒ | Frontend Portfolio",
+    description: "フロントエンドエンジニア3年目のポートフォリオ",
   },
 };
 

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { isLocale, localeInfo, locales, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { buildAlternates } from "@/lib/seo/metadata";
-import { SHARE_CARD_CONFIG, getSiteCopy } from "@/lib/site/profile";
+import { SHARE_CARD_CONFIG, SITE_CONFIG, getSiteCopy } from "@/lib/site/profile";
 
 type LangLayoutProps = {
   children: React.ReactNode;
@@ -32,8 +32,9 @@ export async function generateMetadata({ params }: LangLayoutProps): Promise<Met
     description: site.description,
     alternates: buildAlternates(locale, "/"),
     openGraph: {
-      title: SHARE_CARD_CONFIG.title,
-      description: SHARE_CARD_CONFIG.description,
+      title: site.title,
+      description: site.description,
+      url: `${SITE_CONFIG.siteUrl}${localeInfo[locale].pathPrefix}`,
       locale: localeInfo[locale].ogLocale,
       type: "website",
       images: [
@@ -44,8 +45,8 @@ export async function generateMetadata({ params }: LangLayoutProps): Promise<Met
     },
     twitter: {
       card: "summary_large_image",
-      title: SHARE_CARD_CONFIG.title,
-      description: SHARE_CARD_CONFIG.description,
+      title: site.title,
+      description: site.description,
       images: [SHARE_CARD_CONFIG.imagePath],
     },
   };

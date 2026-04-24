@@ -5,6 +5,7 @@ import { getHomeSlides } from "@/lib/home/repository";
 import { isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { buildPageMetadata } from "@/lib/seo/metadata";
+import { getSiteCopy } from "@/lib/site/profile";
 
 type HomePageProps = {
   params: Promise<{ lang: string }>;
@@ -17,15 +18,16 @@ export async function generateMetadata({ params }: HomePageProps): Promise<Metad
     return {};
   }
 
-  const dictionary = getDictionary(lang);
+  const site = getSiteCopy(lang);
 
   return buildPageMetadata({
     locale: lang,
     pathname: "/",
-    title: dictionary.home.title,
-    description: dictionary.home.description,
+    title: site.title,
+    description: site.description,
     shareCard: {
-      mode: "fixedShareCard",
+      mode: "dynamicShareCard",
+      imagePath: "/PJH-about.png",
     },
   });
 }
