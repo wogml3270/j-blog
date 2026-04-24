@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Noto_Sans_JP, Noto_Sans_KR, Plus_Jakarta_Sans } from "next/font/google";
 import "@toast-ui/editor/dist/toastui-editor.css";
+import "@toast-ui/editor/dist/theme/toastui-editor-dark.css";
 import "swiper/css";
 import "swiper/css/pagination";
 import { ThemeProvider } from "@/components/theme/provider";
@@ -46,6 +47,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: SHARE_CARD_CONFIG.title,
     description: SHARE_CARD_CONFIG.description,
+    url: SITE_CONFIG.siteUrl,
     type: "website",
     images: [
       {
@@ -58,6 +60,15 @@ export const metadata: Metadata = {
     title: SHARE_CARD_CONFIG.title,
     description: SHARE_CARD_CONFIG.description,
     images: [SHARE_CARD_CONFIG.imagePath],
+  },
+  icons: {
+    icon: [
+      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/favicon-64.png", sizes: "64x64", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/icons/favicon-32.png",
   },
 };
 

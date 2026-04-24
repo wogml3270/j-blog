@@ -500,6 +500,89 @@ a {
   color: var(--foreground) !important;
 }
 
+.dark .admin-toast-editor .toastui-editor-defaultUI,
+.dark .admin-toast-editor .toastui-editor-main,
+.dark .admin-toast-editor .toastui-editor-md-container,
+.dark .admin-toast-editor .toastui-editor-md-preview {
+  background: color-mix(in srgb, var(--background) 86%, black 14%) !important;
+}
+
+.dark .admin-toast-editor .toastui-editor-toolbar,
+.dark .admin-toast-editor .toastui-editor-md-tab-container {
+  background: color-mix(in srgb, var(--surface) 78%, black 22%) !important;
+}
+
+.dark .admin-toast-editor .toastui-editor-toolbar-icons,
+.dark .admin-toast-editor .tab-item {
+  color: color-mix(in srgb, var(--foreground) 92%, white 8%) !important;
+}
+
+.dark .admin-toast-editor .tab-item.active {
+  background: color-mix(in srgb, var(--surface) 66%, black 34%) !important;
+  border-color: var(--border) !important;
+}
+
+.dark .admin-toast-editor .CodeMirror,
+.dark .admin-toast-editor .CodeMirror-scroll,
+.dark .admin-toast-editor .CodeMirror-gutters {
+  background: color-mix(in srgb, var(--background) 88%, black 12%) !important;
+}
+
+.dark .admin-toast-editor .CodeMirror-line,
+.dark .admin-toast-editor .CodeMirror pre,
+.dark .admin-toast-editor .CodeMirror span {
+  color: color-mix(in srgb, var(--foreground) 94%, white 6%) !important;
+}
+
+/* 다크모드 write(마크다운) 패널은 토큰별 색 대비를 명시적으로 올려 가독성을 보장한다. */
+.dark .admin-toast-editor .toastui-editor-md-container .CodeMirror-code,
+.dark .admin-toast-editor .toastui-editor-md-container .CodeMirror-line,
+.dark .admin-toast-editor .toastui-editor-md-container .CodeMirror-line span,
+.dark .admin-toast-editor .toastui-editor-md-container .CodeMirror pre span {
+  color: #eef3fb !important;
+}
+
+.dark .admin-toast-editor .toastui-editor-md-container .cm-header {
+  color: #93c5fd !important;
+}
+
+.dark .admin-toast-editor .toastui-editor-md-container .cm-strong {
+  color: #f8fafc !important;
+}
+
+.dark .admin-toast-editor .toastui-editor-md-container .cm-em {
+  color: #e2e8f0 !important;
+}
+
+.dark .admin-toast-editor .toastui-editor-md-container .cm-link,
+.dark .admin-toast-editor .toastui-editor-md-container .cm-url {
+  color: #67e8f9 !important;
+}
+
+.dark .admin-toast-editor .toastui-editor-md-container .cm-quote {
+  color: #cbd5e1 !important;
+}
+
+.dark .admin-toast-editor .toastui-editor-md-container .cm-comment {
+  color: #94a3b8 !important;
+}
+
+.dark .admin-toast-editor .toastui-editor-md-container .CodeMirror-gutter-elt {
+  color: #9ea7b3 !important;
+}
+
+.dark .admin-toast-editor .CodeMirror-placeholder {
+  color: color-mix(in srgb, var(--muted) 85%, white 15%) !important;
+}
+
+.dark .admin-toast-editor .CodeMirror-cursor {
+  border-left-color: color-mix(in srgb, var(--foreground) 90%, white 10%) !important;
+}
+
+.dark .admin-toast-editor .CodeMirror-selected {
+  background: color-mix(in srgb, var(--accent) 24%, transparent) !important;
+}
+
 .swiper-pagination-bullet {
   background: color-mix(in srgb, var(--foreground) 35%, transparent) !important;
   opacity: 1 !important;

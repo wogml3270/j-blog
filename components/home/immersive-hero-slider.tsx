@@ -140,8 +140,8 @@ export function ImmersiveHeroSlider({
                   <div className="absolute inset-0 bg-linear-to-t from-black/55 via-transparent to-black/16" />
                 </div>
 
-                <div className="relative z-10 mx-auto flex h-full w-full max-w-[1240px] items-center px-5 pb-16 pt-20 sm:px-8 sm:pb-20 lg:pb-24">
-                  <div className="home-hero-copy max-w-[min(74ch,78vw)] space-y-4 text-white">
+                <div className="relative z-10 mx-auto flex h-full w-full max-w-[1240px] items-start px-5 pb-28 pt-14 sm:px-8 sm:pb-32 sm:pt-16 lg:items-center lg:pb-24 lg:pt-20">
+                  <div className="home-hero-copy max-w-[min(74ch,86vw)] space-y-3 text-white sm:space-y-4">
                     <p
                       style={{ "--copy-delay": "120ms" } as CSSProperties}
                       className="home-hero-badge inline-flex rounded-full border border-white/35 bg-black/30 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-white/80"
@@ -150,13 +150,13 @@ export function ImmersiveHeroSlider({
                     </p>
                     <h1
                       style={{ "--copy-delay": "260ms" } as CSSProperties}
-                      className="home-hero-title text-3xl font-semibold leading-tight tracking-tight sm:text-4xl lg:text-5xl"
+                      className="home-hero-title text-[clamp(1.45rem,6vw,1.95rem)] font-semibold leading-tight tracking-tight sm:text-4xl lg:text-5xl"
                     >
                       {slide.title}
                     </h1>
                     <p
                       style={{ "--copy-delay": "400ms" } as CSSProperties}
-                      className="text-sm leading-7 text-white/85 sm:text-base sm:leading-8"
+                      className="text-[clamp(0.86rem,3.5vw,0.98rem)] leading-[1.66] text-white/85 sm:text-base sm:leading-8"
                     >
                       {slide.description}
                     </p>
@@ -165,7 +165,7 @@ export function ImmersiveHeroSlider({
                         href={slide.href}
                         className={buttonStyles({
                           className:
-                            "h-11 rounded-full border border-white/30 bg-white/92 px-5 text-sm text-black hover:bg-white",
+                            "h-10 rounded-full border border-white/30 bg-white/92 px-4 text-xs text-black hover:bg-white sm:h-11 sm:px-5 sm:text-sm",
                         })}
                       >
                         {slide.ctaLabel ??

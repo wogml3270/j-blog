@@ -10,7 +10,7 @@ export const SITE_CONFIG = {
 // 링크 공유(OG/Twitter)에서 모든 페이지에 공통으로 노출할 기본 카드 정보다.
 export const SHARE_CARD_CONFIG = {
   title: "박재희 | Frontend Portfolio",
-  description: "3년차 프론트엔드 개발자의 포트폴리오와 기술 블로그",
+  description: "3년차 프론트엔드 개발자의 포트폴리오",
   imagePath: "/PJH-about.png",
 };
 
@@ -25,17 +25,17 @@ const SITE_COPY: Record<
   ko: {
     siteName: "박재희 Portfolio",
     title: "박재희 | Frontend Portfolio",
-    description: "3년차 프론트엔드 개발자의 포트폴리오와 기술 블로그",
+    description: "3년차 프론트엔드 개발자의 포트폴리오",
   },
   en: {
     siteName: "Jaehee Park Portfolio",
-    title: "Jaehee Park | Frontend Portfolio",
-    description: "Portfolio and technical blog of a Frontend Developer with 3 years of experience",
+    title: "박재희 | Frontend Portfolio",
+    description: "3년차 프론트엔드 개발자의 포트폴리오",
   },
   ja: {
     siteName: "パク・ジェヒ Portfolio",
-    title: "パク・ジェヒ | Frontend Portfolio",
-    description: "フロントエンドエンジニア3年目のポートフォリオと技術ブログ",
+    title: "박재희 | Frontend Portfolio",
+    description: "3년차 프론트엔드 개발자의 포트폴리오",
   },
 };
 

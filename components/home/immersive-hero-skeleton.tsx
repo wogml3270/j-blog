@@ -29,7 +29,7 @@ export function ImmersiveHeroSkeleton() {
         <div className="pointer-events-none absolute bottom-5 left-0 right-0 z-20 px-4 sm:px-6 lg:px-8">
           <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={`hero-thumb-skeleton-${index}`} height={88} rounded="0.75rem" />
+              <Skeleton key={`hero-thumb-skeleton-${index}`} height={68} rounded="0.75rem" />
             ))}
           </div>
         </div>
