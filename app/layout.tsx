@@ -6,7 +6,7 @@ import "swiper/css";
 import "swiper/css/pagination";
 import { ThemeProvider } from "@/components/theme/provider";
 import { defaultLocale, isLocale, localeInfo } from "@/lib/i18n/config";
-import { SHARE_CARD_CONFIG, SITE_CONFIG, getSiteCopy } from "@/lib/site/profile";
+import { SITE_CONFIG, getSiteCopy } from "@/lib/site/profile";
 import "./globals.css";
 
 const sansKo = Noto_Sans_KR({
@@ -39,28 +39,8 @@ const defaultSite = getSiteCopy(defaultLocale);
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_CONFIG.siteUrl),
-  title: {
-    default: defaultSite.title,
-    template: `%s | ${defaultSite.siteName}`,
-  },
+  title: defaultSite.title,
   description: defaultSite.description,
-  openGraph: {
-    title: SHARE_CARD_CONFIG.title,
-    description: SHARE_CARD_CONFIG.description,
-    url: SITE_CONFIG.siteUrl,
-    type: "website",
-    images: [
-      {
-        url: SHARE_CARD_CONFIG.imagePath,
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: SHARE_CARD_CONFIG.title,
-    description: SHARE_CARD_CONFIG.description,
-    images: [SHARE_CARD_CONFIG.imagePath],
-  },
   icons: {
     icon: [
       { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
