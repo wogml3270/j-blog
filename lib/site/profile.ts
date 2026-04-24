@@ -2,10 +2,16 @@ import type { Locale } from "@/lib/i18n/config";
 import type { AboutTechItem } from "@/types/about";
 
 export const SITE_CONFIG = {
-  siteUrl: "https://portfolio.example.com",
+  siteUrl: "https://j-fe-blog.vercel.app",
   email: "wogml3270@gmail.com",
   githubUrl: "https://github.com/wogml3270",
-  linkedInUrl: "https://www.linkedin.com/in/example",
+};
+
+// 링크 공유(OG/Twitter)에서 모든 페이지에 공통으로 노출할 기본 카드 정보다.
+export const SHARE_CARD_CONFIG = {
+  title: "박재희 | Frontend Portfolio",
+  description: "3년차 프론트엔드 개발자의 포트폴리오와 기술 블로그",
+  imagePath: "/PJH-about.png",
 };
 
 const SITE_COPY: Record<
@@ -61,7 +67,7 @@ const HOME_INTRO_BY_LOCALE: Record<
   },
 };
 
-export const DEFAULT_ABOUT_PHOTO_URL = "/profile/default-photo.svg";
+export const DEFAULT_ABOUT_PHOTO_URL = "/PJH-about.png";
 
 export const DEFAULT_ABOUT_TECH_ITEMS: AboutTechItem[] = [
   {

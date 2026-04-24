@@ -5,7 +5,7 @@ import "swiper/css";
 import "swiper/css/pagination";
 import { ThemeProvider } from "@/components/theme/provider";
 import { defaultLocale, isLocale, localeInfo } from "@/lib/i18n/config";
-import { SITE_CONFIG, getSiteCopy } from "@/lib/site/profile";
+import { SHARE_CARD_CONFIG, SITE_CONFIG, getSiteCopy } from "@/lib/site/profile";
 import "./globals.css";
 
 const sansKo = Noto_Sans_KR({
@@ -43,6 +43,22 @@ export const metadata: Metadata = {
     template: `%s | ${defaultSite.siteName}`,
   },
   description: defaultSite.description,
+  openGraph: {
+    title: SHARE_CARD_CONFIG.title,
+    description: SHARE_CARD_CONFIG.description,
+    type: "website",
+    images: [
+      {
+        url: SHARE_CARD_CONFIG.imagePath,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SHARE_CARD_CONFIG.title,
+    description: SHARE_CARD_CONFIG.description,
+    images: [SHARE_CARD_CONFIG.imagePath],
+  },
 };
 
 export default async function RootLayout({

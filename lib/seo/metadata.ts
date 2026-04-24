@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { localeInfo, locales, type Locale, withLocalePath } from "@/lib/i18n/config";
-import { SITE_CONFIG, getSiteCopy } from "@/lib/site/profile";
+import { SHARE_CARD_CONFIG, SITE_CONFIG, getSiteCopy } from "@/lib/site/profile";
 
 type PageMetadataArgs = {
   locale: Locale;
@@ -42,17 +42,23 @@ export function buildPageMetadata({
     description,
     alternates,
     openGraph: {
-      title,
-      description,
+      title: SHARE_CARD_CONFIG.title,
+      description: SHARE_CARD_CONFIG.description,
       url: alternates.canonical as string,
       siteName: site.siteName,
       locale: localeInfo[locale].ogLocale,
       type: "website",
+      images: [
+        {
+          url: SHARE_CARD_CONFIG.imagePath,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
-      title,
-      description,
+      title: SHARE_CARD_CONFIG.title,
+      description: SHARE_CARD_CONFIG.description,
+      images: [SHARE_CARD_CONFIG.imagePath],
     },
   };
 }

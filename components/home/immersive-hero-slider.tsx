@@ -88,7 +88,7 @@ export function ImmersiveHeroSlider({
 
   return (
     <section
-      aria-label="메인 하이라이트"
+      aria-label="메인 홈 슬라이드"
       className="relative left-1/2 right-1/2 -mx-[50vw] -mb-8 -mt-8 w-screen overflow-hidden sm:-mb-10 sm:-mt-10 lg:-mb-12 lg:-mt-12"
     >
       <div
@@ -144,23 +144,23 @@ export function ImmersiveHeroSlider({
                   <div className="home-hero-copy max-w-[min(74ch,78vw)] space-y-4 text-white">
                     <p
                       style={{ "--copy-delay": "120ms" } as CSSProperties}
-                      className="inline-flex rounded-full border border-white/35 bg-black/30 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-white/80"
+                      className="home-hero-badge inline-flex rounded-full border border-white/35 bg-black/30 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-white/80"
                     >
                       {HIGHLIGHT_BADGE[slide.locale][slide.sourceType]}
                     </p>
                     <h1
                       style={{ "--copy-delay": "260ms" } as CSSProperties}
-                      className="text-3xl font-semibold leading-tight tracking-tight sm:text-4xl lg:text-5xl"
+                      className="home-hero-title text-3xl font-semibold leading-tight tracking-tight sm:text-4xl lg:text-5xl"
                     >
                       {slide.title}
                     </h1>
                     <p
-                      style={{ "--copy-delay": "420ms" } as CSSProperties}
+                      style={{ "--copy-delay": "400ms" } as CSSProperties}
                       className="text-sm leading-7 text-white/85 sm:text-base sm:leading-8"
                     >
                       {slide.description}
                     </p>
-                    <div style={{ "--copy-delay": "560ms" } as CSSProperties} className="pt-3">
+                    <div style={{ "--copy-delay": "660ms" } as CSSProperties} className="pt-3">
                       <Link
                         href={slide.href}
                         className={buttonStyles({
@@ -200,35 +200,43 @@ export function ImmersiveHeroSlider({
                 syncMainToIndex(swiper.realIndex);
               }}
             >
-              {safeSlides.map((slide, index) => (
-                <SwiperSlide key={`thumb-${slide.id}`}>
-                  <button
-                    type="button"
-                    className={cn(
-                      "group relative h-20 w-full cursor-pointer overflow-hidden rounded-xl bg-black/35 text-left backdrop-blur-[2px] transition-all duration-300",
-                      activeIndex === index || focusedThumbIndex === index
-                        ? "border border-white/85 opacity-100 shadow-[0_10px_28px_rgba(10,12,19,0.35)]"
-                        : "border border-white/30 opacity-80 hover:border-white/70 hover:opacity-100",
-                    )}
-                    aria-label={`${slide.title} 슬라이드로 이동`}
-                    aria-current={activeIndex === index ? "true" : undefined}
-                    onClick={() => syncMainToIndex(index)}
-                    onFocus={() => setFocusedThumbIndex(index)}
-                    onBlur={() => setFocusedThumbIndex(null)}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={slide.imageUrl}
-                      alt=""
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                    <span className="absolute inset-0 bg-black/50 transition-colors duration-300 group-hover:bg-black/40" />
-                    <span className="relative z-10 line-clamp-2 block px-3 py-2.5 text-xs font-medium text-white">
-                      {slide.title}
-                    </span>
-                  </button>
-                </SwiperSlide>
-              ))}
+              {safeSlides.map((slide, index) => {
+                const isActive = activeIndex === index || focusedThumbIndex === index;
+
+                return (
+                  <SwiperSlide key={`thumb-${slide.id}`}>
+                    <button
+                      type="button"
+                      className={cn(
+                        "home-hero-thumb-button group relative h-17 w-full cursor-pointer overflow-hidden rounded-xl border text-left transition-all duration-300",
+                        isActive
+                          ? "border-white/85 opacity-100"
+                          : "border-white/45 opacity-80 hover:opacity-100",
+                      )}
+                      aria-label={`${slide.title} 슬라이드로 이동`}
+                      aria-current={activeIndex === index ? "true" : undefined}
+                      onClick={() => syncMainToIndex(index)}
+                      onFocus={() => setFocusedThumbIndex(index)}
+                      onBlur={() => setFocusedThumbIndex(null)}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={slide.imageUrl}
+                        alt=""
+                        className={cn(
+                          "home-hero-thumb-image absolute inset-0 h-full w-full object-cover",
+                          isActive ? "home-hero-thumb-image-active" : null,
+                        )}
+                      />
+                      <span className="home-hero-thumb-glass absolute inset-0" />
+                      <span className="absolute inset-0 bg-black/42 transition-colors duration-300 group-hover:bg-black/28" />
+                      <span className="relative z-10 line-clamp-2 block px-3 py-2.5 text-xs font-medium text-white">
+                        {slide.title}
+                      </span>
+                    </button>
+                  </SwiperSlide>
+                );
+              })}
             </Swiper>
           </div>
         </div>
