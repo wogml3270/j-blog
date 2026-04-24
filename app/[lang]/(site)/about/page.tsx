@@ -50,6 +50,9 @@ export async function generateMetadata({ params }: AboutPageProps): Promise<Meta
     pathname: "/about",
     title: dictionary.about.title,
     description: dictionary.about.description,
+    shareCard: {
+      mode: "fixedShareCard",
+    },
   });
 }
 

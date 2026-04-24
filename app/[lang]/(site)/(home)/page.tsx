@@ -24,6 +24,9 @@ export async function generateMetadata({ params }: HomePageProps): Promise<Metad
     pathname: "/",
     title: dictionary.home.title,
     description: dictionary.home.description,
+    shareCard: {
+      mode: "fixedShareCard",
+    },
   });
 }
 

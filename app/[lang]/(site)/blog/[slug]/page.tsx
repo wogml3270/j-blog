@@ -31,16 +31,29 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
   try {
     post = await getPublishedPostBySlug(normalizedSlug, lang);
   } catch {
-    return {
+    return buildPageMetadata({
+      locale: lang,
+      pathname: `/blog/${encodeSlugSegment(normalizedSlug)}`,
       title: dictionary.blog.title,
       description: dictionary.blog.description,
-    };
+      shareCard: {
+        mode: "dynamicShareCard",
+        imagePath: "/blog/default-thumbnail.svg",
+      },
+    });
   }
 
   if (!post) {
-    return {
+    return buildPageMetadata({
+      locale: lang,
+      pathname: `/blog/${encodeSlugSegment(normalizedSlug)}`,
       title: dictionary.blog.postNotFound,
-    };
+      description: dictionary.blog.description,
+      shareCard: {
+        mode: "dynamicShareCard",
+        imagePath: "/blog/default-thumbnail.svg",
+      },
+    });
   }
 
   return buildPageMetadata({
@@ -48,6 +61,10 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
     pathname: `/blog/${encodeSlugSegment(normalizedSlug)}`,
     title: post.title,
     description: post.description,
+    shareCard: {
+      mode: "dynamicShareCard",
+      imagePath: post.thumbnail || "/blog/default-thumbnail.svg",
+    },
   });
 }
 

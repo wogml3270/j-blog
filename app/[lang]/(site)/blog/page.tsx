@@ -26,12 +26,24 @@ export async function generateMetadata({ params }: BlogListPageProps): Promise<M
   }
 
   const dictionary = getDictionary(lang);
+  let shareImagePath = "/blog/default-thumbnail.svg";
+
+  try {
+    const posts = await getAllPublishedPosts(lang);
+    shareImagePath = posts[0]?.thumbnail || shareImagePath;
+  } catch {
+    // DB 장애 시에도 목록 페이지 메타는 기본 썸네일로 안정적으로 반환한다.
+  }
 
   return buildPageMetadata({
     locale: lang,
     pathname: "/blog",
     title: dictionary.blog.title,
     description: dictionary.blog.description,
+    shareCard: {
+      mode: "dynamicShareCard",
+      imagePath: shareImagePath,
+    },
   });
 }
 

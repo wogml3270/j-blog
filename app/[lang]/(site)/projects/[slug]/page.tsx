@@ -34,23 +34,43 @@ export async function generateMetadata({ params }: ProjectDetailPageProps): Prom
   try {
     project = await getPublishedProjectBySlug(normalizedSlug, lang);
   } catch {
-    return {
+    return buildPageMetadata({
+      locale: lang,
+      pathname: `/projects/${encodeSlugSegment(normalizedSlug)}`,
       title: dictionary.projects.title,
       description: dictionary.projects.description,
-    };
+      shareCard: {
+        mode: "dynamicShareCard",
+        imagePath: "/projects/default-thumbnail.svg",
+      },
+    });
   }
 
   if (!project) {
-    return {
+    return buildPageMetadata({
+      locale: lang,
+      pathname: `/projects/${encodeSlugSegment(normalizedSlug)}`,
       title: dictionary.projects.projectNotFound,
-    };
+      description: dictionary.projects.description,
+      shareCard: {
+        mode: "dynamicShareCard",
+        imagePath: "/projects/default-thumbnail.svg",
+      },
+    });
   }
+
+  const metaDescription =
+    project.homeSummary.trim() || stripMarkdownToPlainText(project.summary) || dictionary.projects.description;
 
   return buildPageMetadata({
     locale: lang,
     pathname: `/projects/${encodeSlugSegment(normalizedSlug)}`,
     title: project.title,
-    description: stripMarkdownToPlainText(project.summary),
+    description: metaDescription,
+    shareCard: {
+      mode: "dynamicShareCard",
+      imagePath: project.thumbnail || "/projects/default-thumbnail.svg",
+    },
   });
 }
 
