@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Container } from "@/components/layout/container";
+import { SocialProviderIcon } from "@/components/ui/icons/social-provider-icon";
+
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { SITE_CONFIG, getSiteCopy } from "@/lib/site/profile";
-import { SocialProviderIcon } from "../ui/icons/social-provider-icon";
 
 type FooterProps = {
   locale: Locale;
@@ -22,6 +23,9 @@ export function Footer({ locale, dictionary }: FooterProps) {
         <div className="flex items-center gap-4">
           <a href={SITE_CONFIG.githubUrl} className="flex gap-2" target="_blank" rel="noreferrer">
             <SocialProviderIcon provider="github" /> GitHub
+          </a>
+          <a href={SITE_CONFIG.notionUrl} className="flex gap-2" target="_blank" rel="noreferrer">
+            <SocialProviderIcon provider="notion" /> Notion
           </a>
           <a href={`mailto:${SITE_CONFIG.email}`}>{dictionary.footer.emailLabel}</a>
           <Link href="/admin/login">{dictionary.footer.adminLabel}</Link>

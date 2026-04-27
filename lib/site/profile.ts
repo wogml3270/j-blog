@@ -5,6 +5,7 @@ export const SITE_CONFIG = {
   siteUrl: "https://j-fe-blog.vercel.app",
   email: "wogml3270@gmail.com",
   githubUrl: "https://github.com/wogml3270",
+  notionUrl: "https://wogml3270.notion.site/cf22a7bca5ec45a7815997c128d2e0ec",
 };
 
 // 링크 공유(OG/Twitter)에서 모든 페이지에 공통으로 노출할 기본 카드 정보다.
