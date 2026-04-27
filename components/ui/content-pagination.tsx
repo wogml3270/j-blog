@@ -3,8 +3,7 @@
 import { useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ChevronLeftIcon } from "@/components/ui/icons/chevron-left-icon";
-import { ChevronRightIcon } from "@/components/ui/icons/chevron-right-icon";
+import { ChevronRightIcon, ChevronLeftIcon } from "@/components/ui/icons/chevron-icon";
 import { cn } from "@/lib/utils/cn";
 
 type ContentPaginationProps = {

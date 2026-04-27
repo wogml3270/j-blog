@@ -1,8 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ChevronLeftIcon } from "@/components/ui/icons/chevron-left-icon";
-import { ChevronRightIcon } from "@/components/ui/icons/chevron-right-icon";
+import { ChevronRightIcon, ChevronLeftIcon } from "@/components/ui/icons/chevron-icon";
 import { cn } from "@/lib/utils/cn";
 import type { AdminPaginationProps } from "@/types/ui";
 
@@ -36,12 +35,7 @@ function buildPageItems(page: number, totalPages: number): Array<number | "ellip
   return result;
 }
 
-export function AdminPagination({
-  page,
-  totalPages,
-  total,
-  onPageChange,
-}: AdminPaginationProps) {
+export function AdminPagination({ page, totalPages, total, onPageChange }: AdminPaginationProps) {
   const hasPrev = page > 1;
   const hasNext = page < totalPages;
   const pageItems = buildPageItems(page, totalPages);

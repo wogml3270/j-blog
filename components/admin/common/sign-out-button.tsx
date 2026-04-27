@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LogoutIcon } from "@/components/ui/icons/logout-icon";
+import { LogoutIcon } from "@/components/ui/icons/account-icon";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { cn } from "@/lib/utils/cn";
 

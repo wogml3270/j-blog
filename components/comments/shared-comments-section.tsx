@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
+import { AccountIcon } from "@/components/ui/icons/account-icon";
 import { NoteIcon } from "@/components/ui/icons/note-icon";
 import { TrashIcon } from "@/components/ui/icons/trash-icon";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -375,7 +376,7 @@ export function SharedCommentsSection<TComment extends CommentBase>({
                 />
               ) : (
                 <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-[11px] font-semibold text-foreground">
-                  {(nickname || email || "U").slice(0, 1).toUpperCase()}
+                  <AccountIcon className="h-4 w-4" />
                 </span>
               )}
               <div className="min-w-0">
@@ -548,4 +549,3 @@ export function SharedCommentsSection<TComment extends CommentBase>({
     </section>
   );
 }
-

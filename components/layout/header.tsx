@@ -11,7 +11,7 @@ import { Container } from "@/components/layout/container";
 import { ThemeToggle } from "@/components/theme/toggle";
 import { Button } from "@/components/ui/button";
 import { CloseIcon } from "@/components/ui/icons/close-icon";
-import { LogoutIcon } from "@/components/ui/icons/logout-icon";
+import { AccountIcon, LogoutIcon } from "@/components/ui/icons/account-icon";
 import { getPathWithoutLocale, locales, withLocalePath } from "@/lib/i18n/config";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { hasSupabasePublicEnv } from "@/lib/supabase/env";
@@ -115,6 +115,19 @@ export function Header({ locale, dictionary }: HeaderProps) {
 
   const nickname = useMemo(() => getNicknameFromUser(user), [user]);
   const avatarUrl = useMemo(() => getAvatarFromUser(user), [user]);
+  const authButtonContent = user ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={avatarUrl}
+      alt={nickname || "user"}
+      className="h-9 w-9 rounded-full object-cover"
+      loading="lazy"
+    />
+  ) : (
+    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-xs font-semibold text-foreground">
+      <AccountIcon className="h-4 w-4" />
+    </span>
+  );
 
   useEffect(() => {
     if (!isAuthAvailable) {
@@ -236,19 +249,13 @@ export function Header({ locale, dictionary }: HeaderProps) {
           <div className="space-y-3">
             <p className="text-xs">{dictionary.header.authSignedInAs}</p>
             <div className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2.5">
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={avatarUrl}
-                  alt={nickname || "user"}
-                  className="h-9 w-9 rounded-full object-cover"
-                  loading="lazy"
-                />
-              ) : (
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-sm font-semibold text-foreground">
-                  {(nickname || user.email || "U").slice(0, 1).toUpperCase()}
-                </span>
-              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={avatarUrl}
+                alt={nickname || "user"}
+                className="h-9 w-9 rounded-full object-cover"
+                loading="lazy"
+              />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-foreground">
                   {nickname || user.email}
@@ -330,22 +337,7 @@ export function Header({ locale, dictionary }: HeaderProps) {
               onClick={openAuthModal}
               className={cn("h-9", user ? "w-9 px-0! border-0" : "px-3")}
             >
-              {user ? (
-                avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={avatarUrl}
-                    alt={nickname || "user"}
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-xs font-semibold text-foreground">
-                    {(nickname || user.email || "U").slice(0, 1).toUpperCase()}
-                  </span>
-                )
-              ) : (
-                dictionary.header.authSignInCta
-              )}
+              {authButtonContent}
             </Button>
             <ThemeToggle labels={dictionary.theme} />
           </div>
@@ -361,22 +353,7 @@ export function Header({ locale, dictionary }: HeaderProps) {
               }}
               className={cn("h-9", user ? "w-9 px-0! border-0" : "px-3")}
             >
-              {user ? (
-                avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={avatarUrl}
-                    alt={nickname || "user"}
-                    className="h-full w-full rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="text-xs font-semibold">
-                    {(nickname || user.email || "U").slice(0, 1).toUpperCase()}
-                  </span>
-                )
-              ) : (
-                <span className="text-xs font-semibold">U</span>
-              )}
+              {authButtonContent}
             </Button>
             <ThemeToggle labels={dictionary.theme} />
             <Button
