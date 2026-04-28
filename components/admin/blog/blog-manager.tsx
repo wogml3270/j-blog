@@ -248,7 +248,7 @@ export function BlogManager({
   initialFilter = "all",
   initialSelectedId = null,
 }: BlogManagerProps) {
-  const { canWriteAdmin, role } = useAdminSession();
+  const { canWriteAdmin, role, userId } = useAdminSession();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -291,6 +291,13 @@ export function BlogManager({
   const setSavedPageSize = useAdminListUiStore((state) => state.setPageSize);
   const isFormDirty =
     drawerOpen && serializePostForm(form, syncSlugWithTitle, translations) !== savedFormSnapshot;
+  const editingPost =
+    editingId !== null ? [...mainPosts, ...privatePosts].find((post) => post.id === editingId) : null;
+  const canEditSelectedPost =
+    !editingPost ||
+    role === "super_admin" ||
+    (role === "admin" && Boolean(editingPost.createdBy) && editingPost.createdBy === userId);
+  const canMutateCurrentPost = canWriteAdmin && canEditSelectedPost;
 
   useBeforeUnloadUnsavedChanges(isFormDirty);
 
@@ -705,7 +712,12 @@ export function BlogManager({
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!canWriteAdmin) {
+    if (!canMutateCurrentPost) {
+      if (role === "admin" && editingPost) {
+        setMessage("admin 권한은 본인이 작성한 블로그만 수정할 수 있습니다.");
+        return;
+      }
+
       setMessage("읽기 전용 계정은 저장할 수 없습니다.");
       return;
     }
@@ -782,7 +794,12 @@ export function BlogManager({
   };
 
   const onDelete = async (id: string) => {
-    if (!canWriteAdmin) {
+    if (!canMutateCurrentPost) {
+      if (role === "admin" && editingPost) {
+        setMessage("admin 권한은 본인이 작성한 블로그만 삭제할 수 있습니다.");
+        return;
+      }
+
       setMessage("읽기 전용 계정은 게시글을 삭제할 수 없습니다.");
       return;
     }
@@ -965,7 +982,13 @@ export function BlogManager({
       <ManagerShell
         title="블로그 관리"
         summary={`전체 게시글 ${total}개`}
-        detail={!canWriteAdmin ? `현재 계정(${role ?? "unknown"})은 읽기 전용입니다.` : undefined}
+        detail={
+          !canWriteAdmin
+            ? `현재 계정(${role ?? "unknown"})은 읽기 전용입니다.`
+            : role === "admin"
+              ? "admin 권한은 본인이 작성한 글만 수정/삭제할 수 있습니다."
+              : undefined
+        }
         action={
           <AdminToolbar>
             <AdminToolbarSelect
@@ -1145,9 +1168,9 @@ export function BlogManager({
         title={editingId ? "게시글 편집" : "새 게시글"}
         description="저장 즉시 Supabase 데이터가 갱신됩니다."
       >
-        <form className="space-y-3" onSubmit={onSubmit}>
-          <fieldset disabled={!canWriteAdmin || isPending} className="space-y-3">
-          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
+        <form className="min-w-0 space-y-3" onSubmit={onSubmit}>
+          <fieldset disabled={!canMutateCurrentPost || isPending} className="min-w-0 space-y-3">
+          <SurfaceCard tone="background" radius="lg" padding="sm" className="min-w-0 space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">
               썸네일 업로드(선택)
             </p>
@@ -1213,7 +1236,7 @@ export function BlogManager({
             )}
           </SurfaceCard>
           <div className="space-y-1">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-start justify-between gap-2">
               <label className="text-xs font-medium uppercase tracking-wide text-muted">
                 콘텐츠 언어
               </label>
@@ -1230,7 +1253,7 @@ export function BlogManager({
             />
           </div>
           <div className="space-y-1">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-start justify-between gap-2">
               <label className="text-xs font-medium uppercase tracking-wide text-muted">
                 슬러그
               </label>
@@ -1274,7 +1297,7 @@ export function BlogManager({
             />
           </div>
 
-          <div className="space-y-3">
+          <div className="min-w-0 space-y-3">
             <div className="flex flex-wrap items-center gap-3">
               <StatusRadioGroup
                 legend="공개 상태"
@@ -1329,11 +1352,7 @@ export function BlogManager({
                   실제 게시일
                 </label>
                 <div>
-                  <Input
-                    value={toDisplayDateTime(form.publishedAt || null)}
-                    readOnly
-                    className={cn("lg:w-1/2!")}
-                  />
+                  <Input value={toDisplayDateTime(form.publishedAt || null)} readOnly className="max-w-sm" />
                   <p className="text-[11px] text-muted">
                     최초 공개 시점이 자동 저장되며 이후 수정 시 유지됩니다.
                   </p>
@@ -1343,7 +1362,7 @@ export function BlogManager({
                 <label className="text-xs font-medium uppercase tracking-wide text-muted">
                   예약 발행
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                   <Input
                     type="datetime-local"
                     value={form.scheduledPublishAt}
@@ -1354,7 +1373,7 @@ export function BlogManager({
                       }))
                     }
                     disabled={form.status !== "published"}
-                    className={cn("lg:w-1/2!")}
+                    className="min-w-0 flex-1 sm:max-w-sm"
                   />
                   <Button
                     type="button"
@@ -1367,6 +1386,7 @@ export function BlogManager({
                       }))
                     }
                     disabled={form.status !== "published" || !form.scheduledPublishAt}
+                    className="shrink-0"
                   >
                     해제
                   </Button>
@@ -1478,7 +1498,7 @@ export function BlogManager({
           ) : null}
 
           <div className="flex gap-2">
-            <Button type="submit" className="flex-1" disabled={isPending || !canWriteAdmin}>
+            <Button type="submit" className="flex-1" disabled={isPending || !canMutateCurrentPost}>
               {isPending ? "저장 중..." : editingId ? "저장" : "게시글 생성"}
             </Button>
             {editingId ? (
@@ -1486,7 +1506,7 @@ export function BlogManager({
                 type="button"
                 variant="destructive"
                 onClick={() => onDelete(editingId)}
-                disabled={isPending || !canWriteAdmin}
+                disabled={isPending || !canMutateCurrentPost}
                 aria-label="게시글 삭제"
               >
                 <TrashIcon />

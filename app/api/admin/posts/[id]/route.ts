@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
-import { deleteAdminPost, updateAdminPost } from "@/lib/blog/repository";
+import { deleteAdminPost, getAdminPostOwnerId, updateAdminPost } from "@/lib/blog/repository";
 import { revalidateBlogPaths } from "@/lib/cache/revalidate";
 import { normalizeSlug } from "@/lib/utils/slug";
 import type { AdminPostInput, BlogTranslationMap } from "@/types/blog";
@@ -96,6 +96,24 @@ function validateFeaturedPolicy(payload: AdminPostInput): string | null {
   return null;
 }
 
+// admin은 본인이 작성한 게시글만 수정/삭제할 수 있다.
+async function canModifyPostForRole(input: {
+  role: "super_admin" | "admin" | "test_admin" | null;
+  userId: string;
+  postId: string;
+}): Promise<boolean> {
+  if (input.role === "super_admin") {
+    return true;
+  }
+
+  if (input.role !== "admin") {
+    return false;
+  }
+
+  const ownerId = await getAdminPostOwnerId(input.postId);
+  return ownerId === input.userId;
+}
+
 export async function PUT(request: Request, context: RouteContext) {
   const guard = await getAdminGuardForApi("write");
 
@@ -104,6 +122,19 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
+  const canModify = await canModifyPostForRole({
+    role: guard.state.role,
+    userId: guard.user.id,
+    postId: id,
+  });
+
+  if (!canModify) {
+    return NextResponse.json(
+      { error: "admin 권한은 본인이 작성한 블로그만 수정할 수 있습니다." },
+      { status: 403 },
+    );
+  }
+
   const payload = parseBody(await request.json());
 
   if (!payload) {
@@ -134,6 +165,19 @@ export async function DELETE(_: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
+  const canModify = await canModifyPostForRole({
+    role: guard.state.role,
+    userId: guard.user.id,
+    postId: id,
+  });
+
+  if (!canModify) {
+    return NextResponse.json(
+      { error: "admin 권한은 본인이 작성한 블로그만 삭제할 수 있습니다." },
+      { status: 403 },
+    );
+  }
+
   const result = await deleteAdminPost(id);
 
   if (result.error) {

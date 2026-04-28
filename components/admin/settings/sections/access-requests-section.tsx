@@ -174,7 +174,6 @@ export function AccessRequestsSection({ initialRequests }: AccessRequestsSection
                       >
                         <option value="test_admin">test_admin</option>
                         <option value="admin">admin</option>
-                        <option value="super_admin">super_admin</option>
                       </select>
                     </label>
                     <label className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-2 text-sm">

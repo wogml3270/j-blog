@@ -40,6 +40,7 @@ export type Project = {
 
 export type AdminProject = {
   id: string;
+  createdBy: string | null;
   slug: string;
   title: string;
   homeSummary: string;

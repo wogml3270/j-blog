@@ -22,6 +22,7 @@ import { toSlugConflictMessage } from "@/lib/utils/db-error";
 
 type ProjectRow = {
   id: string;
+  created_by: string | null;
   slug: string;
   title: string;
   home_summary: string | null;
@@ -55,7 +56,7 @@ type RepoResult<T> = {
 };
 
 const PROJECT_SELECT_FIELDS =
-  "id,slug,title,home_summary,summary,sync_slug_with_title,use_markdown_editor,thumbnail,role,period,start_date,end_date,tech_stack,links,featured,status,created_at,updated_at";
+  "id,created_by,slug,title,home_summary,summary,sync_slug_with_title,use_markdown_editor,thumbnail,role,period,start_date,end_date,tech_stack,links,featured,status,created_at,updated_at";
 
 export class ProjectServiceUnavailableError extends Error {
   constructor(message = "Project database is unavailable.") {
@@ -286,6 +287,7 @@ function rowToAdminProject(row: ProjectRow, translations: ProjectTranslationMap 
 
   return {
     id: row.id,
+    createdBy: row.created_by,
     slug: row.slug,
     title: row.title,
     homeSummary: row.home_summary?.trim() || deriveHomeSummary(row.summary),
@@ -615,6 +617,7 @@ async function upsertProjectTranslations(
 
 export async function createAdminProject(
   input: AdminProjectInput,
+  userId: string,
 ): Promise<RepoResult<AdminProject>> {
   const service = createSupabaseServiceClient();
 
@@ -632,6 +635,7 @@ export async function createAdminProject(
   const { data, error } = await service
     .from("projects")
     .insert({
+      created_by: userId,
       slug: input.slug,
       title: input.title,
       home_summary: input.homeSummary.trim(),
@@ -671,6 +675,27 @@ export async function createAdminProject(
     data: await getAdminProjectById(data.id),
     error: null,
   };
+}
+
+// admin 권한의 프로젝트 수정/삭제 제한을 위해 작성자 id를 조회한다.
+export async function getAdminProjectOwnerId(id: string): Promise<string | null> {
+  const service = createSupabaseServiceClient();
+
+  if (!service) {
+    return null;
+  }
+
+  const { data, error } = await service
+    .from("projects")
+    .select("created_by")
+    .eq("id", id)
+    .maybeSingle<{ created_by: string | null }>();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data.created_by ?? null;
 }
 
 export async function updateAdminProject(

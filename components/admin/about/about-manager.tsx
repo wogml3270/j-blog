@@ -323,13 +323,13 @@ function SortableAboutTechItem({
         isDragging ? "shadow-lg" : "",
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <div className="inline-flex min-w-0 items-center gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="inline-flex min-w-0 flex-1 items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={item.logoUrl} alt="" className="h-5 w-5 rounded-sm bg-black/15 p-0.5" />
           <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
             className="inline-flex h-7 w-7 cursor-grab items-center justify-center rounded border border-border text-xs text-muted active:cursor-grabbing"
@@ -386,7 +386,7 @@ function SortableAboutTechItem({
 }
 
 export function AboutManager({ initialAbout }: AboutManagerProps) {
-  const { canWriteAdmin, role } = useAdminSession();
+  const { canManageAdmin, role } = useAdminSession();
   const initialForm = useMemo(() => toFormState(initialAbout), [initialAbout]);
   const initialTranslations = useMemo(
     () => toTranslationState(initialAbout.translations),
@@ -541,7 +541,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
   // 기술 항목은 이름/설명/로고 URL이 모두 채워졌을 때만 추가한다.
   const addTechItem = () => {
-    if (!canWriteAdmin) {
+    if (!canManageAdmin) {
       return;
     }
 
@@ -580,7 +580,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
   // 기술 항목은 현재 선택한 카테고리 내부에서만 순서를 재배치한다.
   const onTechItemsDragEnd = (event: DragEndEvent) => {
-    if (!canWriteAdmin) {
+    if (!canManageAdmin) {
       return;
     }
 
@@ -589,7 +589,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
   // 프로필 사진 파일을 선택하면 로컬 미리보기를 먼저 보여주고 즉시 업로드한다.
   const uploadAboutPhotoImmediately = async (file: File) => {
-    if (!canWriteAdmin) {
+    if (!canManageAdmin) {
       return;
     }
 
@@ -657,7 +657,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
   // 기술 로고 파일을 선택하면 로컬 미리보기를 먼저 보여주고 즉시 업로드한다.
   const uploadTechLogoImmediately = async (file: File) => {
-    if (!canWriteAdmin) {
+    if (!canManageAdmin) {
       return;
     }
 
@@ -721,8 +721,8 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
   // SVG 태그 문자열도 기술 로고로 업로드할 수 있게 파일로 변환해 처리한다.
   const onUploadTechLogoSvg = async () => {
-    if (!canWriteAdmin) {
-      setNotice({ kind: "error", text: "읽기 전용 계정은 수정할 수 없습니다." });
+    if (!canManageAdmin) {
+      setNotice({ kind: "error", text: "소개 관리는 super_admin만 수정할 수 있습니다." });
       return;
     }
 
@@ -758,8 +758,8 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
   // 단순화된 About 모델(name/title/summary/photo/tech) 기준으로 저장한다.
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!canWriteAdmin) {
-      setNotice({ kind: "error", text: "읽기 전용 계정은 저장할 수 없습니다." });
+    if (!canManageAdmin) {
+      setNotice({ kind: "error", text: "소개 관리는 super_admin만 저장할 수 있습니다." });
       return;
     }
 
@@ -831,9 +831,9 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
       title="소개 관리"
       summary="소개 페이지 콘텐츠를 단순 모델로 관리합니다."
       detail={
-        canWriteAdmin
+        canManageAdmin
           ? "이름, 직함, 한 줄 소개, 프로필 이미지, 기술 항목만 관리합니다."
-          : `현재 계정(${role ?? "unknown"})은 읽기 전용입니다.`
+          : `현재 계정(${role ?? "unknown"})은 조회 전용입니다. 소개 관리는 super_admin만 수정할 수 있습니다.`
       }
       motion
     >
@@ -842,10 +842,10 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
         radius="2xl"
         padding="md"
         interactive
-        className="space-y-4 sm:p-5"
+        className="min-w-0 space-y-4 overflow-x-hidden sm:p-5"
       >
-        <form className="space-y-4" onSubmit={onSubmit}>
-          <fieldset disabled={!canWriteAdmin || isPending} className="space-y-4">
+        <form className="min-w-0 space-y-4" onSubmit={onSubmit}>
+          <fieldset disabled={!canManageAdmin || isPending} className="min-w-0 space-y-4">
           <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-3 sm:p-4">
             <div className="space-y-1">
               <h3 className="text-sm font-semibold text-foreground">프로필 이미지</h3>
@@ -922,7 +922,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
               <h3 className="text-sm font-semibold text-foreground">기본 정보</h3>
               <p className="text-xs text-muted">소개 카드의 핵심 텍스트를 관리합니다.</p>
             </div>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-medium uppercase tracking-wide text-muted">콘텐츠 언어</p>
               <AdminLocaleTabs value={activeLocale} onChange={setActiveLocale} />
             </div>
@@ -1036,13 +1036,13 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
               </div>
             ) : null}
 
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid min-w-0 gap-2 sm:grid-cols-3">
               <select
                 value={localeTechCategoryInput}
                 onChange={(event) =>
                   setLocaleTechCategoryInput(normalizeAboutTechCategory(event.target.value))
                 }
-                className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-foreground"
+                className="h-10 min-w-0 rounded-md border border-border bg-surface px-3 text-sm text-foreground"
               >
                 {ABOUT_TECH_CATEGORY_ORDER.map((category) => (
                   <option key={category} value={category}>
@@ -1054,11 +1054,13 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
                 value={localeTechNameInput}
                 onChange={(event) => setLocaleTechInput("techNameInput", event.target.value)}
                 placeholder="기술명"
+                className="min-w-0"
               />
               <Input
                 value={localeTechLogoUrlInput}
                 onChange={(event) => setLocaleTechInput("techLogoUrlInput", event.target.value)}
                 placeholder="로고 URL"
+                className="min-w-0"
               />
             </div>
 

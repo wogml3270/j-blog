@@ -5,7 +5,6 @@ import type { AdminPost } from "@/types/blog";
 import type { Contact } from "@/types/contacts";
 import type { HomeSlide } from "@/types/home-slide";
 import type { AdminProject } from "@/types/projects";
-import type { AboutContent } from "@/types/about";
 
 function formatDate(value: string | null): string {
   if (!value) {
@@ -28,17 +27,17 @@ function formatDate(value: string | null): string {
 export function DashboardManager({
   posts,
   projects,
-  profile,
   contacts,
   highlights,
   pendingAccessRequests,
+  isSuperAdmin,
 }: {
   posts: AdminPost[];
   projects: AdminProject[];
-  profile: AboutContent;
   contacts: Contact[];
   highlights: HomeSlide[];
   pendingAccessRequests: number;
+  isSuperAdmin: boolean;
 }) {
   // 대시보드는 독립 데이터 소스를 요약 카드/최근 변경 패널로 나눠 보여준다.
   const newContactsCount = contacts.filter((item) => item.status === "new").length;
@@ -56,21 +55,23 @@ export function DashboardManager({
       <h1 className="text-2xl font-semibold tracking-tight">관리자 대시보드</h1>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <Link
-          href="/admin/settings?tab=access-requests"
-          className="group block rounded-xl border border-border bg-surface p-4 transition hover:border-foreground/35"
-        >
-          <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">
-            권한 요청
-            <span className="font-bold text-red-300">
-              {pendingAccessRequests > 0 ? ` (대기 ${pendingAccessRequests}건)` : ""}
-            </span>
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">
-            {pendingAccessRequests}
-          </p>
-          <p className="mt-1 text-xs text-muted">처리 필요 항목</p>
-        </Link>
+        {isSuperAdmin && (
+          <Link
+            href="/admin/settings?tab=access-requests"
+            className="group block rounded-xl border border-border bg-surface p-4 transition hover:border-foreground/35"
+          >
+            <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">
+              권한 요청
+              <span className="font-bold text-red-300">
+                {pendingAccessRequests > 0 ? ` (대기 ${pendingAccessRequests}건)` : ""}
+              </span>
+            </p>
+            <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">
+              {pendingAccessRequests}
+            </p>
+            <p className="mt-1 text-xs text-muted">처리 필요 항목</p>
+          </Link>
+        )}
 
         <Link
           href="/admin/home"
@@ -85,7 +86,7 @@ export function DashboardManager({
           <p className="mt-1 text-xs text-muted">전체 {highlights.length}개</p>
         </Link>
 
-        <Link
+        {/* <Link
           href="/admin/about"
           className="group block rounded-xl border border-border bg-surface p-4 transition hover:border-foreground/35"
         >
@@ -96,7 +97,7 @@ export function DashboardManager({
             {profile.name || "프로필"}
           </p>
           <p className="mt-1 text-xs text-muted">마지막 변경 {formatDate(profile.updatedAt)}</p>
-        </Link>
+        </Link> */}
 
         <Link
           href="/admin/projects"
@@ -128,7 +129,7 @@ export function DashboardManager({
           className="group block rounded-xl border border-border bg-surface p-4 transition hover:border-foreground/35"
         >
           <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">
-            문의
+            문의함
             <span className="font-bold text-red-300">
               {newContactsCount > 0 ? ` (신규 ${newContactsCount}건)` : ""}
             </span>
@@ -147,7 +148,10 @@ export function DashboardManager({
         <ul className="mt-3 space-y-2 text-sm">
           {pendingAccessRequests > 0 ? (
             <li>
-              <Link href="/admin/settings?tab=access-requests" className="text-foreground underline">
+              <Link
+                href="/admin/settings?tab=access-requests"
+                className="text-foreground underline"
+              >
                 신규 권한 요청 {pendingAccessRequests}건 처리하기
               </Link>
             </li>

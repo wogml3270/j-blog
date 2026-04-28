@@ -81,6 +81,7 @@ npm run dev
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `ADMIN_ALLOWED_EMAILS` (콤마 구분)
+- `ADMIN_SUPER_ADMIN_EMAILS` (콤마 구분, super_admin 고정 계정)
 - `RESEND_API_KEY` (선택)
 - `SITE_CONTACT_TO_EMAIL` (선택)
 - `SITE_CONTACT_FROM_EMAIL` (선택)
@@ -92,7 +93,7 @@ Supabase SQL Editor에서 아래 파일을 실행합니다.
 - 최초 1회: `supabase/schema-v1.0.0.sql`
 - 이후 증분: `supabase/schema-v1.0.1.sql` -> `supabase/schema-v1.0.2.sql` 순서로 적용
 
-적용 후 `admin_allowlist`에 기본 슈퍼관리자(`wogml3270@gmail.com`)가 등록됩니다.
+적용 후 super_admin 계정은 `ADMIN_SUPER_ADMIN_EMAILS`로 고정됩니다. (미설정 시 `wogml3270@gmail.com` fallback)
 
 ### 3) 소셜 로그인 Provider 설정
 

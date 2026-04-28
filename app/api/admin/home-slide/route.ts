@@ -64,7 +64,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const guard = await getAdminGuardForApi("write");
+  const guard = await getAdminGuardForApi("manage_admin");
 
   if (!guard.ok) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });

@@ -8,14 +8,18 @@ type RouteContext = {
 };
 
 function parseRole(value: unknown): AdminRole | null {
-  if (value === "super_admin" || value === "admin" || value === "test_admin") {
+  if (value === "admin" || value === "test_admin") {
     return value;
   }
 
   return null;
 }
 
-function parseIsActive(value: unknown): boolean | null {
+function parseIsActive(value: unknown): boolean | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
   if (typeof value !== "boolean") {
     return null;
   }
@@ -58,7 +62,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   const role = parseRole(body?.role);
   const isActive = parseIsActive(body?.isActive);
 
-  if (!role || isActive === null) {
+  if (!role || (body && "isActive" in body && isActive === null)) {
     return NextResponse.json({ error: "Invalid payload." }, { status: 400 });
   }
 
@@ -66,7 +70,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   const result = await updateAdminMember({
     id,
     role,
-    isActive,
+    isActive: typeof isActive === "boolean" ? isActive : undefined,
     expiresAt: parseExpiresAt(body?.expiresAt),
   });
 

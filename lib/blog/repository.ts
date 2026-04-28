@@ -21,6 +21,7 @@ import { toSlugConflictMessage } from "@/lib/utils/db-error";
 
 type PostRow = {
   id: string;
+  created_by: string | null;
   slug: string;
   title: string;
   description: string;
@@ -50,7 +51,7 @@ type RepoResult<T> = {
 };
 
 const POST_SELECT_FIELDS =
-  "id,slug,title,description,thumbnail,featured,sync_slug_with_title,body_markdown,use_markdown_editor,status,published_at,scheduled_publish_at,updated_at,post_tag_map(post_tags(name))";
+  "id,created_by,slug,title,description,thumbnail,featured,sync_slug_with_title,body_markdown,use_markdown_editor,status,published_at,scheduled_publish_at,updated_at,post_tag_map(post_tags(name))";
 const BLOG_DEFAULT_THUMBNAIL = "/blog/default-thumbnail.svg";
 
 export class BlogServiceUnavailableError extends Error {
@@ -174,6 +175,7 @@ function rowToSummary(row: PostRow): BlogPostSummary {
 function rowToAdminPost(row: PostRow, translations: BlogTranslationMap = {}): AdminPost {
   return {
     id: row.id,
+    createdBy: row.created_by,
     slug: row.slug,
     title: row.title,
     description: row.description,
@@ -189,6 +191,27 @@ function rowToAdminPost(row: PostRow, translations: BlogTranslationMap = {}): Ad
     updatedAt: row.updated_at,
     translations,
   };
+}
+
+// admin 권한의 게시글 수정/삭제 제한을 위해 작성자 id를 조회한다.
+export async function getAdminPostOwnerId(id: string): Promise<string | null> {
+  const service = createSupabaseServiceClient();
+
+  if (!service) {
+    return null;
+  }
+
+  const { data, error } = await service
+    .from("posts")
+    .select("created_by")
+    .eq("id", id)
+    .maybeSingle<{ created_by: string | null }>();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data.created_by ?? null;
 }
 
 function normalizeScheduledPublishAt(raw: string | null | undefined): string | null {

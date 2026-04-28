@@ -12,22 +12,20 @@ import { confirmUnsavedChanges } from "@/lib/utils/unsaved-changes";
 import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
 import type { AdminSidebarProps } from "@/types/ui";
 
-const ADMIN_PATH = "/admin";
-
 const NAV_ITEMS = [
-  { href: `${ADMIN_PATH}/dashboard`, label: "대시보드" },
-  { href: `${ADMIN_PATH}/home`, label: "홈" },
-  { href: `${ADMIN_PATH}/about`, label: "소개" },
-  { href: `${ADMIN_PATH}/projects`, label: "프로젝트" },
-  { href: `${ADMIN_PATH}/blog`, label: "블로그" },
-  { href: `${ADMIN_PATH}/contact`, label: "문의함" },
+  { href: `/admin/dashboard`, label: "대시보드" },
+  { href: `/admin/home`, label: "홈" },
+  { href: `/admin/about`, label: "소개" },
+  { href: `/admin/projects`, label: "프로젝트" },
+  { href: `/admin/blog`, label: "블로그" },
+  { href: `/admin/contact`, label: "문의함" },
 ];
 
 export function AdminSidebar({ email, avatarUrl, role }: AdminSidebarProps) {
   const pathname = usePathname();
   const hasAnyDirty = useAdminUnsavedStore((state) => state.hasAnyDirty);
   const initial = (email ?? "U").slice(0, 1).toUpperCase();
-  const isSettingsActive = pathname === `${ADMIN_PATH}/settings`;
+  const isSettingsActive = pathname === `/admin/settings`;
 
   // 저장되지 않은 관리자 변경 사항이 있으면 네비게이션 이동 전에 확인 창을 띄운다.
   const guardNavigation = (event: MouseEvent<HTMLAnchorElement>) => {
@@ -46,7 +44,7 @@ export function AdminSidebar({ email, avatarUrl, role }: AdminSidebarProps) {
   return (
     <aside className="w-full rounded-xl border border-border bg-surface p-3.5 sm:p-4 xl:sticky xl:top-6 xl:h-[calc(100dvh-3rem)] xl:w-[272px] xl:self-start">
       <div className="space-y-3.5">
-        <div className="flex flex-row lg:flex-col items-start justify-between gap-2">
+        <div className="flex flex-row xl:flex-col items-start justify-between gap-2">
           <BrandLogo
             href="/admin/dashboard"
             title="Jaehee Park"
@@ -91,16 +89,9 @@ export function AdminSidebar({ email, avatarUrl, role }: AdminSidebarProps) {
               </span>
             )}
             <div className="min-w-0">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted">관리자</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">{role}</p>
               <p className="truncate text-xs font-medium text-foreground sm:text-sm">
                 {email ?? "unknown"}
-              </p>
-              <p className="text-[11px] text-muted">
-                {role === "super_admin"
-                  ? "super_admin"
-                  : role === "test_admin"
-                    ? "test_admin (read-only)"
-                    : "admin"}
               </p>
             </div>
           </div>
@@ -109,9 +100,9 @@ export function AdminSidebar({ email, avatarUrl, role }: AdminSidebarProps) {
 
       <nav className="mt-4 flex flex-wrap gap-2 xl:block xl:space-y-1.5 xl:gap-0">
         {NAV_ITEMS.map((item) => {
-          const isDashboard = item.href === `${ADMIN_PATH}/dashboard`;
+          const isDashboard = item.href === `/admin/dashboard`;
           const isActive = isDashboard
-            ? pathname === `${ADMIN_PATH}/dashboard`
+            ? pathname === `/admin/dashboard`
             : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (

@@ -421,7 +421,7 @@ export function ProjectsManager({
   initialFilter = "all",
   initialSelectedId = null,
 }: ProjectsManagerProps) {
-  const { canWriteAdmin, role } = useAdminSession();
+  const { canWriteAdmin, role, userId } = useAdminSession();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -464,6 +464,15 @@ export function ProjectsManager({
   const setSavedPageSize = useAdminListUiStore((state) => state.setPageSize);
   const isFormDirty =
     drawerOpen && serializeProjectForm(form, syncSlugWithTitle, translations) !== savedFormSnapshot;
+  const editingProject =
+    editingId !== null
+      ? [...mainProjects, ...privateProjects].find((project) => project.id === editingId)
+      : null;
+  const canEditSelectedProject =
+    !editingProject ||
+    role === "super_admin" ||
+    (role === "admin" && Boolean(editingProject.createdBy) && editingProject.createdBy === userId);
+  const canMutateCurrentProject = canWriteAdmin && canEditSelectedProject;
 
   useBeforeUnloadUnsavedChanges(isFormDirty);
 
@@ -940,7 +949,12 @@ export function ProjectsManager({
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!canWriteAdmin) {
+    if (!canMutateCurrentProject) {
+      if (role === "admin" && editingProject) {
+        setMessage("admin 권한은 본인이 작성한 프로젝트만 수정할 수 있습니다.");
+        return;
+      }
+
       setMessage("읽기 전용 계정은 저장할 수 없습니다.");
       return;
     }
@@ -1026,7 +1040,12 @@ export function ProjectsManager({
   };
 
   const onDelete = async (id: string) => {
-    if (!canWriteAdmin) {
+    if (!canMutateCurrentProject) {
+      if (role === "admin" && editingProject) {
+        setMessage("admin 권한은 본인이 작성한 프로젝트만 삭제할 수 있습니다.");
+        return;
+      }
+
       setMessage("읽기 전용 계정은 삭제할 수 없습니다.");
       return;
     }
@@ -1224,7 +1243,13 @@ export function ProjectsManager({
         motion
         title="프로젝트 관리"
         summary={`전체 프로젝트 ${total}개`}
-        detail={!canWriteAdmin ? `현재 계정(${role ?? "unknown"})은 읽기 전용입니다.` : undefined}
+        detail={
+          !canWriteAdmin
+            ? `현재 계정(${role ?? "unknown"})은 읽기 전용입니다.`
+            : role === "admin"
+              ? "admin 권한은 본인이 작성한 프로젝트만 수정/삭제할 수 있습니다."
+              : undefined
+        }
         action={
           <AdminToolbar>
             <AdminToolbarSelect
@@ -1409,9 +1434,12 @@ export function ProjectsManager({
         title={editingId ? "프로젝트 편집" : "새 프로젝트"}
         description="필수 필드를 채운 뒤 저장하면 공개 페이지와 동기화됩니다."
       >
-        <form className="space-y-3.5" onSubmit={onSubmit}>
-          <fieldset disabled={!canWriteAdmin || isPending} className="space-y-3.5">
-          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
+        <form className="min-w-0 space-y-3.5" onSubmit={onSubmit}>
+          <fieldset
+            disabled={!canMutateCurrentProject || isPending}
+            className="min-w-0 space-y-3.5"
+          >
+          <SurfaceCard tone="background" radius="lg" padding="sm" className="min-w-0 space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">썸네일 업로드</p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -1476,7 +1504,7 @@ export function ProjectsManager({
             )}
           </SurfaceCard>
           <div className="space-y-1">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-start justify-between gap-2">
               <label className="text-xs font-medium uppercase tracking-wide text-muted">
                 콘텐츠 언어
               </label>
@@ -1493,7 +1521,7 @@ export function ProjectsManager({
             />
           </div>
           <div className="space-y-1">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-start justify-between gap-2">
               <label className="text-xs font-medium uppercase tracking-wide text-muted">
                 슬러그
               </label>
@@ -1576,7 +1604,7 @@ export function ProjectsManager({
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 items-center">
+          <div className="grid items-center gap-3 sm:grid-cols-2">
             <StatusRadioGroup
               legend="공개 상태"
               name="project-status"
@@ -1668,7 +1696,7 @@ export function ProjectsManager({
 
           <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">관련 링크</p>
-            <div className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto_auto]">
+            <div className="grid items-center gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto_auto]">
               <Input
                 className="min-w-0"
                 value={form.linkLabelInput}
@@ -1829,7 +1857,7 @@ export function ProjectsManager({
           ) : null}
 
           <div className="flex gap-2">
-            <Button type="submit" className="flex-1" disabled={isPending || !canWriteAdmin}>
+            <Button type="submit" className="flex-1" disabled={isPending || !canMutateCurrentProject}>
               {isPending ? "저장 중..." : editingId ? "저장" : "프로젝트 생성"}
             </Button>
             {editingId ? (
@@ -1837,7 +1865,7 @@ export function ProjectsManager({
                 type="button"
                 variant="destructive"
                 onClick={() => onDelete(editingId)}
-                disabled={isPending || !canWriteAdmin}
+                disabled={isPending || !canMutateCurrentProject}
                 aria-label="프로젝트 삭제"
               >
                 <TrashIcon />

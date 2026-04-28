@@ -8,7 +8,7 @@ type RouteContext = {
 };
 
 function parseRole(value: unknown): AdminRole {
-  if (value === "super_admin" || value === "admin" || value === "test_admin") {
+  if (value === "admin" || value === "test_admin") {
     return value;
   }
 

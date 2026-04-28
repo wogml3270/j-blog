@@ -14,6 +14,7 @@ export default async function AdminProtectedLayout({ children }: { children: Rea
   return (
     <AdminSessionProvider
       value={{
+        userId: state.user.id,
         role: state.role,
         canReadAdmin: state.canReadAdmin,
         canWriteAdmin: state.canWriteAdmin,

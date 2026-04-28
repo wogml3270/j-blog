@@ -1,4 +1,6 @@
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { isEnvSuperAdminEmail, normalizeAdminEmail } from "@/lib/auth/admin-emails";
+import { normalizeAvatarUrl } from "@/lib/utils/avatar-url";
 import type {
   AdminAccessRequest,
   AdminAccessRequestStatus,
@@ -36,15 +38,12 @@ type AdminAllowlistRow = {
   updated_at: string;
 };
 
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
+type AuthUserLike = {
+  email?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+};
 
-function normalizeRole(value: string | null, isSuperAdmin: boolean): AdminRole {
-  if (isSuperAdmin || value === "super_admin") {
-    return "super_admin";
-  }
-
+function normalizeRole(value: string | null): AdminRole {
   if (value === "test_admin") {
     return "test_admin";
   }
@@ -77,16 +76,39 @@ function rowToAccessRequest(row: AdminAccessRequestRow): AdminAccessRequest {
 }
 
 function rowToMember(row: AdminAllowlistRow): AdminMember {
+  const isEnvSuperAdmin = isEnvSuperAdminEmail(row.email);
+
   return {
     id: row.id,
     email: row.email,
-    isSuperAdmin: row.is_super_admin,
-    role: normalizeRole(row.role, row.is_super_admin),
-    isActive: row.is_active ?? true,
-    expiresAt: row.expires_at,
+    isSuperAdmin: isEnvSuperAdmin,
+    role: isEnvSuperAdmin ? "super_admin" : normalizeRole(row.role),
+    isActive: isEnvSuperAdmin ? true : (row.is_active ?? true),
+    expiresAt: isEnvSuperAdmin ? null : row.expires_at,
+    avatarUrl: null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+// Auth 사용자 메타데이터에서 관리자 프로필 이미지를 추출한다.
+function extractAvatarUrl(user: AuthUserLike | null | undefined): string | null {
+  if (!user) {
+    return null;
+  }
+
+  const metadata = user.user_metadata ?? {};
+  const candidates = [metadata.avatar_url, metadata.picture];
+
+  for (const value of candidates) {
+    const normalized = normalizeAvatarUrl(value);
+
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return null;
 }
 
 export async function getLatestAdminAccessRequestByEmail(email: string): Promise<AdminAccessRequest | null> {
@@ -96,7 +118,7 @@ export async function getLatestAdminAccessRequestByEmail(email: string): Promise
     return null;
   }
 
-  const normalizedEmail = normalizeEmail(email);
+  const normalizedEmail = normalizeAdminEmail(email);
   const { data, error } = await service
     .from("admin_access_requests")
     .select(
@@ -128,7 +150,7 @@ export async function createAdminAccessRequest(input: {
     };
   }
 
-  const normalizedEmail = normalizeEmail(input.email);
+  const normalizedEmail = normalizeAdminEmail(input.email);
   const existing = await getLatestAdminAccessRequestByEmail(normalizedEmail);
 
   if (existing && existing.status === "pending") {
@@ -245,15 +267,15 @@ export async function resolveAdminAccessRequest(input: {
   }
 
   if (input.status === "approved") {
-    const nextRole = input.role ?? "test_admin";
+    const nextRole = input.role === "admin" ? "admin" : "test_admin";
     const nextExpiresAt =
       nextRole === "test_admin" ? input.testAdminExpiresAt ?? null : null;
-    const normalizedEmail = normalizeEmail(currentRow.email);
+    const normalizedEmail = normalizeAdminEmail(currentRow.email);
 
     const { error: upsertError } = await service.from("admin_allowlist").upsert(
       {
         email: normalizedEmail,
-        is_super_admin: nextRole === "super_admin",
+        is_super_admin: false,
         role: nextRole,
         is_active: true,
         expires_at: nextExpiresAt,
@@ -313,13 +335,53 @@ export async function getAdminMembers(): Promise<AdminMember[]> {
     return [];
   }
 
-  return (data as AdminAllowlistRow[]).map(rowToMember);
+  const members = (data as AdminAllowlistRow[]).map(rowToMember);
+  const avatarByEmail = new Map<string, string>();
+  let page = 1;
+  const perPage = 200;
+
+  // allowlist 이메일과 매칭되는 auth.users 아바타를 페이지 단위로 조회한다.
+  while (true) {
+    const { data: usersData, error: usersError } = await service.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+
+    if (usersError || !usersData?.users?.length) {
+      break;
+    }
+
+    for (const user of usersData.users as AuthUserLike[]) {
+      const email = typeof user.email === "string" ? normalizeAdminEmail(user.email) : "";
+
+      if (!email || avatarByEmail.has(email)) {
+        continue;
+      }
+
+      const avatarUrl = extractAvatarUrl(user);
+
+      if (avatarUrl) {
+        avatarByEmail.set(email, avatarUrl);
+      }
+    }
+
+    if (usersData.users.length < perPage) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return members.map((member) => ({
+    ...member,
+    avatarUrl: avatarByEmail.get(normalizeAdminEmail(member.email)) ?? null,
+  }));
 }
 
 export async function updateAdminMember(input: {
   id: string;
   role: AdminRole;
-  isActive: boolean;
+  isActive?: boolean;
   expiresAt: string | null;
 }): Promise<RepoResult<AdminMember>> {
   const service = createSupabaseServiceClient();
@@ -331,16 +393,42 @@ export async function updateAdminMember(input: {
     };
   }
 
-  const nextRole = input.role;
+  const { data: currentRow, error: currentRowError } = await service
+    .from("admin_allowlist")
+    .select("id,email,is_super_admin")
+    .eq("id", input.id)
+    .maybeSingle<{ id: string; email: string; is_super_admin: boolean }>();
+
+  if (currentRowError || !currentRow) {
+    return {
+      data: null,
+      error: currentRowError?.message ?? "관리자 계정을 찾을 수 없습니다.",
+    };
+  }
+
+  // env에 등록된 super_admin은 allowlist 편집으로 변경할 수 없도록 고정한다.
+  if (isEnvSuperAdminEmail(currentRow.email)) {
+    return {
+      data: null,
+      error: "super_admin 계정은 수정할 수 없습니다.",
+    };
+  }
+
+  const nextRole = input.role === "test_admin" ? "test_admin" : "admin";
   const nextExpiresAt = nextRole === "test_admin" ? input.expiresAt : null;
+  const updatePayload: Record<string, unknown> = {
+    role: nextRole,
+    is_super_admin: false,
+    expires_at: nextExpiresAt,
+  };
+
+  if (typeof input.isActive === "boolean") {
+    updatePayload.is_active = input.isActive;
+  }
+
   const { data, error } = await service
     .from("admin_allowlist")
-    .update({
-      role: nextRole,
-      is_super_admin: nextRole === "super_admin",
-      is_active: input.isActive,
-      expires_at: nextExpiresAt,
-    })
+    .update(updatePayload)
     .eq("id", input.id)
     .select("id,email,is_super_admin,role,is_active,expires_at,created_at,updated_at")
     .maybeSingle<AdminAllowlistRow>();

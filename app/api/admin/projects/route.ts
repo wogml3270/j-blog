@@ -220,7 +220,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: policyError }, { status: 400 });
   }
 
-  const result = await createAdminProject(payload);
+  const result = await createAdminProject(payload, guard.user.id);
 
   if (result.error || !result.data) {
     return NextResponse.json(

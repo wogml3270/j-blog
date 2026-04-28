@@ -79,7 +79,7 @@ export function EditorDrawer({ open, title, description, onClose, children }: Ed
             </Button>
           </div>
         </header>
-        <div ref={contentRef} className="flex-1 overflow-y-auto px-5 py-4">
+        <div ref={contentRef} className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-5 py-4">
           {children}
         </div>
       </aside>

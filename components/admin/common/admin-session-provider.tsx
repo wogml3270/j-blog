@@ -1,16 +1,13 @@
 "use client";
 
-import { createContext, useContext } from "react";
-import type { AdminRole } from "@/types/admin";
+import { createContext, useContext, useEffect } from "react";
+import { useAdminAuthStore } from "@/stores/admin-auth";
+import type { AdminAuthSession } from "@/types/admin";
 
-type AdminSessionValue = {
-  role: AdminRole | null;
-  canReadAdmin: boolean;
-  canWriteAdmin: boolean;
-  canManageAdmin: boolean;
-};
+export type AdminSessionValue = AdminAuthSession;
 
 const AdminSessionContext = createContext<AdminSessionValue>({
+  userId: null,
   role: null,
   canReadAdmin: false,
   canWriteAdmin: false,
@@ -24,6 +21,13 @@ export function AdminSessionProvider({
   value: AdminSessionValue;
   children: React.ReactNode;
 }) {
+  const setAuth = useAdminAuthStore((state) => state.setAuth);
+
+  // 서버에서 계산한 관리자 권한 스냅샷을 클라이언트 전역 스토어에 동기화한다.
+  useEffect(() => {
+    setAuth(value);
+  }, [setAuth, value]);
+
   return <AdminSessionContext.Provider value={value}>{children}</AdminSessionContext.Provider>;
 }
 

@@ -1,10 +1,13 @@
 import type { User } from "@supabase/supabase-js";
+import {
+  getAllowedAdminEmailsFromEnv,
+  isEnvSuperAdminEmail,
+  normalizeAdminEmail,
+} from "@/lib/auth/admin-emails";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { normalizeAvatarUrl } from "@/lib/utils/avatar-url";
 import type { AdminPermission, AdminRole } from "@/types/admin";
-
-const DEFAULT_SUPER_ADMIN_EMAIL = "wogml3270@gmail.com";
 
 type AdminStateReason =
   | "supabase_not_configured"
@@ -35,10 +38,6 @@ type AdminAllowlistRow = {
   expires_at: string | null;
 };
 
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
-
 // 사용자 메타데이터에서 프로필 이미지를 우선순위대로 추출한다.
 function getAvatarFromUser(user: User | null): string | null {
   if (!user) {
@@ -59,24 +58,9 @@ function getAvatarFromUser(user: User | null): string | null {
   return null;
 }
 
-function getAllowedEmailsFromEnv(): Set<string> {
-  const values = (process.env.ADMIN_ALLOWED_EMAILS ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .map(normalizeEmail);
-
-  values.push(DEFAULT_SUPER_ADMIN_EMAIL);
-  return new Set(values);
-}
-
-function normalizeRole(value: string | null, isSuperAdmin: boolean): AdminRole {
-  if (isSuperAdmin) {
-    return "super_admin";
-  }
-
-  if (value === "super_admin" || value === "admin" || value === "test_admin") {
-    return value;
+function normalizeRole(value: string | null): AdminRole {
+  if (value === "test_admin") {
+    return "test_admin";
   }
 
   return "admin";
@@ -140,7 +124,11 @@ async function isEmailInAllowlistTable(email: string): Promise<boolean> {
 }
 
 export async function isAllowedAdminEmail(email: string): Promise<boolean> {
-  const normalized = normalizeEmail(email);
+  const normalized = normalizeAdminEmail(email);
+
+  if (isEnvSuperAdminEmail(normalized)) {
+    return true;
+  }
 
   const allowlistEntry = await getAllowlistEntry(normalized);
 
@@ -152,7 +140,7 @@ export async function isAllowedAdminEmail(email: string): Promise<boolean> {
     return !isExpired(allowlistEntry.expires_at);
   }
 
-  if (getAllowedEmailsFromEnv().has(normalized)) {
+  if (getAllowedAdminEmailsFromEnv().has(normalized)) {
     return true;
   }
 
@@ -160,7 +148,15 @@ export async function isAllowedAdminEmail(email: string): Promise<boolean> {
 }
 
 async function resolveAdminRole(email: string): Promise<{ role: AdminRole | null; expiresAt: string | null }> {
-  const normalized = normalizeEmail(email);
+  const normalized = normalizeAdminEmail(email);
+
+  if (isEnvSuperAdminEmail(normalized)) {
+    return {
+      role: "super_admin",
+      expiresAt: null,
+    };
+  }
+
   const allowlistEntry = await getAllowlistEntry(normalized);
 
   if (allowlistEntry) {
@@ -172,19 +168,12 @@ async function resolveAdminRole(email: string): Promise<{ role: AdminRole | null
     }
 
     return {
-      role: normalizeRole(allowlistEntry.role, allowlistEntry.is_super_admin),
+      role: normalizeRole(allowlistEntry.role),
       expiresAt: allowlistEntry.expires_at,
     };
   }
 
-  if (normalized === normalizeEmail(DEFAULT_SUPER_ADMIN_EMAIL)) {
-    return {
-      role: "super_admin",
-      expiresAt: null,
-    };
-  }
-
-  if (getAllowedEmailsFromEnv().has(normalized)) {
+  if (getAllowedAdminEmailsFromEnv().has(normalized)) {
     return {
       role: "admin",
       expiresAt: null,
@@ -235,7 +224,7 @@ export async function getAdminState(): Promise<AdminState> {
     };
   }
 
-  const email = user.email ? normalizeEmail(user.email) : null;
+  const email = user.email ? normalizeAdminEmail(user.email) : null;
 
   if (!email) {
     return {

@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { revalidateProjectPaths } from "@/lib/cache/revalidate";
-import { deleteAdminProject, updateAdminProject } from "@/lib/projects/repository";
+import {
+  deleteAdminProject,
+  getAdminProjectOwnerId,
+  updateAdminProject,
+} from "@/lib/projects/repository";
 import { normalizeSlug } from "@/lib/utils/slug";
 import type {
   AdminProjectInput,
@@ -183,6 +187,24 @@ function validateFeaturedPolicy(payload: AdminProjectInput): string | null {
   return null;
 }
 
+// admin은 본인이 작성한 프로젝트만 수정/삭제할 수 있다.
+async function canModifyProjectForRole(input: {
+  role: "super_admin" | "admin" | "test_admin" | null;
+  userId: string;
+  projectId: string;
+}): Promise<boolean> {
+  if (input.role === "super_admin") {
+    return true;
+  }
+
+  if (input.role !== "admin") {
+    return false;
+  }
+
+  const ownerId = await getAdminProjectOwnerId(input.projectId);
+  return ownerId === input.userId;
+}
+
 export async function PUT(request: Request, context: RouteContext) {
   const guard = await getAdminGuardForApi("write");
 
@@ -191,6 +213,19 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
+  const canModify = await canModifyProjectForRole({
+    role: guard.state.role,
+    userId: guard.user.id,
+    projectId: id,
+  });
+
+  if (!canModify) {
+    return NextResponse.json(
+      { error: "admin 권한은 본인이 작성한 프로젝트만 수정할 수 있습니다." },
+      { status: 403 },
+    );
+  }
+
   const payload = parseBody(await request.json());
 
   if (!payload) {
@@ -224,6 +259,19 @@ export async function DELETE(_: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
+  const canModify = await canModifyProjectForRole({
+    role: guard.state.role,
+    userId: guard.user.id,
+    projectId: id,
+  });
+
+  if (!canModify) {
+    return NextResponse.json(
+      { error: "admin 권한은 본인이 작성한 프로젝트만 삭제할 수 있습니다." },
+      { status: 403 },
+    );
+  }
+
   const result = await deleteAdminProject(id);
 
   if (result.error) {
