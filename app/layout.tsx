@@ -36,11 +36,20 @@ const mono = JetBrains_Mono({
 });
 
 const defaultSite = getSiteCopy(defaultLocale);
+// Google Search Console 사이트 소유권 검증 토큰(env 기반)
+const GOOGLE_SITE_VERIFICATION_TOKEN = process.env.GOOGLE_SITE_VERIFICATION?.trim();
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_CONFIG.siteUrl),
   title: defaultSite.title,
   description: defaultSite.description,
+  ...(GOOGLE_SITE_VERIFICATION_TOKEN
+    ? {
+        verification: {
+          google: GOOGLE_SITE_VERIFICATION_TOKEN,
+        },
+      }
+    : {}),
   icons: {
     icon: [
       { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
