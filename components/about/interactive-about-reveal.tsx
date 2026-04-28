@@ -96,7 +96,7 @@ export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutReve
               : "pointer-events-none max-h-0 opacity-0 translate-y-4 lg:-translate-x-12",
           )}
         >
-          <article className="w-full rounded-3xl border border-border/70 bg-background/70 p-4 pt-60 shadow-lg backdrop-blur-sm lg:pt-5">
+          <article className="w-full rounded-3xl border border-border/70 bg-background/70 p-4 pt-60 backdrop-blur-sm lg:pt-5">
             <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
               {labels.headline}
             </h1>
@@ -148,7 +148,9 @@ export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutReve
                           <li
                             key={`${item.category}-${item.name}-${animationIndex}`}
                             style={{
-                              transitionDelay: isExpanded ? `${260 + animationIndex * 70}ms` : "0ms",
+                              transitionDelay: isExpanded
+                                ? `${260 + animationIndex * 70}ms`
+                                : "0ms",
                             }}
                             className={cn(
                               "rounded-xl border border-border bg-surface/85 p-2.5 transition-all duration-500",
@@ -166,7 +168,9 @@ export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutReve
                                   decoding="async"
                                 />
                               </span>
-                              <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                              <p className="truncate text-sm font-semibold text-foreground">
+                                {item.name}
+                              </p>
                             </div>
                             <p className="mt-2 line-clamp-2 text-xs leading-6 text-muted">
                               {item.description}
