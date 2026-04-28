@@ -2,6 +2,10 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
 
+function hasSupabaseAuthCookie(request: NextRequest) {
+  return request.cookies.getAll().some(({ name }) => name.startsWith("sb-") && name.includes("auth"));
+}
+
 export async function updateSupabaseSession(request: NextRequest) {
   const env = getSupabasePublicEnv();
 
@@ -30,6 +34,10 @@ export async function updateSupabaseSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  // 비로그인 방문 요청에서는 인증 갱신 왕복을 생략해 TTFB를 줄인다.
+  if (hasSupabaseAuthCookie(request)) {
+    await supabase.auth.getUser();
+  }
+
   return supabaseResponse;
 }

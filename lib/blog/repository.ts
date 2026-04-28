@@ -63,7 +63,10 @@ export class BlogServiceUnavailableError extends Error {
 
 // 블로그는 DB를 단일 소스로 사용하므로 연결 실패 시 즉시 장애 에러를 노출한다.
 function requireBlogService() {
-  const service = createSupabaseServiceClient();
+  const service = createSupabaseServiceClient({
+    cacheStrategy: "revalidate",
+    revalidateSeconds: 60,
+  });
 
   if (!service) {
     throw new BlogServiceUnavailableError("Supabase service client is not configured.");
@@ -596,7 +599,7 @@ export async function getAdminPosts(): Promise<AdminPost[]> {
     .from("posts")
     .select(POST_SELECT_FIELDS)
     .order("featured", { ascending: false })
-    .order("updated_at", { ascending: false });
+    .order("created_at", { ascending: false });
 
   if (error || !data) {
     return [];
@@ -649,7 +652,7 @@ export async function getAdminPostsPaginated(
 
   const { data, error, count } = await query
     .order("featured", { ascending: false })
-    .order("updated_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .range(from, to);
 
   if (error || !data) {

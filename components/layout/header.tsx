@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { SocialLoginButtons } from "@/components/auth/social-login-buttons";
 import { BrandLogo } from "@/components/layout/brand-logo";
@@ -116,12 +117,12 @@ export function Header({ locale, dictionary }: HeaderProps) {
   const nickname = useMemo(() => getNicknameFromUser(user), [user]);
   const avatarUrl = useMemo(() => getAvatarFromUser(user), [user]);
   const authButtonContent = user ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src={avatarUrl}
       alt={nickname || "user"}
+      width={36}
+      height={36}
       className="h-9 w-9 rounded-full object-cover"
-      loading="lazy"
     />
   ) : (
     <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-xs font-semibold text-foreground">
@@ -249,12 +250,12 @@ export function Header({ locale, dictionary }: HeaderProps) {
           <div className="space-y-3">
             <p className="text-xs">{dictionary.header.authSignedInAs}</p>
             <div className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2.5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={avatarUrl}
                 alt={nickname || "user"}
+                width={36}
+                height={36}
                 className="h-9 w-9 rounded-full object-cover"
-                loading="lazy"
               />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-foreground">

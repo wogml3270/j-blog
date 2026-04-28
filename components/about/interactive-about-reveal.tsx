@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { Keyboard, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { ABOUT_TECH_CATEGORY_ORDER } from "@/lib/about/tech-categories";
 import { useDevice } from "@/lib/hooks/use-device";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 import { cn } from "@/lib/utils/cn";
+import { toCachedMediaUrl } from "@/lib/utils/media-cache-url";
 import type { AboutTechCategory } from "@/types/about";
 import type { InteractiveAboutRevealProps } from "@/types/ui";
 
@@ -157,10 +159,11 @@ export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutReve
                               <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/90">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                  src={item.logoUrl}
+                                  src={toCachedMediaUrl(item.logoUrl)}
                                   alt={`${item.name} logo`}
                                   className="h-5 w-5 object-contain"
                                   loading="lazy"
+                                  decoding="async"
                                 />
                               </span>
                               <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
@@ -190,10 +193,11 @@ export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutReve
                       <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/90">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={item.logoUrl}
+                          src={toCachedMediaUrl(item.logoUrl)}
                           alt={`${item.name} logo`}
                           className="h-5 w-5 object-contain"
                           loading="lazy"
+                          decoding="async"
                         />
                       </span>
                       <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
@@ -231,12 +235,12 @@ export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutReve
                 : "",
             )}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={profile.aboutPhotoUrl}
               alt={`${profile.name} profile`}
-              className="h-full w-full object-cover object-top"
-              loading="lazy"
+              fill
+              sizes="(max-width: 640px) 240px, (max-width: 1024px) 280px, 360px"
+              className="object-cover object-top"
             />
             <span className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/28 via-transparent to-transparent" />
           </div>

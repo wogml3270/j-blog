@@ -230,7 +230,10 @@ function buildTranslationMap(
 
 // 공개 About은 locale row 우선, 누락 필드는 KO row로 fallback한다.
 export async function getPublishedAboutContent(locale: Locale): Promise<AboutContent> {
-  const service = createSupabaseServiceClient();
+  const service = createSupabaseServiceClient({
+    cacheStrategy: "revalidate",
+    revalidateSeconds: 60,
+  });
 
   if (!service) {
     return fallbackAbout(locale);

@@ -310,7 +310,10 @@ async function getFallbackSlides(locale: Locale): Promise<HomeSlideResolved[]> {
 export async function getHomeSlides(
   locale: Locale,
 ): Promise<HomeSlideResolved[]> {
-  const service = createSupabaseServiceClient();
+  const service = createSupabaseServiceClient({
+    cacheStrategy: "revalidate",
+    revalidateSeconds: 60,
+  });
 
   if (!service) {
     return getFallbackSlides(locale);

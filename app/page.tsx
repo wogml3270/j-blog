@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { getSiteCopy } from "@/lib/site/profile";
 
-export const dynamic = "force-dynamic";
-
 export async function generateMetadata(): Promise<Metadata> {
   const site = getSiteCopy("ko");
 

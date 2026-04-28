@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { type CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
 import { A11y, Autoplay, EffectFade, Keyboard } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -128,12 +129,13 @@ export function ImmersiveHeroSlider({
             <SwiperSlide key={slide.id}>
               <article className="relative h-full w-full">
                 <div className="absolute inset-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={slide.imageUrl}
                     alt={slide.title}
-                    className="home-hero-bg-image h-full w-full object-cover"
-                    loading="lazy"
+                    fill
+                    sizes="100vw"
+                    priority={activeIndex === 0}
+                    className="home-hero-bg-image object-cover"
                   />
                   <div className="home-hero-bg-reveal absolute inset-0" />
                   <div className="absolute inset-0 bg-linear-to-r from-black/72 via-black/44 to-black/20" />
@@ -219,12 +221,13 @@ export function ImmersiveHeroSlider({
                       onFocus={() => setFocusedThumbIndex(index)}
                       onBlur={() => setFocusedThumbIndex(null)}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <Image
                         src={slide.imageUrl}
                         alt=""
+                        fill
+                        sizes="(max-width: 640px) 70vw, (max-width: 1024px) 38vw, (max-width: 1280px) 24vw, 20vw"
                         className={cn(
-                          "home-hero-thumb-image absolute inset-0 h-full w-full object-cover",
+                          "home-hero-thumb-image absolute inset-0 object-cover",
                           isActive ? "home-hero-thumb-image-active" : null,
                         )}
                       />
