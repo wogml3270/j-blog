@@ -183,7 +183,7 @@ function validateFeaturedPolicy(payload: AdminProjectInput): string | null {
 
 // 관리자 프로젝트 목록은 페이지네이션 메타와 함께 반환한다.
 export async function GET(request: Request) {
-  const guard = await getAdminGuardForApi();
+  const guard = await getAdminGuardForApi("read");
 
   if (!guard.ok) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
@@ -202,7 +202,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const guard = await getAdminGuardForApi();
+  const guard = await getAdminGuardForApi("write");
 
   if (!guard.ok) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });

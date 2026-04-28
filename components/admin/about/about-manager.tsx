@@ -24,6 +24,7 @@ import {
   normalizeAboutTechCategory,
 } from "@/lib/about/tech-categories";
 import { AdminLocaleTabs, type AdminLocale } from "@/components/admin/common/locale-tabs";
+import { useAdminSession } from "@/components/admin/common/admin-session-provider";
 import { ManagerShell } from "@/components/admin/common/manager-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -385,6 +386,7 @@ function SortableAboutTechItem({
 }
 
 export function AboutManager({ initialAbout }: AboutManagerProps) {
+  const { canWriteAdmin, role } = useAdminSession();
   const initialForm = useMemo(() => toFormState(initialAbout), [initialAbout]);
   const initialTranslations = useMemo(
     () => toTranslationState(initialAbout.translations),
@@ -539,6 +541,10 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
   // 기술 항목은 이름/설명/로고 URL이 모두 채워졌을 때만 추가한다.
   const addTechItem = () => {
+    if (!canWriteAdmin) {
+      return;
+    }
+
     const category = localeTechCategoryInput || activeTechCategory || "frontend";
     const name = localeTechNameInput.trim();
     const description = localeTechDescriptionInput.trim();
@@ -574,11 +580,19 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
   // 기술 항목은 현재 선택한 카테고리 내부에서만 순서를 재배치한다.
   const onTechItemsDragEnd = (event: DragEndEvent) => {
+    if (!canWriteAdmin) {
+      return;
+    }
+
     setLocaleTechItems(reorderByCategory(localeTechItems, activeTechCategory, event));
   };
 
   // 프로필 사진 파일을 선택하면 로컬 미리보기를 먼저 보여주고 즉시 업로드한다.
   const uploadAboutPhotoImmediately = async (file: File) => {
+    if (!canWriteAdmin) {
+      return;
+    }
+
     const requestId = aboutPhotoUploadRequestRef.current + 1;
     aboutPhotoUploadRequestRef.current = requestId;
     setIsUploadingAboutPhoto(true);
@@ -643,6 +657,10 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
   // 기술 로고 파일을 선택하면 로컬 미리보기를 먼저 보여주고 즉시 업로드한다.
   const uploadTechLogoImmediately = async (file: File) => {
+    if (!canWriteAdmin) {
+      return;
+    }
+
     const requestId = techLogoUploadRequestRef.current + 1;
     techLogoUploadRequestRef.current = requestId;
     setIsUploadingTechLogo(true);
@@ -703,6 +721,11 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
   // SVG 태그 문자열도 기술 로고로 업로드할 수 있게 파일로 변환해 처리한다.
   const onUploadTechLogoSvg = async () => {
+    if (!canWriteAdmin) {
+      setNotice({ kind: "error", text: "읽기 전용 계정은 수정할 수 없습니다." });
+      return;
+    }
+
     const markup = techLogoSvgInput.trim();
 
     if (!markup) {
@@ -735,6 +758,11 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
   // 단순화된 About 모델(name/title/summary/photo/tech) 기준으로 저장한다.
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!canWriteAdmin) {
+      setNotice({ kind: "error", text: "읽기 전용 계정은 저장할 수 없습니다." });
+      return;
+    }
+
     setIsPending(true);
     setNotice(null);
 
@@ -802,7 +830,11 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
     <ManagerShell
       title="소개 관리"
       summary="소개 페이지 콘텐츠를 단순 모델로 관리합니다."
-      detail="이름, 직함, 한 줄 소개, 프로필 이미지, 기술 항목만 관리합니다."
+      detail={
+        canWriteAdmin
+          ? "이름, 직함, 한 줄 소개, 프로필 이미지, 기술 항목만 관리합니다."
+          : `현재 계정(${role ?? "unknown"})은 읽기 전용입니다.`
+      }
       motion
     >
       <SurfaceCard
@@ -813,6 +845,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
         className="space-y-4 sm:p-5"
       >
         <form className="space-y-4" onSubmit={onSubmit}>
+          <fieldset disabled={!canWriteAdmin || isPending} className="space-y-4">
           <SurfaceCard tone="background" radius="xl" padding="sm" className="space-y-3 sm:p-4">
             <div className="space-y-1">
               <h3 className="text-sm font-semibold text-foreground">프로필 이미지</h3>
@@ -1101,6 +1134,7 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
               {isPending ? "저장 중..." : "소개 저장"}
             </Button>
           </div>
+          </fieldset>
         </form>
       </SurfaceCard>
 

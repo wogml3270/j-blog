@@ -23,10 +23,11 @@ const NAV_ITEMS = [
   { href: `${ADMIN_PATH}/contact`, label: "문의함" },
 ];
 
-export function AdminSidebar({ email, avatarUrl }: AdminSidebarProps) {
+export function AdminSidebar({ email, avatarUrl, role }: AdminSidebarProps) {
   const pathname = usePathname();
   const hasAnyDirty = useAdminUnsavedStore((state) => state.hasAnyDirty);
   const initial = (email ?? "U").slice(0, 1).toUpperCase();
+  const isSettingsActive = pathname === `${ADMIN_PATH}/settings`;
 
   // 저장되지 않은 관리자 변경 사항이 있으면 네비게이션 이동 전에 확인 창을 띄운다.
   const guardNavigation = (event: MouseEvent<HTMLAnchorElement>) => {
@@ -60,13 +61,19 @@ export function AdminSidebar({ email, avatarUrl }: AdminSidebarProps) {
                 toDarkLabel: "다크 모드로 전환",
               }}
             />
-            <button
-              type="button"
-              aria-label="설정 (준비 중)"
-              className="cursor-not-allowed inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-muted transition-colors hover:text-foreground"
+            <Link
+              href="/admin/settings"
+              onClick={guardNavigation}
+              aria-label="설정 페이지"
+              className={cn(
+                "inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors",
+                isSettingsActive
+                  ? "border-foreground/30 bg-foreground/10 text-foreground"
+                  : "border-border bg-background text-muted hover:text-foreground",
+              )}
             >
               <SettingsIcon />
-            </button>
+            </Link>
           </div>
         </div>
         <div className="flex">
@@ -87,6 +94,13 @@ export function AdminSidebar({ email, avatarUrl }: AdminSidebarProps) {
               <p className="text-xs font-medium uppercase tracking-wide text-muted">관리자</p>
               <p className="truncate text-xs font-medium text-foreground sm:text-sm">
                 {email ?? "unknown"}
+              </p>
+              <p className="text-[11px] text-muted">
+                {role === "super_admin"
+                  ? "super_admin"
+                  : role === "test_admin"
+                    ? "test_admin (read-only)"
+                    : "admin"}
               </p>
             </div>
           </div>

@@ -6,6 +6,7 @@ import {
   AdminToolbar,
   AdminToolbarSelect,
 } from "@/components/admin/common/admin-toolbar";
+import { useAdminSession } from "@/components/admin/common/admin-session-provider";
 import { EditorDrawer } from "@/components/admin/common/editor-drawer";
 import { ManagerList, ManagerListRow } from "@/components/admin/common/manager-list";
 import { ManagerShell } from "@/components/admin/common/manager-shell";
@@ -94,6 +95,7 @@ export function ContactManager({
   initialStatusFilter = "all",
   initialSelectedId = null,
 }: ContactManagerProps) {
+  const { canWriteAdmin, role } = useAdminSession();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -263,6 +265,11 @@ export function ContactManager({
 
   // 문의 상세에서 상태/메모를 한 번에 저장해 운영 기록이 분리되지 않도록 한다.
   const saveContact = async () => {
+    if (!canWriteAdmin) {
+      setMessage("읽기 전용 계정은 문의 상태/메모를 수정할 수 없습니다.");
+      return;
+    }
+
     if (!selected) {
       return;
     }
@@ -407,6 +414,7 @@ export function ContactManager({
         motion
         title="문의 관리"
         summary={`문의함 ${summaryTotal}건`}
+        detail={!canWriteAdmin ? `현재 계정(${role ?? "unknown"})은 읽기 전용입니다.` : undefined}
         action={
           <AdminToolbar>
             <AdminToolbarSelect
@@ -571,6 +579,7 @@ export function ContactManager({
                 value={adminNote}
                 onChange={(event) => setAdminNote(event.target.value)}
                 maxLength={3000}
+                disabled={!canWriteAdmin}
               />
             </SurfaceCard>
 
@@ -579,14 +588,20 @@ export function ContactManager({
               name="contact-status"
               value={nextStatus}
               options={STATUS_OPTIONS}
-              onChange={(value) => setNextStatus(value as ContactStatus)}
+              onChange={(value) => {
+                if (!canWriteAdmin) {
+                  return;
+                }
+
+                setNextStatus(value as ContactStatus);
+              }}
             />
 
             <Button
               type="button"
               className="w-full"
               onClick={saveContact}
-              disabled={isPending || !hasUnsavedChanges}
+              disabled={isPending || !hasUnsavedChanges || !canWriteAdmin}
             >
               {isPending ? "저장 중..." : "상태/메모 저장"}
             </Button>

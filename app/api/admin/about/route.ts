@@ -116,7 +116,7 @@ function parseBody(body: unknown): AdminAboutInput | null {
 }
 
 export async function GET() {
-  const guard = await getAdminGuardForApi();
+  const guard = await getAdminGuardForApi("read");
 
   if (!guard.ok) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
@@ -127,7 +127,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const guard = await getAdminGuardForApi();
+  const guard = await getAdminGuardForApi("write");
 
   if (!guard.ok) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });

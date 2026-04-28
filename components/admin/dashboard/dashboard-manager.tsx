@@ -31,12 +31,14 @@ export function DashboardManager({
   profile,
   contacts,
   highlights,
+  pendingAccessRequests,
 }: {
   posts: AdminPost[];
   projects: AdminProject[];
   profile: AboutContent;
   contacts: Contact[];
   highlights: HomeSlide[];
+  pendingAccessRequests: number;
 }) {
   // 대시보드는 독립 데이터 소스를 요약 카드/최근 변경 패널로 나눠 보여준다.
   const newContactsCount = contacts.filter((item) => item.status === "new").length;
@@ -54,6 +56,22 @@ export function DashboardManager({
       <h1 className="text-2xl font-semibold tracking-tight">관리자 대시보드</h1>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <Link
+          href="/admin/settings?tab=access-requests"
+          className="group block rounded-xl border border-border bg-surface p-4 transition hover:border-foreground/35"
+        >
+          <p className="text-xs uppercase tracking-wide text-muted group-hover:underline">
+            권한 요청
+            <span className="font-bold text-red-300">
+              {pendingAccessRequests > 0 ? ` (대기 ${pendingAccessRequests}건)` : ""}
+            </span>
+          </p>
+          <p className="mt-2 text-2xl font-semibold text-foreground group-hover:underline">
+            {pendingAccessRequests}
+          </p>
+          <p className="mt-1 text-xs text-muted">처리 필요 항목</p>
+        </Link>
+
         <Link
           href="/admin/home"
           className="group block rounded-xl border border-border bg-surface p-4 transition hover:border-foreground/35"
@@ -127,6 +145,13 @@ export function DashboardManager({
           지금 확인할 항목
         </h2>
         <ul className="mt-3 space-y-2 text-sm">
+          {pendingAccessRequests > 0 ? (
+            <li>
+              <Link href="/admin/settings?tab=access-requests" className="text-foreground underline">
+                신규 권한 요청 {pendingAccessRequests}건 처리하기
+              </Link>
+            </li>
+          ) : null}
           {newContactsCount > 0 ? (
             <li>
               <Link href="/admin/contact" className="text-foreground underline">

@@ -3,7 +3,7 @@ import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { normalizeUploadScope, uploadAdminImageToStorage } from "@/lib/admin/media-upload";
 
 export async function POST(request: Request) {
-  const guard = await getAdminGuardForApi();
+  const guard = await getAdminGuardForApi("write");
 
   if (!guard.ok) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });

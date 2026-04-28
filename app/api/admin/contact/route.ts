@@ -6,7 +6,7 @@ import { normalizeContactListFilter } from "@/lib/utils/search-params";
 
 // 문의 목록 응답을 페이지 단위로 표준화한다.
 export async function GET(request: Request) {
-  const guard = await getAdminGuardForApi();
+  const guard = await getAdminGuardForApi("read");
 
   if (!guard.ok) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });

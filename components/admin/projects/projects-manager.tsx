@@ -25,6 +25,7 @@ import {
   AdminToolbarSelect,
 } from "@/components/admin/common/admin-toolbar";
 import { AdminLocaleTabs, type AdminLocale } from "@/components/admin/common/locale-tabs";
+import { useAdminSession } from "@/components/admin/common/admin-session-provider";
 import { EditorDrawer } from "@/components/admin/common/editor-drawer";
 import { ManagerList, ManagerListRow } from "@/components/admin/common/manager-list";
 import { MarkdownField } from "@/components/admin/common/markdown-field";
@@ -420,6 +421,7 @@ export function ProjectsManager({
   initialFilter = "all",
   initialSelectedId = null,
 }: ProjectsManagerProps) {
+  const { canWriteAdmin, role } = useAdminSession();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -548,6 +550,11 @@ export function ProjectsManager({
   }, []);
 
   const onDeleteProjectCommentByAdmin = async (commentId: string) => {
+    if (!canWriteAdmin) {
+      setMessage("읽기 전용 계정은 댓글을 삭제할 수 없습니다.");
+      return;
+    }
+
     if (!window.confirm("이 댓글을 삭제할까요?")) {
       return;
     }
@@ -575,6 +582,11 @@ export function ProjectsManager({
   };
 
   const openCreate = () => {
+    if (!canWriteAdmin) {
+      setMessage("읽기 전용 계정은 새 프로젝트를 생성할 수 없습니다.");
+      return;
+    }
+
     if (!confirmProceedIfDirty()) {
       return;
     }
@@ -702,6 +714,11 @@ export function ProjectsManager({
 
   // 파일 선택 즉시 로컬 미리보기 + 업로드를 수행한다.
   const uploadThumbnailImmediately = async (file: File) => {
+    if (!canWriteAdmin) {
+      setMessage("읽기 전용 계정은 이미지를 업로드할 수 없습니다.");
+      return;
+    }
+
     const requestId = ++thumbnailUploadRequestRef.current;
     setIsUploadingThumbnail(true);
     setMessage(null);
@@ -923,6 +940,11 @@ export function ProjectsManager({
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!canWriteAdmin) {
+      setMessage("읽기 전용 계정은 저장할 수 없습니다.");
+      return;
+    }
+
     if (!form.summary.trim()) {
       setMessage("프로젝트 내용을 입력해주세요.");
       return;
@@ -1004,6 +1026,11 @@ export function ProjectsManager({
   };
 
   const onDelete = async (id: string) => {
+    if (!canWriteAdmin) {
+      setMessage("읽기 전용 계정은 삭제할 수 없습니다.");
+      return;
+    }
+
     if (!window.confirm("이 프로젝트를 삭제할까요?")) {
       return;
     }
@@ -1197,6 +1224,7 @@ export function ProjectsManager({
         motion
         title="프로젝트 관리"
         summary={`전체 프로젝트 ${total}개`}
+        detail={!canWriteAdmin ? `현재 계정(${role ?? "unknown"})은 읽기 전용입니다.` : undefined}
         action={
           <AdminToolbar>
             <AdminToolbarSelect
@@ -1220,7 +1248,7 @@ export function ProjectsManager({
               onChange={(value) => void onChangePageSize(Number(value))}
             />
             <AdminToolbarAction>
-              <Button type="button" onClick={openCreate}>
+              <Button type="button" onClick={openCreate} disabled={!canWriteAdmin}>
                 새 프로젝트
               </Button>
             </AdminToolbarAction>
@@ -1382,6 +1410,7 @@ export function ProjectsManager({
         description="필수 필드를 채운 뒤 저장하면 공개 페이지와 동기화됩니다."
       >
         <form className="space-y-3.5" onSubmit={onSubmit}>
+          <fieldset disabled={!canWriteAdmin || isPending} className="space-y-3.5">
           <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">썸네일 업로드</p>
             <div className="flex flex-wrap gap-2">
@@ -1784,7 +1813,7 @@ export function ProjectsManager({
                           size="sm"
                           variant="destructive"
                           onClick={() => void onDeleteProjectCommentByAdmin(comment.id)}
-                          disabled={pendingCommentDeleteId === comment.id}
+                          disabled={pendingCommentDeleteId === comment.id || !canWriteAdmin}
                         >
                           삭제
                         </Button>
@@ -1800,7 +1829,7 @@ export function ProjectsManager({
           ) : null}
 
           <div className="flex gap-2">
-            <Button type="submit" className="flex-1" disabled={isPending}>
+            <Button type="submit" className="flex-1" disabled={isPending || !canWriteAdmin}>
               {isPending ? "저장 중..." : editingId ? "저장" : "프로젝트 생성"}
             </Button>
             {editingId ? (
@@ -1808,7 +1837,7 @@ export function ProjectsManager({
                 type="button"
                 variant="destructive"
                 onClick={() => onDelete(editingId)}
-                disabled={isPending}
+                disabled={isPending || !canWriteAdmin}
                 aria-label="프로젝트 삭제"
               >
                 <TrashIcon />
@@ -1816,6 +1845,7 @@ export function ProjectsManager({
               </Button>
             ) : null}
           </div>
+          </fieldset>
 
           {message ? <p className="text-sm text-muted">{message}</p> : null}
         </form>

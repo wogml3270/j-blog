@@ -7,7 +7,7 @@ type RouteContext = {
 };
 
 export async function GET(_: Request, context: RouteContext) {
-  const guard = await getAdminGuardForApi();
+  const guard = await getAdminGuardForApi("read");
 
   if (!guard.ok) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });

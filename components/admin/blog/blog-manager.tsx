@@ -8,6 +8,7 @@ import {
   AdminToolbarSelect,
 } from "@/components/admin/common/admin-toolbar";
 import { AdminLocaleTabs, type AdminLocale } from "@/components/admin/common/locale-tabs";
+import { useAdminSession } from "@/components/admin/common/admin-session-provider";
 import { EditorDrawer } from "@/components/admin/common/editor-drawer";
 import { ManagerList, ManagerListRow } from "@/components/admin/common/manager-list";
 import { MarkdownField } from "@/components/admin/common/markdown-field";
@@ -247,6 +248,7 @@ export function BlogManager({
   initialFilter = "all",
   initialSelectedId = null,
 }: BlogManagerProps) {
+  const { canWriteAdmin, role } = useAdminSession();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -366,6 +368,11 @@ export function BlogManager({
   }, []);
 
   const openCreate = () => {
+    if (!canWriteAdmin) {
+      setMessage("읽기 전용 계정은 새 게시글을 생성할 수 없습니다.");
+      return;
+    }
+
     if (!confirmProceedIfDirty()) {
       return;
     }
@@ -490,6 +497,11 @@ export function BlogManager({
   );
 
   const onDeleteCommentByAdmin = async (commentId: string) => {
+    if (!canWriteAdmin) {
+      setMessage("읽기 전용 계정은 댓글을 삭제할 수 없습니다.");
+      return;
+    }
+
     if (!window.confirm("이 댓글을 삭제할까요?")) {
       return;
     }
@@ -624,6 +636,11 @@ export function BlogManager({
 
   // 파일 선택 즉시 로컬 미리보기 + 업로드를 수행한다.
   const uploadThumbnailImmediately = async (file: File) => {
+    if (!canWriteAdmin) {
+      setMessage("읽기 전용 계정은 썸네일을 수정할 수 없습니다.");
+      return;
+    }
+
     const requestId = ++thumbnailUploadRequestRef.current;
     setIsUploadingThumbnail(true);
     setMessage(null);
@@ -688,6 +705,10 @@ export function BlogManager({
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!canWriteAdmin) {
+      setMessage("읽기 전용 계정은 저장할 수 없습니다.");
+      return;
+    }
 
     if (!form.bodyMarkdown.trim()) {
       setMessage("본문을 입력해주세요.");
@@ -761,6 +782,11 @@ export function BlogManager({
   };
 
   const onDelete = async (id: string) => {
+    if (!canWriteAdmin) {
+      setMessage("읽기 전용 계정은 게시글을 삭제할 수 없습니다.");
+      return;
+    }
+
     if (!window.confirm("이 게시글을 삭제할까요?")) {
       return;
     }
@@ -939,6 +965,7 @@ export function BlogManager({
       <ManagerShell
         title="블로그 관리"
         summary={`전체 게시글 ${total}개`}
+        detail={!canWriteAdmin ? `현재 계정(${role ?? "unknown"})은 읽기 전용입니다.` : undefined}
         action={
           <AdminToolbar>
             <AdminToolbarSelect
@@ -962,7 +989,7 @@ export function BlogManager({
               onChange={(value) => void onChangePageSize(Number(value))}
             />
             <AdminToolbarAction>
-              <Button type="button" onClick={openCreate}>
+              <Button type="button" onClick={openCreate} disabled={!canWriteAdmin}>
                 새 게시글
               </Button>
             </AdminToolbarAction>
@@ -1119,6 +1146,7 @@ export function BlogManager({
         description="저장 즉시 Supabase 데이터가 갱신됩니다."
       >
         <form className="space-y-3" onSubmit={onSubmit}>
+          <fieldset disabled={!canWriteAdmin || isPending} className="space-y-3">
           <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">
               썸네일 업로드(선택)
@@ -1450,7 +1478,7 @@ export function BlogManager({
           ) : null}
 
           <div className="flex gap-2">
-            <Button type="submit" className="flex-1" disabled={isPending}>
+            <Button type="submit" className="flex-1" disabled={isPending || !canWriteAdmin}>
               {isPending ? "저장 중..." : editingId ? "저장" : "게시글 생성"}
             </Button>
             {editingId ? (
@@ -1458,7 +1486,7 @@ export function BlogManager({
                 type="button"
                 variant="destructive"
                 onClick={() => onDelete(editingId)}
-                disabled={isPending}
+                disabled={isPending || !canWriteAdmin}
                 aria-label="게시글 삭제"
               >
                 <TrashIcon />
@@ -1466,6 +1494,7 @@ export function BlogManager({
               </Button>
             ) : null}
           </div>
+          </fieldset>
 
           {message ? <p className="text-sm text-muted">{message}</p> : null}
         </form>

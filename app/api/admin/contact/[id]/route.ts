@@ -30,7 +30,7 @@ function parseAdminNote(value: unknown): string | null {
 }
 
 export async function PUT(request: Request, context: RouteContext) {
-  const guard = await getAdminGuardForApi();
+  const guard = await getAdminGuardForApi("write");
 
   if (!guard.ok) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AccessRequestCard } from "@/components/admin/access-request-card";
 import { SocialLoginButtons } from "@/components/auth/social-login-buttons";
+import { getLatestAdminAccessRequestByEmail } from "@/lib/auth/admin-settings-repository";
 import { getAdminState } from "@/lib/auth/admin";
 
 type LoginPageProps = {
@@ -37,6 +39,10 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
   const resolvedSearchParams = await searchParams;
   const nextPath = readSearchParam(resolvedSearchParams.next, "/admin/dashboard");
   const reason = readSearchParam(resolvedSearchParams.reason, state.reason);
+  const latestRequest =
+    state.email && state.user && !state.isAdmin
+      ? await getLatestAdminAccessRequestByEmail(state.email)
+      : null;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-xl items-center px-4 py-10">
@@ -53,7 +59,12 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
         ) : null}
 
         {state.user && !state.isAdmin ? (
-          <p className="mt-3 text-sm text-muted">현재 로그인 계정: {state.email ?? "unknown"}</p>
+          <>
+            <p className="mt-3 text-sm text-muted">현재 로그인 계정: {state.email ?? "unknown"}</p>
+            {state.email ? (
+              <AccessRequestCard email={state.email} initialRequest={latestRequest} />
+            ) : null}
+          </>
         ) : null}
 
         <div className="mt-5">

@@ -96,7 +96,7 @@ function validateFeaturedPolicy(payload: AdminPostInput): string | null {
 
 // 관리자 게시글 목록은 page/pageSize 기반 응답으로 통일한다.
 export async function GET(request: Request) {
-  const guard = await getAdminGuardForApi();
+  const guard = await getAdminGuardForApi("read");
 
   if (!guard.ok) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
@@ -115,7 +115,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const guard = await getAdminGuardForApi();
+  const guard = await getAdminGuardForApi("write");
 
   if (!guard.ok) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });

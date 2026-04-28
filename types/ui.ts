@@ -1,6 +1,6 @@
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/config";
-import type { AdminListFilter } from "@/types/admin";
+import type { AdminAccessRequest, AdminListFilter, AdminMember, AdminRole } from "@/types/admin";
 import type { AdminPost } from "@/types/blog";
 import type { Contact } from "@/types/contacts";
 import type { PublishStatus } from "@/types/db";
@@ -54,6 +54,7 @@ export type ContactFabProps = {
 export type AdminSidebarProps = {
   email: string | null;
   avatarUrl: string | null;
+  role: AdminRole | null;
 };
 
 export type BlogManagerProps = {
@@ -221,4 +222,10 @@ export type InteractiveAboutRevealProps = {
     techStack: string;
     techCategory: Record<AboutTechCategory, string>;
   };
+};
+
+export type SettingsManagerProps = {
+  initialRequests: AdminAccessRequest[];
+  initialMembers: AdminMember[];
+  initialTab?: "access-requests" | "admin-members";
 };

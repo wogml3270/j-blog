@@ -22,6 +22,7 @@ import {
   AdminToolbar,
   AdminToolbarSelect,
 } from "@/components/admin/common/admin-toolbar";
+import { useAdminSession } from "@/components/admin/common/admin-session-provider";
 import { ManagerShell } from "@/components/admin/common/manager-shell";
 import { Button } from "@/components/ui/button";
 import { FilterIcon } from "@/components/ui/icons/filter-icon";
@@ -159,6 +160,7 @@ export function HomeManager({
   initialHighlights,
   initialSources,
 }: HomeManagerProps) {
+  const { canWriteAdmin, role } = useAdminSession();
   const [items, setItems] = useState<EditableHighlight[]>(() => toEditableList(initialHighlights));
   const [savedItems, setSavedItems] = useState<EditableHighlight[]>(() =>
     toEditableList(initialHighlights),
@@ -208,6 +210,10 @@ export function HomeManager({
 
   // 홈 슬라이드 항목 순서를 드래그 결과 순서로 재배치한다.
   const onSlidesDragEnd = (event: DragEndEvent) => {
+    if (!canWriteAdmin) {
+      return;
+    }
+
     setItems((prev) =>
       reorderByVisibleSubset(
         prev,
@@ -219,6 +225,11 @@ export function HomeManager({
 
   // 저장 시 순서/활성 상태와 CTA 오버라이드만 갱신한다.
   const save = async () => {
+    if (!canWriteAdmin) {
+      setNotice({ kind: "error", text: "읽기 전용 계정은 저장할 수 없습니다." });
+      return;
+    }
+
     setIsPending(true);
     setNotice(null);
 
@@ -254,7 +265,11 @@ export function HomeManager({
       title="메인 홈 슬라이드 관리"
       motion
       summary="대시보드 홈 Hero 슬라이드 노출 순서와 활성 상태를 관리합니다."
-      detail="제목/설명/이미지는 원본 콘텐츠를 사용하며, CTA 라벨만 오버라이드할 수 있습니다."
+      detail={
+        canWriteAdmin
+          ? "제목/설명/이미지는 원본 콘텐츠를 사용하며, CTA 라벨만 오버라이드할 수 있습니다."
+          : `현재 계정(${role ?? "unknown"})은 읽기 전용입니다.`
+      }
       action={
         <AdminToolbar>
           <AdminToolbarSelect
@@ -335,6 +350,7 @@ export function HomeManager({
                           <input
                             type="checkbox"
                             checked={item.isActive}
+                            disabled={!canWriteAdmin}
                             onChange={(event) =>
                               setItems((prev) =>
                                 prev.map((target) =>
@@ -351,6 +367,7 @@ export function HomeManager({
 
                         <Input
                           value={item.overrideCtaLabel}
+                          disabled={!canWriteAdmin}
                           onChange={(event) =>
                             setItems((prev) =>
                               prev.map((target) =>
@@ -381,7 +398,7 @@ export function HomeManager({
           >
             {isDirty ? "변경 사항 있음" : "저장된 상태"}
           </span>
-          <Button type="button" onClick={save} disabled={isPending || !isDirty}>
+          <Button type="button" onClick={save} disabled={isPending || !isDirty || !canWriteAdmin}>
             {isPending ? "저장 중..." : "저장"}
           </Button>
         </div>
