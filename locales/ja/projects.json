@@ -1,8 +1,6 @@
 {
   "title": "プロジェクト",
-  "description": "プロジェクト一覧と各プロジェクトの役割・技術・詳細レビュー",
-  "listTitle": "Projects",
-  "listDescription": "サムネイル、役割、期間、技術、関連リンクを確認できるプロジェクト集です。",
+  "description": "企画からデプロイまで、課題解決の過程と成果を示すプロジェクトショーケース。",
   "searchPlaceholder": "タイトル・内容・タグで検索",
   "searchButton": "検索",
   "searchReset": "リセット",

@@ -197,7 +197,7 @@ export function DashboardManager({
         <SurfaceCard tone="surface" padding="md">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-              최근 블로그 변경
+              최근 블로그
             </h2>
             <Link
               href="/admin/blog"
@@ -236,7 +236,7 @@ export function DashboardManager({
         <SurfaceCard tone="surface" padding="md">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-              최근 프로젝트 변경
+              최근 프로젝트
             </h2>
             <Link
               href="/admin/projects"

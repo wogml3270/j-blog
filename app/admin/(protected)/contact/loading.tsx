@@ -1,5 +1,13 @@
-import { AdminListManagerLoadingSkeleton } from "@/components/admin/common/protected-loading-skeleton";
+import { AdminListManagerLoadingSkeleton } from "@/components/ui/skeleton/admin/list-manager-loading-skeleton";
 
 export default function AdminContactLoading() {
-  return <AdminListManagerLoadingSkeleton titleWidth={126} hasAction={false} />;
+  return (
+    <AdminListManagerLoadingSkeleton
+      titleWidth={126}
+      hasAction={false}
+      sectionCount={2}
+      withThumbnail={false}
+      compactToolbar
+    />
+  );
 }

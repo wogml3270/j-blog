@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-// 홈 히어로 로딩 전환 시 사용하는 스켈레톤 UI
-export function ImmersiveHeroSkeleton() {
+// 홈 히어로 슬라이드 페이지 전용 스켈레톤 UI
+export function ImmersiveHeroLoadingSkeleton() {
   return (
     <section
       aria-hidden="true"
@@ -16,20 +16,19 @@ export function ImmersiveHeroSkeleton() {
       >
         <Skeleton className="absolute inset-0 block" width="100%" height="100%" rounded={0} />
         <div className="absolute inset-0 bg-linear-to-r from-black/28 via-black/14 to-transparent" />
-        <div className="relative z-10 mx-auto flex h-full w-full max-w-[1240px] items-end px-5 pb-28 pt-18 sm:px-8 sm:pb-34">
-          <div className="w-full max-w-[min(74ch,78vw)] space-y-4">
-            <Skeleton width={176} height={28} rounded="999px" />
-            <Skeleton width="72%" height={52} rounded="0.75rem" />
-            <Skeleton width="66%" height={22} rounded="0.75rem" />
-            <Skeleton width={140} height={44} rounded="999px" />
-            <Skeleton width="74%" height={86} rounded="0.75rem" />
+        <div className="relative z-10 mx-auto flex h-full w-full max-w-[1240px] items-start px-5 pb-28 pt-14 sm:px-8 sm:pb-32 sm:pt-16 lg:items-center lg:pb-24 lg:pt-20">
+          <div className="w-full max-w-[min(74ch,86vw)] space-y-3 sm:space-y-4">
+            <Skeleton width={130} height={24} rounded="999px" />
+            <Skeleton width="78%" height={56} rounded="0.75rem" />
+            <Skeleton width="64%" height={20} rounded="0.75rem" />
+            <Skeleton width={136} height={42} rounded="999px" />
           </div>
         </div>
 
         <div className="pointer-events-none absolute bottom-5 left-0 right-0 z-20 px-4 sm:px-6 lg:px-8">
           <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={`hero-thumb-skeleton-${index}`} height={68} rounded="0.75rem" />
+              <Skeleton key={`hero-thumb-skeleton-${index}`} height={68} rounded="0.85rem" />
             ))}
           </div>
         </div>

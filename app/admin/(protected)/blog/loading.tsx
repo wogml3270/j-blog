@@ -1,5 +1,5 @@
-import { AdminListManagerLoadingSkeleton } from "@/components/admin/common/protected-loading-skeleton";
+import { AdminListManagerLoadingSkeleton } from "@/components/ui/skeleton/admin/list-manager-loading-skeleton";
 
 export default function AdminBlogLoading() {
-  return <AdminListManagerLoadingSkeleton titleWidth={128} hasAction />;
+  return <AdminListManagerLoadingSkeleton titleWidth={128} hasAction sectionCount={2} />;
 }

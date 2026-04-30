@@ -1,4 +1,4 @@
-import { AdminAboutLoadingSkeleton } from "@/components/admin/common/protected-loading-skeleton";
+import { AdminAboutLoadingSkeleton } from "@/components/ui/skeleton/admin/about-loading-skeleton";
 
 export default function AdminAboutLoading() {
   return <AdminAboutLoadingSkeleton />;

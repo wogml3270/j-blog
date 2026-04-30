@@ -89,8 +89,8 @@ export default async function ProjectsPage({ params, searchParams }: ProjectsPag
 
   return (
     <ContentListLayout
-      title={dictionary.projects.listTitle}
-      description={dictionary.projects.listDescription}
+      title={dictionary.projects.title}
+      description={dictionary.projects.description}
       toolbar={
         <ContentSearchToolbar
           placeholder={dictionary.projects.searchPlaceholder}

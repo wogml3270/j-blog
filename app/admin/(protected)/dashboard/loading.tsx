@@ -1,4 +1,4 @@
-import { AdminDashboardLoadingSkeleton } from "@/components/admin/common/protected-loading-skeleton";
+import { AdminDashboardLoadingSkeleton } from "@/components/ui/skeleton/admin/dashboard-loading-skeleton";
 
 export default function AdminDashboardLoading() {
   return <AdminDashboardLoadingSkeleton />;

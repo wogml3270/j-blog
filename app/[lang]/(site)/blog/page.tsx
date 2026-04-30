@@ -77,8 +77,8 @@ export default async function BlogListPage({ params, searchParams }: BlogListPag
 
   return (
     <ContentListLayout
-      title={dictionary.blog.listTitle}
-      description={dictionary.blog.listDescription}
+      title={dictionary.blog.title}
+      description={dictionary.blog.description}
       toolbar={
         <ContentSearchToolbar
           placeholder={dictionary.blog.searchPlaceholder}
