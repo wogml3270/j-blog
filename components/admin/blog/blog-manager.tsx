@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -107,6 +108,11 @@ function toFormState(post: AdminPost): PostFormState {
 // 태그 목록은 trim 처리 후 중복 없이 저장한다.
 function normalizeTagList(tags: string[]): string[] {
   return [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
+}
+
+// 로컬 썸네일 미리보기(blob URL)는 next/image 최적화를 건너뛴다.
+function isBlobUrl(value: string): boolean {
+  return value.trim().toLowerCase().startsWith("blob:");
 }
 
 function toTranslationState(translations: BlogTranslationMap | undefined) {
@@ -1026,13 +1032,13 @@ export function BlogManager({
             {mainPosts.map((post) => (
               <ManagerListRow key={post.id} onClick={() => openEdit(post)} className="items-start">
                 <>
-                  <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-background">
+                  <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-background">
                     {post.thumbnail ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={post.thumbnail}
                         alt={`${post.title} 썸네일`}
-                        className="h-full w-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-[11px] text-muted">
@@ -1099,13 +1105,13 @@ export function BlogManager({
             {privatePosts.map((post) => (
               <ManagerListRow key={post.id} onClick={() => openEdit(post)} className="items-start">
                 <>
-                  <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-background">
+                  <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-background">
                     {post.thumbnail ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={post.thumbnail}
                         alt={`${post.title} 썸네일`}
-                        className="h-full w-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-[11px] text-muted">
@@ -1223,12 +1229,13 @@ export function BlogManager({
               현재 썸네일: {isUploadingThumbnail ? "업로드 중..." : form.thumbnail || "설정 안 함"}
             </p>
             {localThumbnailPreview || form.thumbnail ? (
-              <div className="overflow-hidden rounded-md border border-border bg-surface">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+              <div className="relative h-40 w-full overflow-hidden rounded-md border border-border bg-surface">
+                <Image
                   src={localThumbnailPreview || form.thumbnail}
                   alt="썸네일 미리보기"
-                  className="h-40 w-full object-cover"
+                  fill
+                  unoptimized={isBlobUrl(localThumbnailPreview || form.thumbnail)}
+                  className="object-cover"
                 />
               </div>
             ) : (

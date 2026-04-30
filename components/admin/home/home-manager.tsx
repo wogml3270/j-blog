@@ -17,6 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import {
   AdminToolbar,
@@ -319,13 +320,13 @@ export function HomeManager({
                   return (
                     <SortableHighlightRow key={item.id} id={item.id}>
                       <div className="flex items-start gap-3">
-                        <div className="h-16 w-28 shrink-0 overflow-hidden rounded-md border border-border bg-surface">
+                        <div className="relative h-16 w-28 shrink-0 overflow-hidden rounded-md border border-border bg-surface">
                           {source?.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
+                            <Image
                               src={source.imageUrl}
                               alt={`${source.title} 썸네일`}
-                              className="h-full w-full object-cover"
+                              fill
+                              className="object-cover"
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-xs text-muted">

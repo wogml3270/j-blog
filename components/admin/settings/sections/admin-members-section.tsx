@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
@@ -272,15 +273,16 @@ export function AdminMembersSection({ initialMembers }: AdminMembersSectionProps
                 <div className="space-y-3">
                   <div className="flex min-w-0 flex-wrap items-start gap-3">
                     {member.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={member.avatarUrl}
                         alt={member.email}
+                        width={40}
+                        height={40}
                         className="h-10 w-10 rounded-full border border-border object-cover"
                       />
                     ) : (
                       <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-xs font-semibold text-foreground">
-                        {(member.email || "U").slice(0, 1).toUpperCase()}
+                        {(member.email || "A").slice(0, 1).toUpperCase()}
                       </span>
                     )}
 

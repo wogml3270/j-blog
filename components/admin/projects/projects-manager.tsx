@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   DndContext,
   type DragEndEvent,
@@ -146,6 +147,11 @@ function normalizeDateInput(value: string | null | undefined): string {
   }
 
   return date.toISOString().slice(0, 10);
+}
+
+// 로컬 썸네일 미리보기(blob URL)는 next/image 최적화를 건너뛴다.
+function isBlobUrl(value: string): boolean {
+  return value.trim().toLowerCase().startsWith("blob:");
 }
 
 function uniqueStringList(items: string[]): string[] {
@@ -1294,12 +1300,12 @@ export function ProjectsManager({
                 className="transition-all duration-300 hover:-translate-y-0.5"
               >
                 <>
-                  <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-background">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                  <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-background">
+                    <Image
                       src={project.thumbnail}
                       alt={`${project.title} 썸네일`}
-                      className="h-full w-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -1372,12 +1378,12 @@ export function ProjectsManager({
                 className="items-start transition-all duration-300 hover:-translate-y-0.5"
               >
                 <>
-                  <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-background">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                  <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-background">
+                    <Image
                       src={project.thumbnail}
                       alt={`${project.title} 썸네일`}
-                      className="h-full w-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -1491,12 +1497,13 @@ export function ProjectsManager({
               {isUploadingThumbnail ? "업로드 중..." : form.thumbnail || "설정되지 않음"}
             </p>
             {localThumbnailPreview || form.thumbnail ? (
-              <div className="overflow-hidden rounded-md border border-border bg-surface">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+              <div className="relative h-40 w-full overflow-hidden rounded-md border border-border bg-surface">
+                <Image
                   src={localThumbnailPreview || form.thumbnail}
                   alt="썸네일 미리보기"
-                  className="h-40 w-full object-cover"
+                  fill
+                  unoptimized={isBlobUrl(localThumbnailPreview || form.thumbnail)}
+                  className="object-cover"
                 />
               </div>
             ) : (

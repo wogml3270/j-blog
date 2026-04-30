@@ -17,6 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ABOUT_TECH_CATEGORY_ORDER,
@@ -298,6 +299,11 @@ function validateSvgMarkup(markup: string): { valid: boolean; message?: string }
   return { valid: true };
 }
 
+// 로컬 미리보기(blob URL)는 이미지 최적화를 끄고 그대로 렌더링한다.
+function isBlobUrl(value: string): boolean {
+  return value.trim().toLowerCase().startsWith("blob:");
+}
+
 function SortableAboutTechItem({
   item,
   onChange,
@@ -325,8 +331,17 @@ function SortableAboutTechItem({
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="inline-flex min-w-0 flex-1 items-center gap-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={item.logoUrl} alt="" className="h-5 w-5 rounded-sm bg-black/15 p-0.5" />
+          {item.logoUrl.trim() ? (
+            <Image
+              src={item.logoUrl}
+              alt=""
+              width={20}
+              height={20}
+              className="h-5 w-5 rounded-sm bg-black/15 p-0.5"
+            />
+          ) : (
+            <span className="inline-flex h-5 w-5 rounded-sm bg-black/15 p-0.5" />
+          )}
           <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -907,11 +922,12 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
             {localAboutPhotoPreview || form.aboutPhotoUrl.trim() ? (
               <div className="overflow-hidden rounded-md border border-border bg-surface p-3">
                 <div className="relative h-44 w-full rounded-md border border-border bg-background/80 sm:h-56">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={localAboutPhotoPreview || form.aboutPhotoUrl}
                     alt="프로필 사진 미리보기"
-                    className="h-full w-full object-contain object-center"
+                    fill
+                    unoptimized={isBlobUrl(localAboutPhotoPreview || form.aboutPhotoUrl)}
+                    className="object-contain object-center"
                   />
                 </div>
               </div>
@@ -1027,10 +1043,12 @@ export function AboutManager({ initialAbout }: AboutManagerProps) {
 
             {localTechLogoPreview || localeTechLogoUrlInput.trim() ? (
               <div className="overflow-hidden rounded-md border border-border bg-surface p-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={localTechLogoPreview || localeTechLogoUrlInput}
                   alt="기술 로고 미리보기"
+                  width={48}
+                  height={48}
+                  unoptimized={isBlobUrl(localTechLogoPreview || localeTechLogoUrlInput)}
                   className="h-12 w-12 rounded-sm object-contain"
                 />
               </div>

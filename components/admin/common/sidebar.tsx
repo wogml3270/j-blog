@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { MouseEvent } from "react";
@@ -77,10 +78,11 @@ export function AdminSidebar({ email, avatarUrl, role }: AdminSidebarProps) {
         <div className="flex">
           <div className="flex items-center gap-2.5">
             {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={avatarUrl}
                 alt={email ?? "관리자 프로필"}
+                width={40}
+                height={40}
                 className="h-10 w-10 rounded-full border border-border object-cover"
               />
             ) : (
