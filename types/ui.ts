@@ -1,6 +1,6 @@
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/config";
-import type { AdminAccessRequest, AdminListFilter, AdminMember, AdminRole } from "@/types/admin";
+import type { AdminAccessRequest, AdminListSort, AdminMember, AdminRole } from "@/types/admin";
 import type { AdminPost } from "@/types/blog";
 import type { Contact } from "@/types/contacts";
 import type { PublishStatus } from "@/types/db";
@@ -60,7 +60,8 @@ export type AdminSidebarProps = {
 export type BlogManagerProps = {
   initialMainPage: import("@/types/admin").PaginatedResult<AdminPost>;
   initialPrivatePage: import("@/types/admin").PaginatedResult<AdminPost>;
-  initialFilter?: AdminListFilter;
+  initialSort?: AdminListSort;
+  initialSearchQuery?: string;
   initialSelectedId?: string | null;
 };
 
@@ -74,7 +75,8 @@ export type ContactManagerProps = {
 export type ProjectsManagerProps = {
   initialMainPage: import("@/types/admin").PaginatedResult<AdminProject>;
   initialPrivatePage: import("@/types/admin").PaginatedResult<AdminProject>;
-  initialFilter?: AdminListFilter;
+  initialSort?: AdminListSort;
+  initialSearchQuery?: string;
   initialSelectedId?: string | null;
 };
 

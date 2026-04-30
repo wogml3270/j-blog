@@ -27,7 +27,7 @@ with seeded_posts as (
     sync_slug_with_title
   )
   values
-  ('테마_스무딩_KO_EN_JA_i18n', $title$테마 스무딩 + KO/EN/JA i18n$title$, $desc$테마 스무딩 + KO/EN/JA i18n 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 작업일지 - 2026-04-06 (테마 스무딩 + KO/EN/JA i18n)
+  ('테마_스무딩_KO_EN_JA_i18n', $title$테마 스무딩 + KO/EN/JA i18n$title$, $desc$테마 스무딩 + KO/EN/JA i18n 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업일지 - 2026-04-06 (테마 스무딩 + KO/EN/JA i18n)
 
 ## 1) 복구 점검
 
@@ -71,7 +71,7 @@ with seeded_posts as (
 
 - `npm run lint`: 통과
 - `npm run build`: 샌드박스 환경의 기존/정체된 빌드 프로세스와 Turbopack 제약으로 실행 불가$body$, 'published', '2026-04-06T00:00:00Z', false, true, false),
-  ('오버레이_애니메이션_로케일_JSON', $title$오버레이 + 애니메이션 + 로케일 JSON$title$, $desc$오버레이 + 애니메이션 + 로케일 JSON 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 작업일지 - 2026-04-06 (오버레이 + 애니메이션 + 로케일 JSON)
+  ('오버레이_애니메이션_로케일_JSON', $title$오버레이 + 애니메이션 + 로케일 JSON$title$, $desc$오버레이 + 애니메이션 + 로케일 JSON 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업일지 - 2026-04-06 (오버레이 + 애니메이션 + 로케일 JSON)
 
 ## 1) 모바일 네비게이션 오버레이
 
@@ -106,7 +106,7 @@ with seeded_posts as (
 
 - `npm run lint`: 통과
 - `npx tsc --noEmit`: 통과$body$, 'published', '2026-04-06T00:00:00Z', false, true, false),
-  ('Admin_CMS_Supabase_v1', $title$Admin CMS + Supabase v1$title$, $desc$Admin CMS + Supabase v1 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 작업일지 - 2026-04-06 (Admin CMS + Supabase v1)
+  ('Admin_CMS_Supabase_v1', $title$Admin CMS + Supabase v1$title$, $desc$Admin CMS + Supabase v1 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업일지 - 2026-04-06 (Admin CMS + Supabase v1)
 
 ## 1) 라우팅/접근 제어
 
@@ -182,7 +182,7 @@ with seeded_posts as (
 - `npm run lint`: 통과
 - `npx tsc --noEmit`: 통과
 - `npm run build`: 샌드박스 제약(Turbopack 포트 바인딩 권한 오류)으로 실패$body$, 'published', '2026-04-06T00:00:00Z', false, true, false),
-  ('ui_여백_인증_댓글', $title$ui 여백 인증 댓글$title$, $desc$ui 여백 인증 댓글 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 작업일지 (2026-04-07)
+  ('ui_여백_인증_댓글', $title$ui 여백 인증 댓글$title$, $desc$ui 여백 인증 댓글 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업일지 (2026-04-07)
 
 ## 목표
 
@@ -254,7 +254,7 @@ with seeded_posts as (
 
 - 빌드 시 Next.js workspace root 경고(복수 lockfile 감지)는 남아 있음.
   - 기능 오류는 아니며, 추후 `outputFileTracingRoot` 설정 또는 상위 lockfile 정리로 해소 가능.$body$, 'published', '2026-04-07T00:00:00Z', false, true, false),
-  ('Admin_IA_5탭_Contact_FAB_Home_About_분리', $title$Admin IA 5탭 + Contact FAB + Home/About 분리$title$, $desc$Admin IA 5탭 + Contact FAB + Home/About 분리 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 작업일지 - 2026-04-07 (Admin IA 5탭 + Contact FAB + Home/About 분리)
+  ('Admin_IA_5탭_Contact_FAB_Home_About_분리', $title$Admin IA 5탭 + Contact FAB + Home/About 분리$title$, $desc$Admin IA 5탭 + Contact FAB + Home/About 분리 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업일지 - 2026-04-07 (Admin IA 5탭 + Contact FAB + Home/About 분리)
 
 ## 1) 관리자 IA 재정렬 (공개 메뉴 기준)
 
@@ -317,7 +317,7 @@ with seeded_posts as (
 - 동일 성격의 리다이렉트 정크 파일인 `project/page.tsx`, `profile/page.tsx`도 삭제.
 - 문의 FAB를 텍스트 버튼에서 SVG 아이콘 버튼으로 변경.
 - 문의 전송 성공 시 모달 폼 자동 닫힘 적용.$body$, 'published', '2026-04-07T00:00:00Z', false, true, false),
-  ('Dashboard_canonical_Blog_썸네일_Home_Swiper', $title$Dashboard canonical + Blog 썸네일 + Home Swiper$title$, $desc$Dashboard canonical + Blog 썸네일 + Home Swiper 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 작업일지 - 2026-04-07 (Dashboard canonical + Blog 썸네일 + Home Swiper)
+  ('Dashboard_canonical_Blog_썸네일_Home_Swiper', $title$Dashboard canonical + Blog 썸네일 + Home Swiper$title$, $desc$Dashboard canonical + Blog 썸네일 + Home Swiper 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업일지 - 2026-04-07 (Dashboard canonical + Blog 썸네일 + Home Swiper)
 
 ## 1) 관리자 대시보드 경로/UX 개편
 
@@ -395,7 +395,7 @@ with seeded_posts as (
 - `npm run lint` 통과
 - `npx tsc --noEmit` 통과
 - `npm run build` 실패 (현 환경 DNS 제한으로 `fonts.googleapis.com` 접근 불가)$body$, 'published', '2026-04-07T00:00:00Z', false, true, false),
-  ('관리자_반응형_레이아웃_튜닝', $title$관리자 반응형 레이아웃 튜닝$title$, $desc$1. 레이아웃 전환 브레이크포인트 조정$desc$, '/blog/default-thumbnail.svg', $body$# 작업일지 - 2026-04-07 (관리자 반응형 레이아웃 튜닝)
+  ('관리자_반응형_레이아웃_튜닝', $title$관리자 반응형 레이아웃 튜닝$title$, $desc$1. 레이아웃 전환 브레이크포인트 조정$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업일지 - 2026-04-07 (관리자 반응형 레이아웃 튜닝)
 
 ## 변경 배경
 
@@ -432,7 +432,7 @@ with seeded_posts as (
 
 - `npm run lint` 통과
 - `npx tsc --noEmit` 통과$body$, 'published', '2026-04-07T00:00:00Z', false, true, false),
-  ('Admin_인라인_편집_About_KO_DB_Projects_DnD', $title$Admin 인라인 편집 + About KO DB + Projects DnD$title$, $desc$Admin 인라인 편집 + About KO DB + Projects DnD 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 작업일지 - 2026-04-07 (Admin 인라인 편집 + About KO DB + Projects DnD)
+  ('Admin_인라인_편집_About_KO_DB_Projects_DnD', $title$Admin 인라인 편집 + About KO DB + Projects DnD$title$, $desc$Admin 인라인 편집 + About KO DB + Projects DnD 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업일지 - 2026-04-07 (Admin 인라인 편집 + About KO DB + Projects DnD)
 
 ## 1) About 소개 문구 DB 전환 (KO 전용)
 
@@ -474,7 +474,7 @@ with seeded_posts as (
   - `supabase/schema-v1.0.2.sql`
   - 내용: `about_intro_description_ko` 추가/백필 + `schema_migrations` 기록
 - README의 스키마 적용 순서를 `v1.0.0 -> v1.0.1 -> v1.0.2`로 갱신.$body$, 'published', '2026-04-07T00:00:00Z', false, true, false),
-  ('대시보드_재구성_썸네일_업로드_2방식', $title$대시보드 재구성 + 썸네일 업로드 2방식$title$, $desc$대시보드 재구성 + 썸네일 업로드 2방식 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 작업일지 - 2026-04-07 (대시보드 재구성 + 썸네일 업로드 2방식)
+  ('대시보드_재구성_썸네일_업로드_2방식', $title$대시보드 재구성 + 썸네일 업로드 2방식$title$, $desc$대시보드 재구성 + 썸네일 업로드 2방식 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업일지 - 2026-04-07 (대시보드 재구성 + 썸네일 업로드 2방식)
 
 ## 1) 관리자 대시보드 재구성
 
@@ -508,7 +508,7 @@ with seeded_posts as (
 
 - `npm run lint` 통과
 - `npx tsc --noEmit` 통과$body$, 'published', '2026-04-07T00:00:00Z', false, true, false),
-  ('댓글_공개_로그인_관리자_UX_정리', $title$댓글 공개 로그인 + 관리자 UX 정리$title$, $desc$댓글 공개 로그인 + 관리자 UX 정리 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 작업일지 - 2026-04-07 (댓글 공개 로그인 + 관리자 UX 정리)
+  ('댓글_공개_로그인_관리자_UX_정리', $title$댓글 공개 로그인 + 관리자 UX 정리$title$, $desc$댓글 공개 로그인 + 관리자 UX 정리 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업일지 - 2026-04-07 (댓글 공개 로그인 + 관리자 UX 정리)
 
 ## 1) 공개 댓글 기능 점검/보강
 
@@ -545,7 +545,7 @@ with seeded_posts as (
 
 - `npm run lint` 통과
 - `npx tsc --noEmit` 통과$body$, 'published', '2026-04-07T00:00:00Z', false, true, false),
-  ('문의_FAB_개선_관리자_대시보드_정리', $title$문의 FAB 개선 + 관리자 대시보드 정리$title$, $desc$문의 FAB 개선 + 관리자 대시보드 정리 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 작업일지 - 2026-04-07 (문의 FAB 개선 + 관리자 대시보드 정리)
+  ('문의_FAB_개선_관리자_대시보드_정리', $title$문의 FAB 개선 + 관리자 대시보드 정리$title$, $desc$문의 FAB 개선 + 관리자 대시보드 정리 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업일지 - 2026-04-07 (문의 FAB 개선 + 관리자 대시보드 정리)
 
 ## 1) 문의 FAB 아이콘화
 
@@ -587,7 +587,7 @@ with seeded_posts as (
 - `npm run lint` 통과
 - `npx tsc --noEmit` 통과
   - 삭제된 admin 라우트로 인해 남아 있던 `.next/dev/types` 잔여 파일 정리 후 정상화$body$, 'published', '2026-04-07T00:00:00Z', false, true, false),
-  ('문의_관리자_메모_라디오', $title$문의 관리자 메모 라디오$title$, $desc$문의 관리자 메모 라디오 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 작업일지 (2026-04-07)
+  ('문의_관리자_메모_라디오', $title$문의 관리자 메모 라디오$title$, $desc$문의 관리자 메모 라디오 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업일지 (2026-04-07)
 
 ## 목표
 
@@ -643,7 +643,7 @@ with seeded_posts as (
 ## 적용 안내
 
 - Supabase SQL Editor에서 `supabase/schema-v1.0.3.sql`을 실행해야 실제 DB 컬럼이 생성됩니다.$body$, 'published', '2026-04-07T00:00:00Z', false, true, false),
-  ('관리자_페이지네이션_주스탄드_타입_v1_0_5', $title$관리자 페이지네이션 주스탄드 타입 v1.0.5$title$, $desc$관리자 페이지네이션 주스탄드 타입 v1.0.5 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 작업 일지 (2026-04-08)
+  ('관리자_페이지네이션_주스탄드_타입_v1_0_5', $title$관리자 페이지네이션 주스탄드 타입 v1.0.5$title$, $desc$관리자 페이지네이션 주스탄드 타입 v1.0.5 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업 일지 (2026-04-08)
 
 ## 요약
 
@@ -690,7 +690,7 @@ with seeded_posts as (
 - `npm run lint` 통과
 - `npx tsc --noEmit` 통과
 - `npm run build` 통과$body$, 'published', '2026-04-08T00:00:00Z', false, true, false),
-  ('readingTime_제거_Admin_구조_재편_Markdown_에디터', $title$readingTime 제거 + Admin 구조 재편 + Markdown 에디터$title$, $desc$1. readingTime 제거$desc$, '/blog/default-thumbnail.svg', $body$# 작업 일지 - 2026-04-08 (readingTime 제거 + Admin 구조 재편 + Markdown 에디터)
+  ('readingTime_제거_Admin_구조_재편_Markdown_에디터', $title$readingTime 제거 + Admin 구조 재편 + Markdown 에디터$title$, $desc$1. readingTime 제거$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업 일지 - 2026-04-08 (readingTime 제거 + Admin 구조 재편 + Markdown 에디터)
 
 ## 적용 목표
 
@@ -741,7 +741,7 @@ with seeded_posts as (
 ## 참고 메모
 
 - `@toast-ui/react-editor`는 React 19 peer dependency 충돌로 채택하지 않았고, 동일한 Toast UI의 vanilla 패키지(`@toast-ui/editor`)로 구현함.$body$, 'published', '2026-04-08T00:00:00Z', false, true, false),
-  ('홈_소개_리뉴얼_1차', $title$홈/소개 리뉴얼 1차$title$, $desc$홈/소개 리뉴얼 1차 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 작업 일지 - 홈/소개 리뉴얼 1차
+  ('홈_소개_리뉴얼_1차', $title$홈/소개 리뉴얼 1차$title$, $desc$홈/소개 리뉴얼 1차 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업 일지 - 홈/소개 리뉴얼 1차
 
 ## 작업일
 
@@ -792,7 +792,7 @@ with seeded_posts as (
 
 - 이번 단계는 홈/소개/관리자 하이라이트 운영까지로 제한
 - 블로그/프로젝트 페이지의 화려한 리뉴얼은 다음 단계로 분리$body$, 'published', '2026-04-09T00:00:00Z', false, true, false),
-  ('About_클릭_리빌_인터랙션_모바일_반응형', $title$About 클릭 리빌 인터랙션 + 모바일 반응형$title$, $desc$1. 위치 클래스 분리$desc$, '/blog/default-thumbnail.svg', $body$# About 클릭 리빌 인터랙션 + 모바일 반응형
+  ('About_클릭_리빌_인터랙션_모바일_반응형', $title$About 클릭 리빌 인터랙션 + 모바일 반응형$title$, $desc$1. 위치 클래스 분리$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# About 클릭 리빌 인터랙션 + 모바일 반응형
 
 ## 작업 내용
 - 공개 About 페이지를 서버/클라이언트 분리 구조로 변경했습니다.
@@ -858,7 +858,7 @@ with seeded_posts as (
   - 기존 의도대로 우측 이동 + 콘텐츠 리빌 유지
 - 코드 가독성:
   - 위치 관련 클래스는 객체 분리 + 한국어 주석 반영$body$, 'published', '2026-04-10T00:00:00Z', false, true, false),
-  ('About_페이지_리뉴얼_반응형_인터랙션', $title$About 페이지 리뉴얼 (반응형 + 인터랙션)$title$, $desc$About 페이지 리뉴얼 (반응형 + 인터랙션) 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# About 페이지 리뉴얼 (반응형 + 인터랙션)
+  ('About_페이지_리뉴얼_반응형_인터랙션', $title$About 페이지 리뉴얼 (반응형 + 인터랙션)$title$, $desc$About 페이지 리뉴얼 (반응형 + 인터랙션) 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# About 페이지 리뉴얼 (반응형 + 인터랙션)
 
 ## 작업 목적
 - 소개 페이지를 단순 정보 나열에서 벗어나 인터랙티브한 브랜드 섹션으로 재구성한다.
@@ -881,7 +881,7 @@ with seeded_posts as (
 ## 검증
 - `npm run lint` 통과
 - `npx tsc --noEmit` 통과$body$, 'published', '2026-04-10T00:00:00Z', false, true, false),
-  ('Vercel_1차_프로덕션_배포_Production_only', $title$Vercel 1차 프로덕션 배포 (Production only)$title$, $desc$1. Vercel CLI 로그인 및 프로젝트 연결$desc$, '/blog/default-thumbnail.svg', $body$# Vercel 1차 프로덕션 배포 (Production only)
+  ('Vercel_1차_프로덕션_배포_Production_only', $title$Vercel 1차 프로덕션 배포 (Production only)$title$, $desc$1. Vercel CLI 로그인 및 프로젝트 연결$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# Vercel 1차 프로덕션 배포 (Production only)
 
 ## 배포 결과
 - Vercel 프로젝트 연결: `wogml3270s-projects/j-blog`
@@ -925,7 +925,7 @@ with seeded_posts as (
 
 ## 메모
 - Vercel 빌드 로그에 `.env` 파일 감지 경고가 있어, 장기적으로는 로컬 `.env` 파일 의존 없이 Vercel 환경변수만 사용하도록 정리 필요.$body$, 'published', '2026-04-10T00:00:00Z', false, true, false),
-  ('관리자_안정화_예약_발행_에디터_고정_v1_0_12', $title$관리자 안정화 + 예약 발행 + 에디터 고정 (v1.0.12)$title$, $desc$관리자 안정화 + 예약 발행 + 에디터 고정 (v1.0.12) 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 관리자 안정화 + 예약 발행 + 에디터 고정 (v1.0.12)
+  ('관리자_안정화_예약_발행_에디터_고정_v1_0_12', $title$관리자 안정화 + 예약 발행 + 에디터 고정 (v1.0.12)$title$, $desc$관리자 안정화 + 예약 발행 + 에디터 고정 (v1.0.12) 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 관리자 안정화 + 예약 발행 + 에디터 고정 (v1.0.12)
 
 ## 작업 목적
 - 관리자 블로그/프로젝트 진입 시 간헐적으로 발생하던 `removeChild` DOM 오류를 완화한다.
@@ -967,7 +967,7 @@ with seeded_posts as (
 
 ## 메모
 - `prettier`는 `.sql` 파서를 자동 인식하지 못해 SQL 파일은 포맷 대상에서 제외했다.$body$, 'published', '2026-04-10T00:00:00Z', false, true, false),
-  ('관리자_위치_변경_드래그_통일', $title$관리자 위치 변경 드래그 통일$title$, $desc$관리자 위치 변경 드래그 통일 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 관리자 위치 변경 드래그 통일
+  ('관리자_위치_변경_드래그_통일', $title$관리자 위치 변경 드래그 통일$title$, $desc$관리자 위치 변경 드래그 통일 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 관리자 위치 변경 드래그 통일
 
 ## 작업 목적
 - 관리자 페이지의 위치 변경 기능을 화살표 버튼이 아닌 마우스 드래그로 통일한다.
@@ -993,7 +993,7 @@ with seeded_posts as (
 ## 확인 포인트
 - Home에서 드래그 순서 변경 후 저장 시 순서 유지되는지
 - About 기술 스택을 가로 방향으로 드래그 정렬 후 저장/재진입 시 순서 유지되는지$body$, 'published', '2026-04-10T00:00:00Z', false, true, false),
-  ('기술스택_순서_이동_한_줄_레이아웃_정리', $title$기술스택 순서 이동 + 한 줄 레이아웃 정리$title$, $desc$기술스택 순서 이동 + 한 줄 레이아웃 정리 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 기술스택 순서 이동 + 한 줄 레이아웃 정리
+  ('기술스택_순서_이동_한_줄_레이아웃_정리', $title$기술스택 순서 이동 + 한 줄 레이아웃 정리$title$, $desc$기술스택 순서 이동 + 한 줄 레이아웃 정리 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 기술스택 순서 이동 + 한 줄 레이아웃 정리
 
 ## 작업 목적
 - About 관리에서 기술스택 노출 순서를 직접 바꿀 수 있게 한다.
@@ -1014,7 +1014,7 @@ with seeded_posts as (
 ## 확인 포인트
 - 관리자 About에서 `↑/↓` 이동 후 저장 시 순서가 유지되는지
 - 공개 About에서 기술스택이 한 줄로 정렬되고, 항목이 많을 때 가로 스크롤되는지$body$, 'published', '2026-04-10T00:00:00Z', false, true, false),
-  ('소개_단순화_리뉴얼_v1_0_13', $title$소개 단순화 리뉴얼 v1.0.13$title$, $desc$소개 단순화 리뉴얼 v1.0.13 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 소개 단순화 리뉴얼 v1.0.13
+  ('소개_단순화_리뉴얼_v1_0_13', $title$소개 단순화 리뉴얼 v1.0.13$title$, $desc$소개 단순화 리뉴얼 v1.0.13 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 소개 단순화 리뉴얼 v1.0.13
 
 ## 작업 요약
 - `profile_content` 모델을 단순화하기 위해 불필요한 About 컬럼 5개를 제거하는 증분 마이그레이션을 추가했습니다.
@@ -1034,7 +1034,7 @@ with seeded_posts as (
 
 ## 비고
 - 기존 v1.0.0/v1.0.2 스키마 파일에는 과거 컬럼 정의가 남아 있으며, 이번 버전에서는 증분 마이그레이션(`v1.0.13`)으로 제거합니다.$body$, 'published', '2026-04-10T00:00:00Z', false, true, false),
-  ('소셜_아바타_next_image_에러_해결', $title$소셜 아바타 next/image 에러 해결$title$, $desc$소셜 아바타 next/image 에러 해결 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 소셜 아바타 next/image 에러 해결
+  ('소셜_아바타_next_image_에러_해결', $title$소셜 아바타 next/image 에러 해결$title$, $desc$소셜 아바타 next/image 에러 해결 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 소셜 아바타 next/image 에러 해결
 
 ## 이슈
 - 카카오 로그인 시 `Invalid src prop ... k.kakaocdn.net` 에러 발생
@@ -1055,7 +1055,7 @@ with seeded_posts as (
 - `components/blog/comments-section.tsx`
 - `lib/auth/admin.ts`
 - `next.config.ts`$body$, 'published', '2026-04-10T00:00:00Z', false, true, false),
-  ('수파베이스_스토리지_업로드_정비', $title$수파베이스 스토리지 업로드 정비$title$, $desc$1. Supabase SQL Editor에서 `schema-v1.0.9.sql` 실행$desc$, '/blog/default-thumbnail.svg', $body$# 수파베이스 스토리지 업로드 정비
+  ('수파베이스_스토리지_업로드_정비', $title$수파베이스 스토리지 업로드 정비$title$, $desc$1. Supabase SQL Editor에서 `schema-v1.0.9.sql` 실행$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 수파베이스 스토리지 업로드 정비
 
 ## 작업 배경
 - 관리자에서 PC 이미지 업로드 시 Supabase Storage로 직접 저장되도록 일원화 필요
@@ -1097,7 +1097,7 @@ with seeded_posts as (
 1. Supabase SQL Editor에서 `schema-v1.0.9.sql` 실행
 2. 관리자에서 블로그/프로젝트/About/Home 이미지 업로드 실사용 점검
 3. 키 노출 이력으로 `SUPABASE_SERVICE_ROLE_KEY` rotate 권장$body$, 'published', '2026-04-10T00:00:00Z', false, true, false),
-  ('슬러그_중복_안내_About_SVG_업로드_개선', $title$슬러그 중복 안내 + About SVG 업로드 개선$title$, $desc$슬러그 중복 안내 + About SVG 업로드 개선 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 슬러그 중복 안내 + About SVG 업로드 개선
+  ('슬러그_중복_안내_About_SVG_업로드_개선', $title$슬러그 중복 안내 + About SVG 업로드 개선$title$, $desc$슬러그 중복 안내 + About SVG 업로드 개선 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 슬러그 중복 안내 + About SVG 업로드 개선
 
 ## 작업 목적
 - 슬러그 중복 발생 시 관리자에게 이해하기 쉬운 오류 메시지를 제공한다.
@@ -1123,7 +1123,7 @@ with seeded_posts as (
 - 블로그/프로젝트에서 중복 slug 저장 시 한국어 안내 문구가 노출되는지.
 - About 기술 로고에서 SVG 코드 입력 업로드가 정상 동작하는지.
 - 업로드 선택 즉시 미리보기 및 URL 반영이 되는지.$body$, 'published', '2026-04-10T00:00:00Z', false, true, false),
-  ('프로젝트_요약_분리_슬러그_동기화_저장', $title$프로젝트 요약 분리 + 슬러그 동기화 저장$title$, $desc$1. Supabase SQL Editor에서 `supabase/schema-v1.0.10.sql` 실행$desc$, '/blog/default-thumbnail.svg', $body$# 프로젝트 요약 분리 + 슬러그 동기화 저장
+  ('프로젝트_요약_분리_슬러그_동기화_저장', $title$프로젝트 요약 분리 + 슬러그 동기화 저장$title$, $desc$1. Supabase SQL Editor에서 `supabase/schema-v1.0.10.sql` 실행$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 프로젝트 요약 분리 + 슬러그 동기화 저장
 
 ## 배경
 - 프로젝트 설명을 마크다운으로 길게 작성하면 홈 하이라이트에서 설명이 과도하게 길게 노출됨
@@ -1158,7 +1158,7 @@ with seeded_posts as (
 1. Supabase SQL Editor에서 `supabase/schema-v1.0.10.sql` 실행
 2. 관리자 프로젝트/블로그에서 저장 후 재진입해 체크 복원 확인
 3. 홈 하이라이트에서 프로젝트 설명 길이 노출 확인$body$, 'published', '2026-04-10T00:00:00Z', false, true, false),
-  ('하이드레이션_안정화_기술스택_세로_정렬_수정_기능', $title$하이드레이션 안정화 + 기술스택 세로 정렬/수정 기능$title$, $desc$하이드레이션 안정화 + 기술스택 세로 정렬/수정 기능 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 하이드레이션 안정화 + 기술스택 세로 정렬/수정 기능
+  ('하이드레이션_안정화_기술스택_세로_정렬_수정_기능', $title$하이드레이션 안정화 + 기술스택 세로 정렬/수정 기능$title$, $desc$하이드레이션 안정화 + 기술스택 세로 정렬/수정 기능 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 하이드레이션 안정화 + 기술스택 세로 정렬/수정 기능
 
 ## 작업 목적
 - 관리자에서 간헐적으로 발생하는 hydration 경고 가능성을 줄인다.
@@ -1187,7 +1187,7 @@ with seeded_posts as (
 - About 기술스택 항목 수정 후 저장 시 공개 페이지에 반영되는지
 - About 기술스택 드래그 순서가 저장 후에도 유지되는지
 - 관리자 진입 시 hydration 경고가 재발하는지$body$, 'published', '2026-04-10T00:00:00Z', false, true, false),
-  ('홈_탭_단순화_프로젝트_입력_라벨_정리_v1_0_11', $title$홈 탭 단순화 + 프로젝트 입력 라벨 정리 (v1.0.11)$title$, $desc$1. Supabase SQL Editor에서 `supabase/v1/schema-v1.0.11.sql` 실행$desc$, '/blog/default-thumbnail.svg', $body$# 홈 탭 단순화 + 프로젝트 입력 라벨 정리 (v1.0.11)
+  ('홈_탭_단순화_프로젝트_입력_라벨_정리_v1_0_11', $title$홈 탭 단순화 + 프로젝트 입력 라벨 정리 (v1.0.11)$title$, $desc$1. Supabase SQL Editor에서 `supabase/v1/schema-v1.0.11.sql` 실행$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 홈 탭 단순화 + 프로젝트 입력 라벨 정리 (v1.0.11)
 
 ## 변경 요약
 - 홈 관리 탭에서 제목/설명/이미지 오버라이드를 제거하고 CTA 오버라이드만 유지
@@ -1236,7 +1236,7 @@ with seeded_posts as (
 1. Supabase SQL Editor에서 `supabase/v1/schema-v1.0.11.sql` 실행
 2. 관리자 `/admin/home`에서 순서/활성/CTA 저장 확인
 3. 공개 홈에서 제목/설명/이미지가 원본 기준으로 출력되는지 확인$body$, 'published', '2026-04-10T00:00:00Z', false, true, false),
-  ('About_데스크탑_자동_리빌_1차', $title$About 데스크탑 자동 리빌 1차$title$, $desc$About 데스크탑 자동 리빌 1차 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# About 데스크탑 자동 리빌 1차
+  ('About_데스크탑_자동_리빌_1차', $title$About 데스크탑 자동 리빌 1차$title$, $desc$About 데스크탑 자동 리빌 1차 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# About 데스크탑 자동 리빌 1차
 
 ## 변경 내용
 - `components/about/interactive-about-reveal.tsx`
@@ -1250,7 +1250,7 @@ with seeded_posts as (
 
 ## 검증
 - `npx eslint components/about/interactive-about-reveal.tsx` 통과$body$, 'published', '2026-04-13T00:00:00Z', false, true, false),
-  ('About_디바이스_훅_분리_모바일_프로필_상단_고정', $title$About 디바이스 훅 분리 + 모바일 프로필 상단 고정$title$, $desc$About 디바이스 훅 분리 + 모바일 프로필 상단 고정 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# About 디바이스 훅 분리 + 모바일 프로필 상단 고정
+  ('About_디바이스_훅_분리_모바일_프로필_상단_고정', $title$About 디바이스 훅 분리 + 모바일 프로필 상단 고정$title$, $desc$About 디바이스 훅 분리 + 모바일 프로필 상단 고정 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# About 디바이스 훅 분리 + 모바일 프로필 상단 고정
 
 ## 변경 내용
 - `isMobile`, `isDesktop` 판별 로직을 커스텀 훅으로 분리했습니다.
@@ -1271,7 +1271,7 @@ with seeded_posts as (
 - `npx eslint components/about/interactive-about-reveal.tsx lib/hooks/use-device.ts`
 - `npx tsc --noEmit`
 - 두 검증 모두 통과$body$, 'published', '2026-04-13T00:00:00Z', false, true, false),
-  ('공개_리스트_스켈레톤_순차_모션_적용', $title$공개 리스트 스켈레톤 + 순차 모션 적용$title$, $desc$0번째 카드부터 아래->위 순서로 자연스럽게 올라오도록 구성했습니다.$desc$, '/blog/default-thumbnail.svg', $body$# 공개 리스트 스켈레톤 + 순차 모션 적용
+  ('공개_리스트_스켈레톤_순차_모션_적용', $title$공개 리스트 스켈레톤 + 순차 모션 적용$title$, $desc$0번째 카드부터 아래->위 순서로 자연스럽게 올라오도록 구성했습니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 공개 리스트 스켈레톤 + 순차 모션 적용
 
 ## 작업 배경
 - 프로젝트/블로그 리스트 진입 시 로딩 상태가 비어 보여 체감이 딱딱했습니다.
@@ -1293,7 +1293,7 @@ with seeded_posts as (
 - `npx eslint app/[lang]/(site)/projects/page.tsx app/[lang]/(site)/blog/page.tsx app/[lang]/(site)/projects/loading.tsx app/[lang]/(site)/blog/loading.tsx`
 - `npx tsc --noEmit`
 - 두 검증 모두 통과했습니다.$body$, 'published', '2026-04-13T00:00:00Z', false, true, false),
-  ('v1_0_14_관리자_UX_정비_About_상태_제거', $title$v1.0.14 관리자 UX 정비 + About 상태 제거$title$, $desc$v1.0.14 관리자 UX 정비 + About 상태 제거 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# v1.0.14 관리자 UX 정비 + About 상태 제거
+  ('v1_0_14_관리자_UX_정비_About_상태_제거', $title$v1.0.14 관리자 UX 정비 + About 상태 제거$title$, $desc$v1.0.14 관리자 UX 정비 + About 상태 제거 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# v1.0.14 관리자 UX 정비 + About 상태 제거
 
 ## 작업 목적
 - 홈 슬라이드 관리 탭에 페이지네이션 없이 필터만 추가
@@ -1329,7 +1329,7 @@ with seeded_posts as (
 - `/admin/about`에서 상태 UI 제거 및 저장 정상 동작 확인
 - `/admin/blog`, `/admin/projects` 리스트의 미리보기 요소 노출 확인
 - `schema-v1.0.14.sql` 실행 전 백업 여부 확인 후 적용$body$, 'published', '2026-04-13T00:00:00Z', false, true, false),
-  ('관리자_헤더_매니저_구조_리팩터링', $title$관리자 헤더/매니저 구조 리팩터링$title$, $desc$관리자 헤더/매니저 구조 리팩터링 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 관리자 헤더/매니저 구조 리팩터링
+  ('관리자_헤더_매니저_구조_리팩터링', $title$관리자 헤더/매니저 구조 리팩터링$title$, $desc$관리자 헤더/매니저 구조 리팩터링 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 관리자 헤더/매니저 구조 리팩터링
 
 ## 작업 목적
 - dashboard와 home의 책임 분리
@@ -1361,7 +1361,7 @@ with seeded_posts as (
 - `npm run lint` 통과
 - `npx tsc --noEmit` 통과
 - `npm run build` 실패(네트워크 제한으로 Google Fonts 접근 불가)$body$, 'published', '2026-04-13T00:00:00Z', false, true, false),
-  ('대시보드_홈_네이밍_통일', $title$대시보드 홈 네이밍 통일$title$, $desc$대시보드 홈 네이밍 통일 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 대시보드 홈 네이밍 통일
+  ('대시보드_홈_네이밍_통일', $title$대시보드 홈 네이밍 통일$title$, $desc$대시보드 홈 네이밍 통일 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 대시보드 홈 네이밍 통일
 
 ## 작업 배경
 - 홈 하이라이트 관리 기능이 대시보드 운영 흐름에 통합된 상태인데, 코드/컴포넌트 네이밍이 `HomeHighlightManager`로 남아 있어 의미가 혼재되고 있었습니다.
@@ -1391,7 +1391,7 @@ with seeded_posts as (
 - `npx eslint app/admin/(protected)/home/page.tsx app/admin/(protected)/home/loading.tsx app/admin/(protected)/dashboard/page.tsx components/admin/home/dashboard-home-manager.tsx types/ui.ts`
 - `npx tsc --noEmit`
 - 두 검증 모두 통과했습니다.$body$, 'published', '2026-04-13T00:00:00Z', false, true, false),
-  ('더미데이터_정리_최종_스키마_정리_v1_0_15', $title$더미데이터 정리 + 최종 스키마 정리 (v1.0.15)$title$, $desc$1. `supabase/v1/schema-v1.0.15.sql`$desc$, '/blog/default-thumbnail.svg', $body$# 더미데이터 정리 + 최종 스키마 정리 (v1.0.15)
+  ('더미데이터_정리_최종_스키마_정리_v1_0_15', $title$더미데이터 정리 + 최종 스키마 정리 (v1.0.15)$title$, $desc$1. `supabase/v1/schema-v1.0.15.sql`$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 더미데이터 정리 + 최종 스키마 정리 (v1.0.15)
 
 ## 작업 목적
 - 프로젝트/블로그/문의함의 기존 테스트 더미 데이터를 제거하고, 운영 시연에 사용할 수 있는 현실적인 샘플 데이터를 재구성한다.
@@ -1423,7 +1423,7 @@ with seeded_posts as (
 ## 다음 적용 순서(권장)
 1. Supabase SQL Editor에서 `schema-v1.0.15.sql` 실행(데이터 정리+샘플 입력).
 2. 신규 환경 전체 초기화가 필요할 때만 `schema-v1.0.15-최종.sql` 사용.$body$, 'published', '2026-04-13T00:00:00Z', false, true, false),
-  ('로컬_수정_프로덕션_캐시_동기화', $title$로컬 수정-프로덕션 캐시 동기화$title$, $desc$1. 공통 revalidate 전략 확장 (`lib/cache/revalidate.ts`)$desc$, '/blog/default-thumbnail.svg', $body$# 로컬 수정-프로덕션 캐시 동기화
+  ('로컬_수정_프로덕션_캐시_동기화', $title$로컬 수정-프로덕션 캐시 동기화$title$, $desc$1. 공통 revalidate 전략 확장 (`lib/cache/revalidate.ts`)$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 로컬 수정-프로덕션 캐시 동기화
 
 ## 배경
 - 로컬 관리자에서 데이터 저장 시, 로컬 서버의 `revalidatePath`만 실행되어 프로덕션 캐시에는 즉시 반영되지 않는 문제가 있었다.
@@ -1495,7 +1495,7 @@ with seeded_posts as (
 - 검증:
   - `npm run lint` 통과.
   - `npx tsc --noEmit` 통과.$body$, 'published', '2026-04-13T00:00:00Z', false, true, false),
-  ('배포_스크립트_추가', $title$배포 스크립트 추가$title$, $desc$배포 스크립트 추가 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 배포 스크립트 추가
+  ('배포_스크립트_추가', $title$배포 스크립트 추가$title$, $desc$배포 스크립트 추가 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 배포 스크립트 추가
 
 ## 목적
 - 매번 수동으로 `npx vercel --prod --yes`를 입력하지 않도록 배포 명령을 npm script로 통일.
@@ -1507,7 +1507,7 @@ with seeded_posts as (
 ## 사용 방법
 - 프로덕션 배포:
   - `npm run deploy`$body$, 'published', '2026-04-13T00:00:00Z', false, true, false),
-  ('v2_네이밍_주석_다국어_조회_정비', $title$v2 네이밍/주석/다국어 조회 정비$title$, $desc$v2 네이밍/주석/다국어 조회 정비 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# v2 네이밍/주석/다국어 조회 정비
+  ('v2_네이밍_주석_다국어_조회_정비', $title$v2 네이밍/주석/다국어 조회 정비$title$, $desc$v2 네이밍/주석/다국어 조회 정비 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# v2 네이밍/주석/다국어 조회 정비
 
 ## 오늘 작업 요약
 - 구현 코드 핵심 함수 위주 한국어 주석 추가
@@ -1531,7 +1531,7 @@ with seeded_posts as (
 ## 메모
 - 기존 호출부 회귀 방지를 위해 구 네이밍 alias는 임시 유지
 - 다음 단계에서 관리자 locale 탭 UI와 번역 저장 UX를 확장 예정$body$, 'published', '2026-04-14T00:00:00Z', false, true, false),
-  ('v2_1_로케일_테이블_전환_About_카테고리_탭_적용', $title$v2.1 로케일 테이블 전환 + About 카테고리 탭 적용$title$, $desc$서버 저장소/조회 로직을 실제 코드에 반영했습니다.$desc$, '/blog/default-thumbnail.svg', $body$# v2.1 로케일 테이블 전환 + About 카테고리 탭 적용
+  ('v2_1_로케일_테이블_전환_About_카테고리_탭_적용', $title$v2.1 로케일 테이블 전환 + About 카테고리 탭 적용$title$, $desc$서버 저장소/조회 로직을 실제 코드에 반영했습니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# v2.1 로케일 테이블 전환 + About 카테고리 탭 적용
 
 ## 작업 목적
 
@@ -1578,7 +1578,7 @@ with seeded_posts as (
 - `npm run -s lint` 통과(기존 unused warning 1건만 유지)
 - `npx tsc --noEmit` 통과
 - `npm run -s build` 통과$body$, 'published', '2026-04-14T00:00:00Z', false, true, false),
-  ('관리자_EN_JA_입력_확장_정비', $title$관리자 EN/JA 입력 확장 정비$title$, $desc$관리자 EN/JA 입력 확장 정비 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 관리자 EN/JA 입력 확장 정비
+  ('관리자_EN_JA_입력_확장_정비', $title$관리자 EN/JA 입력 확장 정비$title$, $desc$관리자 EN/JA 입력 확장 정비 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 관리자 EN/JA 입력 확장 정비
 
 ## 작업 목적
 - 관리자에서 KO 기본 콘텐츠 외에 EN/JA 입력을 직접 저장하고 재수정할 수 있도록 정비.
@@ -1608,7 +1608,7 @@ with seeded_posts as (
 ## 비고
 - 번역 데이터가 비어 있으면 공개 페이지는 KO 기본 콘텐츠로 fallback.
 - 현재 About 번역의 기술 항목(`aboutTechItems`)은 폼에서 별도 편집하지 않고 기본값(`[]`) 저장 정책으로 유지.$body$, 'published', '2026-04-14T00:00:00Z', false, true, false),
-  ('관리자_KO_EN_JA_탭_입력_통일', $title$관리자 KO/EN/JA 탭 입력 통일$title$, $desc$관리자 KO/EN/JA 탭 입력 통일 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 관리자 KO/EN/JA 탭 입력 통일
+  ('관리자_KO_EN_JA_탭_입력_통일', $title$관리자 KO/EN/JA 탭 입력 통일$title$, $desc$관리자 KO/EN/JA 탭 입력 통일 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 관리자 KO/EN/JA 탭 입력 통일
 
 ## 작업 목표
 - Blog / Projects / About 관리자 입력을 기존 섹션 내부에서 `KO | EN | JA` 탭 전환 방식으로 통일.
@@ -1639,7 +1639,7 @@ with seeded_posts as (
 ## 비고
 - EN/JA 번역 미입력 시 공개 페이지는 기존 정책대로 KO 콘텐츠 fallback.
 - Contact/Home 탭은 이번 범위에서 다국어 탭 입력 대상 제외.$body$, 'published', '2026-04-14T00:00:00Z', false, true, false),
-  ('도메인_별칭_불일치_원인_해결', $title$도메인 별칭 불일치 원인 해결$title$, $desc$`j-fe-blog.vercel.app`에는 반영되지 않는 현상이 발생했다.$desc$, '/blog/default-thumbnail.svg', $body$# 도메인 별칭 불일치 원인 해결
+  ('도메인_별칭_불일치_원인_해결', $title$도메인 별칭 불일치 원인 해결$title$, $desc$`j-fe-blog.vercel.app`에는 반영되지 않는 현상이 발생했다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 도메인 별칭 불일치 원인 해결
 
 ## 증상
 
@@ -1677,7 +1677,7 @@ with seeded_posts as (
 
 - 배포 URL 자체(`https://j-blog-...vercel.app`)가 401로 보일 수 있는데, 이는 배포 보호 설정 영향일 수 있다.
 - 운영 확인은 실제 서비스 도메인(`j-fe-blog.vercel.app`) 기준으로 검증한다.$body$, 'published', '2026-04-14T00:00:00Z', false, true, false),
-  ('어바웃_기술스택_카테고리_enum_전환', $title$어바웃 기술스택 카테고리 enum 전환$title$, $desc$어바웃 기술스택 카테고리 enum 전환 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 어바웃 기술스택 카테고리 enum 전환
+  ('어바웃_기술스택_카테고리_enum_전환', $title$어바웃 기술스택 카테고리 enum 전환$title$, $desc$어바웃 기술스택 카테고리 enum 전환 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 어바웃 기술스택 카테고리 enum 전환
 
 ## 배경
 - 기존 `about_tech_stack.category`를 자유 문자열로 저장하면서 카테고리 오탈자/중복(예: 프론트엔드, frontend, 프론트) 관리가 어려웠습니다.
@@ -1710,7 +1710,7 @@ with seeded_posts as (
 
 ## 비고
 - API/리포지토리에서도 카테고리를 정규화해 저장하므로, 구 데이터/외부 입력이 들어와도 enum 규칙으로 보정됩니다.$body$, 'published', '2026-04-14T00:00:00Z', false, true, false),
-  ('프로젝트_EN_JA_성과_기여_입력_확장', $title$프로젝트 EN/JA 성과/기여 입력 확장$title$, $desc$1. 프로젝트 번역 타입 확장$desc$, '/blog/default-thumbnail.svg', $body$# 프로젝트 EN/JA 성과/기여 입력 확장
+  ('프로젝트_EN_JA_성과_기여_입력_확장', $title$프로젝트 EN/JA 성과/기여 입력 확장$title$, $desc$1. 프로젝트 번역 타입 확장$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 프로젝트 EN/JA 성과/기여 입력 확장
 
 ## 작업 목적
 - 관리자 프로젝트 탭에서 KO뿐 아니라 EN/JA에서도 `성과`, `주요 기여`를 입력/정렬/저장할 수 있도록 확장.
@@ -1756,7 +1756,7 @@ with seeded_posts as (
 1. Supabase SQL Editor에서 `supabase/v2/schema-v2.0.1.sql` 실행
 2. 관리자 `/admin/projects`에서 EN/JA 탭으로 성과/기여 입력 및 저장 확인
 3. 공개 프로젝트 페이지 locale 전환 시 성과/기여 번역 반영 확인$body$, 'published', '2026-04-14T00:00:00Z', false, true, false),
-  ('sitemap_prerender_동적_충돌_해결', $title$sitemap prerender 동적 충돌 해결$title$, $desc$1. 정적 라우트 생성$desc$, '/blog/default-thumbnail.svg', $body$# sitemap prerender 동적 충돌 해결
+  ('sitemap_prerender_동적_충돌_해결', $title$sitemap prerender 동적 충돌 해결$title$, $desc$1. 정적 라우트 생성$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# sitemap prerender 동적 충돌 해결
 
 ## 증상
 - `/sitemap.xml` prerender 중 `Dynamic server usage` 오류 발생
@@ -1785,7 +1785,7 @@ with seeded_posts as (
 - `/sitemap.xml` 정적 생성 충돌 제거
 - DB 일시 장애 시에도 빌드 실패 없이 기본 sitemap 생성
 - 1시간 단위 재검증으로 최신성 확보$body$, 'published', '2026-04-17T00:00:00Z', false, true, false),
-  ('Vercel_별칭_자동_최신화_파이프라인_고정', $title$Vercel 별칭 자동 최신화 파이프라인 고정$title$, $desc$모두 동일 최신 배포를 가리키도록 복구됨$desc$, '/blog/default-thumbnail.svg', $body$# Vercel 별칭 자동 최신화 파이프라인 고정
+  ('Vercel_별칭_자동_최신화_파이프라인_고정', $title$Vercel 별칭 자동 최신화 파이프라인 고정$title$, $desc$모두 동일 최신 배포를 가리키도록 복구됨$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# Vercel 별칭 자동 최신화 파이프라인 고정
 
 ## 문제
 - `main` 배포가 성공해도 `j-fe-blog.vercel.app`이 최신 배포를 가리키지 않음
@@ -1827,7 +1827,7 @@ with seeded_posts as (
 
 ## 검증
 - `npx vercel alias ls`에서 `j-fe-blog.vercel.app`이 최신 배포 source로 연결된 것을 확인$body$, 'published', '2026-04-17T00:00:00Z', false, true, false),
-  ('문서_기반_블로그_실데이터_리시드_v2_1_3', $title$문서 기반 블로그 실데이터 리시드 (v2.1.3)$title$, $desc$긴 마크다운/개행/특수문자에서도 SQL Editor 붙여넣기 안정성을 높임.$desc$, '/blog/default-thumbnail.svg', $body$# 문서 기반 블로그 실데이터 리시드 (v2.1.3)
+  ('문서_기반_블로그_실데이터_리시드_v2_1_3', $title$문서 기반 블로그 실데이터 리시드 (v2.1.3)$title$, $desc$긴 마크다운/개행/특수문자에서도 SQL Editor 붙여넣기 안정성을 높임.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 문서 기반 블로그 실데이터 리시드 (v2.1.3)
 
 ## 작업 목적
 - `docs/worklogs`, `docs/refector`의 마크다운을 블로그 실데이터로 일괄 전환
@@ -1878,7 +1878,7 @@ npm run generate:docs-blog-sql
 - `posts_en`, `posts_ja`가 `posts`와 1:1 매핑
 - 블로그 목록/상세/언어 전환 정상
 - 검색(`q`) 동작 정상$body$, 'published', '2026-04-17T00:00:00Z', false, true, false),
-  ('블로그_DB_장애_안내_전환', $title$블로그 DB 장애 안내 전환$title$, $desc$블로그 DB 장애 안내 전환 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 블로그 DB 장애 안내 전환
+  ('블로그_DB_장애_안내_전환', $title$블로그 DB 장애 안내 전환$title$, $desc$블로그 DB 장애 안내 전환 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 블로그 DB 장애 안내 전환
 
 ## 변경 목적
 - 블로그 데이터 소스에서 MDX fallback을 제거하고, DB 장애 시 사용자에게 명시적으로 안내하도록 전환.
@@ -1898,7 +1898,7 @@ npm run generate:docs-blog-sql
 ## 검증
 - `npm run -s lint` 통과(기존 경고 1건 유지)
 - `npx tsc --noEmit` 통과$body$, 'published', '2026-04-17T00:00:00Z', false, true, false),
-  ('블로그_리시드_품질_재구축_v2_1_3', $title$블로그 리시드 품질 재구축 (v2.1.3)$title$, $desc$node scripts/generate-docs-blog-reseed-sql.mjs --bootstrap-translations$desc$, '/blog/default-thumbnail.svg', $body$# 블로그 리시드 품질 재구축 (v2.1.3)
+  ('블로그_리시드_품질_재구축_v2_1_3', $title$블로그 리시드 품질 재구축 (v2.1.3)$title$, $desc$node scripts/generate-docs-blog-reseed-sql.mjs --bootstrap-translations$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 블로그 리시드 품질 재구축 (v2.1.3)
 
 ## 목적
 - docs 기반 블로그 리시드 데이터의 품질 문제(슬러그/태그/EN·JA 번역)를 전면 개선
@@ -1962,7 +1962,7 @@ npm run generate:docs-blog-sql
 - `uXXXX` 패턴 슬러그: 0건
 - `npm run lint`: 통과(기존 warning 1건 유지)
 - `npx tsc --noEmit`: 통과$body$, 'published', '2026-04-17T00:00:00Z', false, true, false),
-  ('블로그_프로젝트_검색_공통화_스켈레톤_통일', $title$블로그/프로젝트 검색 공통화 + 스켈레톤 통일$title$, $desc$1. 공통 검색 유틸 추가$desc$, '/blog/default-thumbnail.svg', $body$# 블로그/프로젝트 검색 공통화 + 스켈레톤 통일
+  ('블로그_프로젝트_검색_공통화_스켈레톤_통일', $title$블로그/프로젝트 검색 공통화 + 스켈레톤 통일$title$, $desc$1. 공통 검색 유틸 추가$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 블로그/프로젝트 검색 공통화 + 스켈레톤 통일
 
 ## 작업 요약
 - 블로그/프로젝트 목록 검색 기능을 동일한 UX/구조로 통일
@@ -2013,7 +2013,7 @@ npm run generate:docs-blog-sql
 ## 메모
 - 기존 `filterPlaceholder/filterButton` 키는 제거하고 검색 키로 대체
 - 검색은 서버 목록 데이터를 기준으로 필드 매칭하는 방식으로 통일$body$, 'published', '2026-04-17T00:00:00Z', false, true, false),
-  ('블로그_프로젝트_공개_페이지네이션_8개_적용', $title$블로그/프로젝트 공개 페이지네이션 8개 적용$title$, $desc$블로그/프로젝트 공개 페이지네이션 8개 적용 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 블로그/프로젝트 공개 페이지네이션 8개 적용
+  ('블로그_프로젝트_공개_페이지네이션_8개_적용', $title$블로그/프로젝트 공개 페이지네이션 8개 적용$title$, $desc$블로그/프로젝트 공개 페이지네이션 8개 적용 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 블로그/프로젝트 공개 페이지네이션 8개 적용
 
 ## 목표
 - 공개 `blog`, `projects` 목록의 기본 노출 개수를 8개로 고정
@@ -2064,7 +2064,7 @@ npm run generate:docs-blog-sql
 ## 비고
 - 현재 구현은 검색 결과를 서버에서 모두 받아온 뒤 페이지 단위로 화면 분할합니다.
 - 데이터가 더 커지면 다음 단계에서 서버 쿼리 레벨 페이지네이션으로 확장 가능합니다.$body$, 'published', '2026-04-17T00:00:00Z', false, true, false),
-  ('프로젝트_DB_장애_안내_전환_및_MDX_제거', $title$프로젝트 DB 장애 안내 전환 및 MDX 제거$title$, $desc$프로젝트 DB 장애 안내 전환 및 MDX 제거 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 프로젝트 DB 장애 안내 전환 및 MDX 제거
+  ('프로젝트_DB_장애_안내_전환_및_MDX_제거', $title$프로젝트 DB 장애 안내 전환 및 MDX 제거$title$, $desc$프로젝트 DB 장애 안내 전환 및 MDX 제거 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 프로젝트 DB 장애 안내 전환 및 MDX 제거
 
 ## 작업 목적
 - 프로젝트 페이지도 블로그와 동일하게 DB 장애 시 사용자 안내 화면을 노출하도록 통일
@@ -2103,7 +2103,7 @@ npm run generate:docs-blog-sql
 ## 메모
 - 현재 코드 기준으로 MDX 런타임/빌드 경로 의존성은 제거됨
 - 문서(README/과거 worklog)에 남아 있는 MDX 언급은 히스토리 설명 용도로만 남아 있음$body$, 'published', '2026-04-17T00:00:00Z', false, true, false),
-  ('리팩토링_2차_정리', $title$리팩토링 2차 정리$title$, $desc$1. `ManagerListRow` 파일 통합$desc$, '/blog/default-thumbnail.svg', $body$# 작업 일지 - 2026-04-08 (리팩토링 2차 정리)
+  ('리팩토링_2차_정리', $title$리팩토링 2차 정리$title$, $desc$1. `ManagerListRow` 파일 통합$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업 일지 - 2026-04-08 (리팩토링 2차 정리)
 
 ## 목표
 
@@ -2138,7 +2138,7 @@ npm run generate:docs-blog-sql
 
 - 현재 `components/` 기준으로 미사용 컴포넌트는 없음(참조 스캔 확인).
 - 다음 단계는 “파일 수 감소”보다 “역할 경계 명확화(Manager 단위 상태/폼 로직 분리)”가 효율적일 가능성이 높음.$body$, 'published', '2026-04-08T00:00:00Z', false, true, false),
-  ('유지보수성_공통_ui', $title$유지보수성 공통 ui$title$, $desc$적용:$desc$, '/blog/default-thumbnail.svg', $body$# 작업일지 (2026-04-08)
+  ('유지보수성_공통_ui', $title$유지보수성 공통 ui$title$, $desc$적용:$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 작업일지 (2026-04-08)
 
 ## 목표
 
@@ -2192,7 +2192,7 @@ npm run generate:docs-blog-sql
 ## 비고
 
 - MDX/Supabase 혼용 구조 및 API/DB 스키마는 변경하지 않음.$body$, 'published', '2026-04-08T00:00:00Z', false, true, false),
-  ('리팩토링_주석_가이드', $title$리팩토링 주석 가이드$title$, $desc$리팩토링 주석 가이드 작업 내용을 정리한 기록입니다.$desc$, '/blog/default-thumbnail.svg', $body$# 리팩토링 주석 가이드
+  ('리팩토링_주석_가이드', $title$리팩토링 주석 가이드$title$, $desc$리팩토링 주석 가이드 작업 내용을 정리한 기록입니다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# 리팩토링 주석 가이드
 
 ## 목적
 
@@ -2218,7 +2218,7 @@ npm run generate:docs-blog-sql
 
 - 좋은 예: `// 저장 직후 서버 정렬(updated_at)을 기준으로 목록을 다시 동기화한다.`
 - 피해야 할 예: `// setState를 호출한다.`$body$, 'published', '2026-04-08T00:00:00Z', false, true, false),
-  ('v2_네이밍_매핑_및_번역_규칙', $title$v2 네이밍 매핑 및 번역 규칙$title$, $desc$`post_tag_map`은 게시글(`posts`)과 태그(`post_tags`)를 연결하는 다대다 매핑 테이블이다.$desc$, '/blog/default-thumbnail.svg', $body$# v2 네이밍 매핑 및 번역 규칙
+  ('v2_네이밍_매핑_및_번역_규칙', $title$v2 네이밍 매핑 및 번역 규칙$title$, $desc$`post_tag_map`은 게시글(`posts`)과 태그(`post_tags`)를 연결하는 다대다 매핑 테이블이다.$desc$, '/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png', $body$# v2 네이밍 매핑 및 번역 규칙
 
 ## 1) 테이블 네이밍 매핑
 - `admin_allowlist` -> 유지

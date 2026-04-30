@@ -1,4 +1,4 @@
-import type { AdminListFilter, PaginatedResult } from "@/types/admin";
+import type { AdminListSort, PaginatedResult } from "@/types/admin";
 import type { PublishStatus } from "@/types/db";
 import type {
   AdminProject,
@@ -13,6 +13,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { stripMarkdownToPlainText } from "@/lib/blog/markdown";
 import { removeHomeHighlightSource, syncHomeHighlightSource } from "@/lib/home/sync";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { matchesContentSearchQuery, normalizeContentSearchQuery } from "@/lib/utils/content-search";
 import {
   ADMIN_PAGE_SIZE_OPTIONS,
   buildPaginatedResult,
@@ -312,6 +313,40 @@ function rowToAdminProject(row: ProjectRow, translations: ProjectTranslationMap 
   };
 }
 
+function getAdminProjectSearchFields(
+  row: ProjectRow,
+  translation: ProjectTranslationMap | undefined,
+): string[] {
+  return [
+    row.title,
+    row.home_summary ?? "",
+    row.summary,
+    toStringArray(row.tech_stack),
+    translation?.en?.title ?? "",
+    translation?.en?.subtitle ?? "",
+    translation?.en?.contentMarkdown ?? "",
+    translation?.en?.tags ?? [],
+    translation?.ja?.title ?? "",
+    translation?.ja?.subtitle ?? "",
+    translation?.ja?.contentMarkdown ?? "",
+    translation?.ja?.tags ?? [],
+  ].flatMap((field) => (Array.isArray(field) ? field : [field]));
+}
+
+function sortAdminProjectRows(rows: ProjectRow[], sort: AdminListSort): ProjectRow[] {
+  const next = [...rows];
+
+  if (sort === "name") {
+    return next.sort((a, b) => a.title.localeCompare(b.title, "ko"));
+  }
+
+  if (sort === "created") {
+    return next.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  return next.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+}
+
 function normalizeStatus(value: PublishStatus): PublishStatus {
   return value === "published" ? "published" : "draft";
 }
@@ -501,7 +536,8 @@ export async function getAdminProjects(): Promise<AdminProject[]> {
 export async function getAdminProjectsPaginated(
   page = 1,
   pageSize = 10,
-  filter: AdminListFilter = "all",
+  searchQuery = "",
+  sort: AdminListSort = "updated",
   statusScope: PublishStatus | null = null,
 ): Promise<PaginatedResult<AdminProject>> {
   const service = createSupabaseServiceClient();
@@ -515,45 +551,48 @@ export async function getAdminProjectsPaginated(
   const safePageSize = ADMIN_PAGE_SIZE_OPTIONS.includes(parsedPageSize as 3 | 5 | 10)
     ? parsedPageSize
     : DEFAULT_ADMIN_PAGE_SIZE;
-  const from = (safePage - 1) * safePageSize;
-  const to = from + safePageSize - 1;
+  const safeSearchQuery = normalizeContentSearchQuery(searchQuery);
 
-  let query = service.from("projects").select(PROJECT_SELECT_FIELDS, { count: "exact" });
+  let query = service.from("projects").select(PROJECT_SELECT_FIELDS);
 
   if (statusScope) {
     query = query.eq("status", statusScope);
   }
 
-  if (filter === "main") {
-    query = query.eq("featured", true);
-  } else if (filter === "general") {
-    query = query.eq("featured", false);
-  } else if (filter === "published") {
-    query = query.eq("status", "published");
-  } else if (filter === "draft") {
-    query = query.eq("status", "draft");
-  }
-
-  const { data, error, count } = await query
-    .order("featured", { ascending: false })
-    .order("created_at", { ascending: false })
-    .range(from, to);
+  const { data, error } = await query;
 
   if (error || !data) {
     return buildPaginatedResult([], safePage, safePageSize, 0);
   }
 
-  const rows = data as ProjectRow[];
+  let rows = data as ProjectRow[];
   const translationMap = await getAdminProjectTranslationMapByIds(
     service,
     rows.map((row) => row.id),
   );
 
+  if (safeSearchQuery) {
+    rows = rows.filter((row) =>
+      matchesContentSearchQuery(
+        getAdminProjectSearchFields(row, translationMap.get(row.id)),
+        safeSearchQuery,
+      ),
+    );
+  }
+
+  const sortedRows = sortAdminProjectRows(rows, sort);
+  const total = sortedRows.length;
+  const totalPages = Math.max(1, Math.ceil(total / safePageSize));
+  const currentPage = Math.min(safePage, totalPages);
+  const from = (currentPage - 1) * safePageSize;
+  const to = from + safePageSize;
+  const paginatedRows = sortedRows.slice(from, to);
+
   return buildPaginatedResult(
-    rows.map((row) => rowToAdminProject(row, translationMap.get(row.id) ?? {})),
-    safePage,
+    paginatedRows.map((row) => rowToAdminProject(row, translationMap.get(row.id) ?? {})),
+    currentPage,
     safePageSize,
-    count ?? 0,
+    total,
   );
 }
 

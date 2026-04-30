@@ -6,6 +6,8 @@
   "searchPlaceholder": "Search by title, content, or tags",
   "searchButton": "Search",
   "searchReset": "Reset",
+  "sortDate": "Newest",
+  "sortName": "Name",
   "paginationPrevious": "Previous page",
   "paginationNext": "Next page",
   "paginationSummary": "Results",

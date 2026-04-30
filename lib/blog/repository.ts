@@ -6,12 +6,13 @@ import type {
   BlogTranslationInput,
   BlogTranslationMap,
 } from "@/types/blog";
-import type { AdminListFilter, PaginatedResult } from "@/types/admin";
+import type { AdminListSort, PaginatedResult } from "@/types/admin";
 import type { PublishStatus } from "@/types/db";
 import type { Locale } from "@/lib/i18n/config";
 import { extractTocFromMarkdown } from "@/lib/blog/markdown";
 import { removeHomeHighlightSource, syncHomeHighlightSource } from "@/lib/home/sync";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { matchesContentSearchQuery, normalizeContentSearchQuery } from "@/lib/utils/content-search";
 import {
   ADMIN_PAGE_SIZE_OPTIONS,
   buildPaginatedResult,
@@ -22,6 +23,7 @@ import { toSlugConflictMessage } from "@/lib/utils/db-error";
 type PostRow = {
   id: string;
   created_by: string | null;
+  created_at: string;
   slug: string;
   title: string;
   description: string;
@@ -51,8 +53,8 @@ type RepoResult<T> = {
 };
 
 const POST_SELECT_FIELDS =
-  "id,created_by,slug,title,description,thumbnail,featured,sync_slug_with_title,body_markdown,use_markdown_editor,status,published_at,scheduled_publish_at,updated_at,post_tag_map(post_tags(name))";
-const BLOG_DEFAULT_THUMBNAIL = "/blog/default-thumbnail.svg";
+  "id,created_by,created_at,slug,title,description,thumbnail,featured,sync_slug_with_title,body_markdown,use_markdown_editor,status,published_at,scheduled_publish_at,updated_at,post_tag_map(post_tags(name))";
+const BLOG_DEFAULT_THUMBNAIL = "/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png";
 
 export class BlogServiceUnavailableError extends Error {
   constructor(message = "Blog database is unavailable.") {
@@ -179,6 +181,7 @@ function rowToAdminPost(row: PostRow, translations: BlogTranslationMap = {}): Ad
   return {
     id: row.id,
     createdBy: row.created_by,
+    createdAt: row.created_at,
     slug: row.slug,
     title: row.title,
     description: row.description,
@@ -194,6 +197,37 @@ function rowToAdminPost(row: PostRow, translations: BlogTranslationMap = {}): Ad
     updatedAt: row.updated_at,
     translations,
   };
+}
+
+function getAdminPostSearchFields(row: PostRow, translation: BlogTranslationMap | undefined): string[] {
+  return [
+    row.title,
+    row.description,
+    row.body_markdown,
+    relationToTagNames(row.post_tag_map),
+    translation?.en?.title ?? "",
+    translation?.en?.description ?? "",
+    translation?.en?.bodyMarkdown ?? "",
+    translation?.en?.tags ?? [],
+    translation?.ja?.title ?? "",
+    translation?.ja?.description ?? "",
+    translation?.ja?.bodyMarkdown ?? "",
+    translation?.ja?.tags ?? [],
+  ].flatMap((field) => (Array.isArray(field) ? field : [field]));
+}
+
+function sortAdminPostRows(rows: PostRow[], sort: AdminListSort): PostRow[] {
+  const next = [...rows];
+
+  if (sort === "name") {
+    return next.sort((a, b) => a.title.localeCompare(b.title, "ko"));
+  }
+
+  if (sort === "created") {
+    return next.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  return next.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 }
 
 // admin 권한의 게시글 수정/삭제 제한을 위해 작성자 id를 조회한다.
@@ -617,7 +651,8 @@ export async function getAdminPosts(): Promise<AdminPost[]> {
 export async function getAdminPostsPaginated(
   page = 1,
   pageSize = 10,
-  filter: AdminListFilter = "all",
+  searchQuery = "",
+  sort: AdminListSort = "updated",
   statusScope: PublishStatus | null = null,
 ): Promise<PaginatedResult<AdminPost>> {
   const service = createSupabaseServiceClient();
@@ -631,45 +666,45 @@ export async function getAdminPostsPaginated(
   const safePageSize = ADMIN_PAGE_SIZE_OPTIONS.includes(parsedPageSize as 3 | 5 | 10)
     ? parsedPageSize
     : DEFAULT_ADMIN_PAGE_SIZE;
-  const from = (safePage - 1) * safePageSize;
-  const to = from + safePageSize - 1;
+  const safeSearchQuery = normalizeContentSearchQuery(searchQuery);
 
-  let query = service.from("posts").select(POST_SELECT_FIELDS, { count: "exact" });
+  let query = service.from("posts").select(POST_SELECT_FIELDS);
 
   if (statusScope) {
     query = query.eq("status", statusScope);
   }
 
-  if (filter === "main") {
-    query = query.eq("featured", true);
-  } else if (filter === "general") {
-    query = query.eq("featured", false);
-  } else if (filter === "published") {
-    query = query.eq("status", "published");
-  } else if (filter === "draft") {
-    query = query.eq("status", "draft");
-  }
-
-  const { data, error, count } = await query
-    .order("featured", { ascending: false })
-    .order("created_at", { ascending: false })
-    .range(from, to);
+  const { data, error } = await query;
 
   if (error || !data) {
     return buildPaginatedResult([], safePage, safePageSize, 0);
   }
 
-  const rows = data as PostRow[];
+  let rows = data as PostRow[];
   const translationMap = await getAdminPostTranslationMapByPostIds(
     service,
     rows.map((row) => row.id),
   );
 
+  if (safeSearchQuery) {
+    rows = rows.filter((row) =>
+      matchesContentSearchQuery(getAdminPostSearchFields(row, translationMap.get(row.id)), safeSearchQuery),
+    );
+  }
+
+  const sortedRows = sortAdminPostRows(rows, sort);
+  const total = sortedRows.length;
+  const totalPages = Math.max(1, Math.ceil(total / safePageSize));
+  const currentPage = Math.min(safePage, totalPages);
+  const from = (currentPage - 1) * safePageSize;
+  const to = from + safePageSize;
+  const paginatedRows = sortedRows.slice(from, to);
+
   return buildPaginatedResult(
-    rows.map((row) => rowToAdminPost(row, translationMap.get(row.id) ?? {})),
-    safePage,
+    paginatedRows.map((row) => rowToAdminPost(row, translationMap.get(row.id) ?? {})),
+    currentPage,
     safePageSize,
-    count ?? 0,
+    total,
   );
 }
 

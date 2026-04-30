@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
       description: dictionary.blog.description,
       shareCard: {
         mode: "dynamicShareCard",
-        imagePath: "/blog/default-thumbnail.svg",
+        imagePath: "/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png",
       },
     });
   }
@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
       description: dictionary.blog.description,
       shareCard: {
         mode: "dynamicShareCard",
-        imagePath: "/blog/default-thumbnail.svg",
+        imagePath: "/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png",
       },
     });
   }
@@ -63,7 +63,7 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
     description: post.description,
     shareCard: {
       mode: "dynamicShareCard",
-      imagePath: post.thumbnail || "/blog/default-thumbnail.svg",
+      imagePath: post.thumbnail || "/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png",
     },
   });
 }

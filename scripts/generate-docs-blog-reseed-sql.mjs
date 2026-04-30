@@ -10,7 +10,7 @@ const OUTPUT_PATH = path.join(REPO_ROOT, "supabase", "v2", "schema-v2.1.3-docs-b
 const TRANSLATION_EN_PATH = path.join(REPO_ROOT, "data", "blog-seed-translations.en.json");
 const TRANSLATION_JA_PATH = path.join(REPO_ROOT, "data", "blog-seed-translations.ja.json");
 const TAG_OVERRIDES_PATH = path.join(REPO_ROOT, "data", "blog-seed-tag-overrides.json");
-const DEFAULT_THUMBNAIL = "/blog/default-thumbnail.svg";
+const DEFAULT_THUMBNAIL = "/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png";
 const FIXED_TIME_UTC = "T00:00:00Z";
 
 const TAXONOMY = [

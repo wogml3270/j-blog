@@ -50,6 +50,7 @@ export type BlogPostDetail = BlogPostSummary & {
 export type AdminPost = {
   id: string;
   createdBy: string | null;
+  createdAt: string;
   slug: string;
   title: string;
   description: string;

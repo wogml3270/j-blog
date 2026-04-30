@@ -15,7 +15,7 @@ interface BlogCardProps {
 }
 
 export function BlogCard({ post, locale, animationDelay = 0 }: BlogCardProps) {
-  const thumbnailSrc = post.thumbnail?.trim() || "/blog/default-thumbnail.svg";
+  const thumbnailSrc = post.thumbnail?.trim() || "/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png";
 
   // 블로그 목록/홈 카드가 동일한 링크/메타 구조를 쓰도록 공통 카드 컴포넌트를 사용한다.
   return (

@@ -73,7 +73,7 @@ function parseBody(body: unknown): AdminPostInput | null {
     thumbnail:
       typeof source.thumbnail === "string" && source.thumbnail.trim()
         ? source.thumbnail.trim()
-        : "/blog/default-thumbnail.svg",
+        : "/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png",
     featured: Boolean(source.featured),
     syncSlugWithTitle: Boolean(source.syncSlugWithTitle),
     bodyMarkdown: source.bodyMarkdown,

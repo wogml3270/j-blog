@@ -12,7 +12,7 @@ import { getAllPublishedProjects } from "@/lib/projects/repository";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { matchesContentSearchQuery, normalizeContentSearchQuery } from "@/lib/utils/content-search";
 import { PUBLIC_CONTENT_PAGE_SIZE, normalizePublicPage } from "@/lib/utils/pagination";
-import { pickSingleQueryValue } from "@/lib/utils/search-params";
+import { normalizePublicSort, pickSingleQueryValue } from "@/lib/utils/search-params";
 
 type ProjectsPageProps = {
   params: Promise<{ lang: string }>;
@@ -59,6 +59,7 @@ export default async function ProjectsPage({ params, searchParams }: ProjectsPag
   const dictionary = getDictionary(lang);
   const projects = await getAllPublishedProjects(lang);
   const searchQuery = normalizeContentSearchQuery(pickSingleQueryValue(query.q));
+  const sort = normalizePublicSort(pickSingleQueryValue(query.sort));
   const filteredProjects = projects.filter((project) =>
     matchesContentSearchQuery(
       [
@@ -71,11 +72,20 @@ export default async function ProjectsPage({ params, searchParams }: ProjectsPag
       searchQuery,
     ),
   );
+  const sortedProjects = [...filteredProjects].sort((a, b) => {
+    if (sort === "name") {
+      return a.title.localeCompare(b.title, lang);
+    }
+
+    const right = b.updatedAt ?? b.createdAt ?? "";
+    const left = a.updatedAt ?? a.createdAt ?? "";
+    return new Date(right).getTime() - new Date(left).getTime();
+  });
   const requestedPage = normalizePublicPage(pickSingleQueryValue(query.page));
-  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PUBLIC_CONTENT_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sortedProjects.length / PUBLIC_CONTENT_PAGE_SIZE));
   const currentPage = Math.min(requestedPage, totalPages);
   const pageStart = (currentPage - 1) * PUBLIC_CONTENT_PAGE_SIZE;
-  const paginatedProjects = filteredProjects.slice(pageStart, pageStart + PUBLIC_CONTENT_PAGE_SIZE);
+  const paginatedProjects = sortedProjects.slice(pageStart, pageStart + PUBLIC_CONTENT_PAGE_SIZE);
 
   return (
     <ContentListLayout
@@ -86,9 +96,14 @@ export default async function ProjectsPage({ params, searchParams }: ProjectsPag
           placeholder={dictionary.projects.searchPlaceholder}
           submitLabel={dictionary.projects.searchButton}
           resetLabel={dictionary.projects.searchReset}
+          defaultSortValue="date"
+          sortOptions={[
+            { value: "date", label: dictionary.projects.sortDate },
+            { value: "name", label: dictionary.projects.sortName },
+          ]}
         />
       }
-      listClassName="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4"
+      listClassName="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
     >
       {paginatedProjects.map((project, index) => (
         <ProjectCard
@@ -100,17 +115,17 @@ export default async function ProjectsPage({ params, searchParams }: ProjectsPag
           animationDelay={index * 70}
         />
       ))}
-      {filteredProjects.length === 0 ? (
+      {sortedProjects.length === 0 ? (
         <SurfaceCard className="col-span-full p-6 text-sm text-muted">
           {dictionary.projects.searchNoResult}
         </SurfaceCard>
       ) : null}
-      {filteredProjects.length > 0 ? (
+      {sortedProjects.length > 0 ? (
         <div className="col-span-full pt-2">
           <ContentPagination
             page={currentPage}
             totalPages={totalPages}
-            total={filteredProjects.length}
+            total={sortedProjects.length}
             previousLabel={dictionary.projects.paginationPrevious}
             nextLabel={dictionary.projects.paginationNext}
             summaryLabel={dictionary.projects.paginationSummary}

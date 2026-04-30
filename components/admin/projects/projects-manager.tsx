@@ -22,7 +22,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   AdminToolbar,
-  AdminToolbarAction,
   AdminToolbarSelect,
 } from "@/components/admin/common/admin-toolbar";
 import { AdminLocaleTabs, type AdminLocale } from "@/components/admin/common/locale-tabs";
@@ -36,10 +35,12 @@ import { StatusRadioGroup } from "@/components/admin/common/status-radio-group";
 import { Button } from "@/components/ui/button";
 import { FilterIcon } from "@/components/ui/icons/filter-icon";
 import { RowsIcon } from "@/components/ui/icons/rows-icon";
+import { SearchIcon } from "@/components/ui/icons/search-icon";
 import { TrashIcon } from "@/components/ui/icons/trash-icon";
 import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { uploadAdminMediaFile } from "@/lib/admin/upload-client";
+import { normalizeContentSearchQuery } from "@/lib/utils/content-search";
 import { ADMIN_PAGE_SIZE_OPTIONS } from "@/lib/utils/pagination";
 import { cn } from "@/lib/utils/cn";
 import { normalizeSlug } from "@/lib/utils/slug";
@@ -47,7 +48,7 @@ import { confirmUnsavedChanges, useBeforeUnloadUnsavedChanges } from "@/lib/util
 import { useAdminDetailStore } from "@/stores/admin-detail";
 import { useAdminListUiStore } from "@/stores/admin-list-ui";
 import { useAdminUnsavedStore } from "@/stores/admin-unsaved";
-import type { AdminListFilter, PaginatedResult } from "@/types/admin";
+import type { AdminListSort, PaginatedResult } from "@/types/admin";
 import type { PublishStatus } from "@/types/db";
 import type {
   AdminProject,
@@ -326,6 +327,13 @@ function toDisplayDate(value: string | null | undefined): string {
   }).format(date);
 }
 
+function toProjectListDateMeta(project: Pick<AdminProject, "createdAt" | "updatedAt">) {
+  return {
+    createdAt: toDisplayDate(project.createdAt),
+    updatedAt: toDisplayDate(project.updatedAt),
+  };
+}
+
 function toDisplayDateTime(value: string | null | undefined): string {
   if (!value) {
     return "-";
@@ -356,12 +364,10 @@ function toStatusLabel(status: PublishStatus): string {
   return status === "published" ? "공개" : "비공개";
 }
 
-const PROJECT_FILTER_OPTIONS: Array<{ value: AdminListFilter; label: string }> = [
-  { value: "all", label: "전체" },
-  { value: "main", label: "메인 노출" },
-  { value: "general", label: "일반" },
-  { value: "published", label: "공개" },
-  { value: "draft", label: "비공개" },
+const PROJECT_SORT_OPTIONS: Array<{ value: AdminListSort; label: string }> = [
+  { value: "updated", label: "수정일" },
+  { value: "created", label: "생성일" },
+  { value: "name", label: "제목" },
 ];
 
 function reorderById<T extends { id: string }>(items: T[], event: DragEndEvent): T[] {
@@ -424,7 +430,8 @@ function SortableRow({ id, children, onRemove }: SortableRowProps) {
 export function ProjectsManager({
   initialMainPage,
   initialPrivatePage,
-  initialFilter = "all",
+  initialSort = "updated",
+  initialSearchQuery = "",
   initialSelectedId = null,
 }: ProjectsManagerProps) {
   const { canWriteAdmin, role, userId } = useAdminSession();
@@ -441,7 +448,9 @@ export function ProjectsManager({
   const [privateTotal, setPrivateTotal] = useState(initialPrivatePage.total);
   const [privateTotalPages, setPrivateTotalPages] = useState(initialPrivatePage.totalPages);
   const [pageSize, setPageSize] = useState(initialMainPage.pageSize);
-  const [filter, setFilter] = useState<AdminListFilter>(initialFilter);
+  const [sort, setSort] = useState<AdminListSort>(initialSort);
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
+  const [searchInput, setSearchInput] = useState(initialSearchQuery);
   const [form, setForm] = useState<ProjectFormState>(EMPTY_FORM);
   const [translations, setTranslations] = useState<
     Record<TranslationLocale, ProjectTranslationFormState>
@@ -461,13 +470,21 @@ export function ProjectsManager({
   const [projectComments, setProjectComments] = useState<ProjectComment[]>([]);
   const [isCommentsLoading, setIsCommentsLoading] = useState(false);
   const [pendingCommentDeleteId, setPendingCommentDeleteId] = useState<string | null>(null);
+  const [copyKoTagsEnabled, setCopyKoTagsEnabled] = useState<Record<TranslationLocale, boolean>>({
+    en: false,
+    ja: false,
+  });
   const hasAppliedInitialSelection = useRef(false);
   const thumbnailUploadRequestRef = useRef(0);
   const openDetail = useAdminDetailStore((state) => state.open);
   const closeDetail = useAdminDetailStore((state) => state.close);
   const setUnsavedDirty = useAdminUnsavedStore((state) => state.setDirty);
   const savedPageSize = useAdminListUiStore((state) => state.pageSizeByScope.projects);
+  const savedSearchQuery = useAdminListUiStore((state) => state.searchQueryByScope.projects);
+  const savedSort = useAdminListUiStore((state) => state.sortByScope.projects);
   const setSavedPageSize = useAdminListUiStore((state) => state.setPageSize);
+  const setSavedSearchQuery = useAdminListUiStore((state) => state.setSearchQuery);
+  const setSavedSort = useAdminListUiStore((state) => state.setSort);
   const isFormDirty =
     drawerOpen && serializeProjectForm(form, syncSlugWithTitle, translations) !== savedFormSnapshot;
   const editingProject =
@@ -514,18 +531,25 @@ export function ProjectsManager({
       mainPage?: number;
       privatePage?: number;
       pageSize?: number;
-      filter?: AdminListFilter;
+      searchQuery?: string;
+      sort?: AdminListSort;
     }) => {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("page");
       params.set("mainPage", String(next.mainPage ?? mainPage));
       params.set("privatePage", String(next.privatePage ?? privatePage));
       params.set("pageSize", String(next.pageSize ?? pageSize));
-      const nextFilter = next.filter ?? filter;
-      if (nextFilter === "all") {
-        params.delete("filter");
+      const nextSearchQuery = normalizeContentSearchQuery(next.searchQuery ?? searchQuery);
+      if (nextSearchQuery) {
+        params.set("q", nextSearchQuery);
       } else {
-        params.set("filter", nextFilter);
+        params.delete("q");
+      }
+      const nextSort = next.sort ?? sort;
+      if (nextSort === "updated") {
+        params.delete("sort");
+      } else {
+        params.set("sort", nextSort);
       }
 
       if (next.id) {
@@ -539,7 +563,7 @@ export function ProjectsManager({
         scroll: false,
       });
     },
-    [filter, mainPage, pageSize, pathname, privatePage, router, searchParams],
+    [mainPage, pageSize, pathname, privatePage, router, searchParams, searchQuery, sort],
   );
 
   // 선택한 프로젝트의 댓글 목록을 관리자 드로어에서 바로 관리할 수 있도록 조회한다.
@@ -624,6 +648,7 @@ export function ProjectsManager({
     setProjectComments([]);
     setIsCommentsLoading(false);
     setPendingCommentDeleteId(null);
+    setCopyKoTagsEnabled({ en: false, ja: false });
     setDrawerOpen(true);
     closeDetail("projects");
     syncQuery({ id: null });
@@ -657,6 +682,7 @@ export function ProjectsManager({
       setProjectComments([]);
       setIsCommentsLoading(false);
       setPendingCommentDeleteId(null);
+      setCopyKoTagsEnabled({ en: false, ja: false });
       setDrawerOpen(true);
       openDetail("projects", project.id);
       syncQuery({ id: project.id });
@@ -684,15 +710,17 @@ export function ProjectsManager({
       nextMainPage = mainPage,
       nextPrivatePage = privatePage,
       nextPageSize = pageSize,
-      nextFilter = filter,
+      nextSearchQuery = searchQuery,
+      nextSort = sort,
     ) => {
+      const normalizedQuery = normalizeContentSearchQuery(nextSearchQuery);
       const [mainResponse, privateResponse] = await Promise.all([
         fetch(
-          `/api/admin/projects?page=${nextMainPage}&pageSize=${nextPageSize}&filter=${nextFilter}&statusScope=published`,
+          `/api/admin/projects?page=${nextMainPage}&pageSize=${nextPageSize}&q=${encodeURIComponent(normalizedQuery)}&sort=${nextSort}&statusScope=published`,
           { method: "GET" },
         ),
         fetch(
-          `/api/admin/projects?page=${nextPrivatePage}&pageSize=${nextPageSize}&filter=${nextFilter}&statusScope=draft`,
+          `/api/admin/projects?page=${nextPrivatePage}&pageSize=${nextPageSize}&q=${encodeURIComponent(normalizedQuery)}&sort=${nextSort}&statusScope=draft`,
           { method: "GET" },
         ),
       ]);
@@ -715,16 +743,19 @@ export function ProjectsManager({
       setPrivateTotal(privatePayload.total);
       setPrivateTotalPages(privatePayload.totalPages);
       setPageSize(mainPayload.pageSize);
-      setFilter(nextFilter);
+      setSearchQuery(normalizedQuery);
+      setSearchInput(normalizedQuery);
+      setSort(nextSort);
       syncQuery({
         id: null,
         mainPage: mainPayload.page,
         privatePage: privatePayload.page,
         pageSize: mainPayload.pageSize,
-        filter: nextFilter,
+        searchQuery: normalizedQuery,
+        sort: nextSort,
       });
     },
-    [filter, mainPage, pageSize, privatePage, syncQuery],
+    [mainPage, pageSize, privatePage, searchQuery, sort, syncQuery],
   );
 
   // 파일 선택 즉시 로컬 미리보기 + 업로드를 수행한다.
@@ -1023,6 +1054,7 @@ export function ProjectsManager({
       setForm(EMPTY_FORM);
       setTranslations(EMPTY_PROJECT_TRANSLATIONS);
       setActiveLocale("ko");
+      setCopyKoTagsEnabled({ en: false, ja: false });
       setSyncSlugWithTitle(true);
       setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true, EMPTY_PROJECT_TRANSLATIONS));
       setThumbnailMode("url");
@@ -1080,6 +1112,7 @@ export function ProjectsManager({
         setForm(EMPTY_FORM);
         setTranslations(EMPTY_PROJECT_TRANSLATIONS);
         setActiveLocale("ko");
+        setCopyKoTagsEnabled({ en: false, ja: false });
         setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true, EMPTY_PROJECT_TRANSLATIONS));
         setProjectComments([]);
         setIsCommentsLoading(false);
@@ -1133,7 +1166,7 @@ export function ProjectsManager({
     setIsCommentsLoading(false);
     setPendingCommentDeleteId(null);
     closeDetail("projects");
-    await loadProjects(nextPage, privatePage, pageSize, filter);
+    await loadProjects(nextPage, privatePage, pageSize, searchQuery, sort);
   };
 
   const onChangePageSize = async (nextPageSize: number) => {
@@ -1155,7 +1188,7 @@ export function ProjectsManager({
     setIsCommentsLoading(false);
     setPendingCommentDeleteId(null);
     closeDetail("projects");
-    await loadProjects(1, 1, nextPageSize, filter);
+    await loadProjects(1, 1, nextPageSize, searchQuery, sort);
   };
 
   const onChangePrivatePage = async (nextPage: number) => {
@@ -1176,11 +1209,36 @@ export function ProjectsManager({
     setIsCommentsLoading(false);
     setPendingCommentDeleteId(null);
     closeDetail("projects");
-    await loadProjects(mainPage, nextPage, pageSize, filter);
+    await loadProjects(mainPage, nextPage, pageSize, searchQuery, sort);
   };
 
-  const onChangeFilter = async (nextFilter: AdminListFilter) => {
-    if (nextFilter === filter) {
+  useEffect(() => {
+    // URL 쿼리가 비어 있으면 스토어에 저장된 페이지/검색/정렬 선호값을 복원한다.
+    if (searchParams.get("pageSize") || searchParams.get("q") || searchParams.get("sort")) {
+      return;
+    }
+
+    const normalizedSavedQuery = normalizeContentSearchQuery(savedSearchQuery);
+    if (savedPageSize === pageSize && normalizedSavedQuery === searchQuery && savedSort === sort) {
+      return;
+    }
+
+    void loadProjects(1, 1, savedPageSize, normalizedSavedQuery, savedSort);
+  }, [
+    loadProjects,
+    pageSize,
+    savedPageSize,
+    savedSearchQuery,
+    savedSort,
+    searchParams,
+    searchQuery,
+    sort,
+  ]);
+
+  // 관리자 검색어는 URL(q)와 스토어를 동기화해 재진입 시에도 복원한다.
+  const onSubmitSearch = async () => {
+    const nextQuery = normalizeContentSearchQuery(searchInput);
+    if (nextQuery === searchQuery) {
       return;
     }
 
@@ -1188,6 +1246,7 @@ export function ProjectsManager({
       return;
     }
 
+    setSavedSearchQuery("projects", nextQuery);
     setDrawerOpen(false);
     setEditingId(null);
     setTranslations(EMPTY_PROJECT_TRANSLATIONS);
@@ -1197,21 +1256,53 @@ export function ProjectsManager({
     setIsCommentsLoading(false);
     setPendingCommentDeleteId(null);
     closeDetail("projects");
-    await loadProjects(1, 1, pageSize, nextFilter);
+    await loadProjects(1, 1, pageSize, nextQuery, sort);
   };
 
-  useEffect(() => {
-    // URL에 pageSize가 없으면 마지막으로 선택한 표시 개수를 우선 적용한다.
-    if (searchParams.get("pageSize")) {
+  const onResetSearch = async () => {
+    if (!searchQuery && !searchInput.trim()) {
       return;
     }
 
-    if (savedPageSize === pageSize) {
+    if (!confirmProceedIfDirty()) {
       return;
     }
 
-    void loadProjects(1, 1, savedPageSize, filter);
-  }, [filter, loadProjects, pageSize, savedPageSize, searchParams]);
+    setSearchInput("");
+    setSavedSearchQuery("projects", "");
+    setDrawerOpen(false);
+    setEditingId(null);
+    setTranslations(EMPTY_PROJECT_TRANSLATIONS);
+    setActiveLocale("ko");
+    setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true, EMPTY_PROJECT_TRANSLATIONS));
+    setProjectComments([]);
+    setIsCommentsLoading(false);
+    setPendingCommentDeleteId(null);
+    closeDetail("projects");
+    await loadProjects(1, 1, pageSize, "", sort);
+  };
+
+  const onChangeSort = async (nextSort: AdminListSort) => {
+    if (nextSort === sort) {
+      return;
+    }
+
+    if (!confirmProceedIfDirty()) {
+      return;
+    }
+
+    setSavedSort("projects", nextSort);
+    setDrawerOpen(false);
+    setEditingId(null);
+    setTranslations(EMPTY_PROJECT_TRANSLATIONS);
+    setActiveLocale("ko");
+    setSavedFormSnapshot(serializeProjectForm(EMPTY_FORM, true, EMPTY_PROJECT_TRANSLATIONS));
+    setProjectComments([]);
+    setIsCommentsLoading(false);
+    setPendingCommentDeleteId(null);
+    closeDetail("projects");
+    await loadProjects(1, 1, pageSize, searchQuery, nextSort);
+  };
 
   useEffect(() => {
     return () => {
@@ -1257,16 +1348,55 @@ export function ProjectsManager({
               : undefined
         }
         action={
-          <AdminToolbar>
+          <Button type="button" onClick={openCreate} disabled={!canWriteAdmin} className="shrink-0">
+            프로젝트 생성
+          </Button>
+        }
+        message={message}
+      >
+        <AdminToolbar className="w-full flex-col items-stretch gap-2">
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+            <Input
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.nativeEvent.isComposing) {
+                  return;
+                }
+
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void onSubmitSearch();
+                }
+              }}
+              placeholder="제목, 내용, 태그 검색"
+              className="h-10 w-full min-w-0 sm:flex-1"
+            />
+            <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void onSubmitSearch()}
+                className="gap-1.5"
+              >
+                <SearchIcon className="h-3.5 w-3.5" />
+                검색
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => void onResetSearch()}>
+                초기화
+              </Button>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <AdminToolbarSelect
               icon={<FilterIcon className="h-3.5 w-3.5 text-muted" />}
-              label="상태 필터"
-              value={filter}
-              options={PROJECT_FILTER_OPTIONS.map((item) => ({
+              label="정렬"
+              value={sort}
+              options={PROJECT_SORT_OPTIONS.map((item) => ({
                 value: item.value,
                 label: item.label,
               }))}
-              onChange={(value) => void onChangeFilter(value as AdminListFilter)}
+              onChange={(value) => void onChangeSort(value as AdminListSort)}
             />
             <AdminToolbarSelect
               icon={<RowsIcon className="h-3.5 w-3.5 text-muted" />}
@@ -1278,15 +1408,9 @@ export function ProjectsManager({
               }))}
               onChange={(value) => void onChangePageSize(Number(value))}
             />
-            <AdminToolbarAction>
-              <Button type="button" onClick={openCreate} disabled={!canWriteAdmin}>
-                새 프로젝트
-              </Button>
-            </AdminToolbarAction>
-          </AdminToolbar>
-        }
-        message={message}
-      >
+          </div>
+        </AdminToolbar>
+
         <section className="space-y-2">
           <h2 className="text-sm font-semibold tracking-tight text-foreground">공개</h2>
           <ManagerList
@@ -1347,10 +1471,18 @@ export function ProjectsManager({
                             : "bg-foreground/10 text-foreground",
                         )}
                       >
-                        {project.featured ? "메인 노출" : "일반 공개"}
+                        {project.featured ? "메인 노출" : "일반"}
                       </span>
                     </div>
-                    <span className="text-muted">{toDisplayDate(project.updatedAt)}</span>
+                    {(() => {
+                      const dateMeta = toProjectListDateMeta(project);
+                      return (
+                        <div className="flex flex-col items-end text-[11px] leading-4 text-muted">
+                          <span>생성일: {dateMeta.createdAt}</span>
+                          <span>수정일: {dateMeta.updatedAt}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </>
               </ManagerListRow>
@@ -1375,7 +1507,7 @@ export function ProjectsManager({
               <ManagerListRow
                 key={project.id}
                 onClick={() => openEdit(project)}
-                className="items-start transition-all duration-300 hover:-translate-y-0.5"
+                className="transition-all duration-300 hover:-translate-y-0.5"
               >
                 <>
                   <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md border border-border bg-background">
@@ -1408,18 +1540,20 @@ export function ProjectsManager({
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5 text-xs">
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 font-semibold",
-                        statusBadge(project.status),
-                      )}
-                    >
-                      {toStatusLabel(project.status)}
-                    </span>
-                    <span className="rounded-full bg-foreground/10 px-2 py-0.5 font-medium text-foreground">
-                      비공개
-                    </span>
-                    <span className="text-muted">{toDisplayDate(project.updatedAt)}</span>
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="rounded-full bg-foreground/10 px-2 py-0.5 font-semibold text-foreground">
+                        비공개
+                      </span>
+                    </div>
+                    {(() => {
+                      const dateMeta = toProjectListDateMeta(project);
+                      return (
+                        <div className="flex flex-col items-end text-[11px] leading-4 text-muted">
+                          <span>생성일: {dateMeta.createdAt}</span>
+                          <span>수정일: {dateMeta.updatedAt}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </>
               </ManagerListRow>
@@ -1437,7 +1571,7 @@ export function ProjectsManager({
       <EditorDrawer
         open={drawerOpen}
         onClose={closeDrawer}
-        title={editingId ? "프로젝트 편집" : "새 프로젝트"}
+        title={editingId ? "프로젝트 편집" : "신규 프로젝트 생성"}
         description="필수 필드를 채운 뒤 저장하면 공개 페이지와 동기화됩니다."
       >
         <form className="min-w-0 space-y-3.5" onSubmit={onSubmit}>
@@ -1445,441 +1579,486 @@ export function ProjectsManager({
             disabled={!canMutateCurrentProject || isPending}
             className="min-w-0 space-y-3.5"
           >
-          <SurfaceCard tone="background" radius="lg" padding="sm" className="min-w-0 space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">썸네일 업로드</p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant={thumbnailMode === "url" ? "solid" : "ghost"}
-                size="sm"
-                onClick={() => setThumbnailMode("url")}
-              >
-                외부 링크
-              </Button>
-              <Button
-                type="button"
-                variant={thumbnailMode === "upload" ? "solid" : "ghost"}
-                size="sm"
-                onClick={() => setThumbnailMode("upload")}
-              >
-                파일 업로드
-              </Button>
-            </div>
-
-            {thumbnailMode === "url" ? (
-              <Input
-                value={form.thumbnail}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    thumbnail: event.target.value,
-                  }))
-                }
-                placeholder="https://... 또는 /images/..."
-                required
-              />
-            ) : (
-              <div className="space-y-2">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => onSelectThumbnailFile(event.target.files?.[0] ?? null)}
-                  className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
-                />
-                <p className="text-xs text-muted">
-                  파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.
-                </p>
+            <SurfaceCard tone="background" radius="lg" padding="sm" className="min-w-0 space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                썸네일 업로드
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant={thumbnailMode === "url" ? "solid" : "ghost"}
+                  size="sm"
+                  onClick={() => setThumbnailMode("url")}
+                >
+                  외부 링크
+                </Button>
+                <Button
+                  type="button"
+                  variant={thumbnailMode === "upload" ? "solid" : "ghost"}
+                  size="sm"
+                  onClick={() => setThumbnailMode("upload")}
+                >
+                  파일 업로드
+                </Button>
               </div>
-            )}
 
-            <p className="truncate text-xs text-muted">
-              현재 썸네일:{" "}
-              {isUploadingThumbnail ? "업로드 중..." : form.thumbnail || "설정되지 않음"}
-            </p>
-            {localThumbnailPreview || form.thumbnail ? (
-              <div className="relative h-40 w-full overflow-hidden rounded-md border border-border bg-surface">
-                <Image
-                  src={localThumbnailPreview || form.thumbnail}
-                  alt="썸네일 미리보기"
-                  fill
-                  unoptimized={isBlobUrl(localThumbnailPreview || form.thumbnail)}
-                  className="object-cover"
-                />
-              </div>
-            ) : (
-              <p className="text-xs text-muted">썸네일 미리보기가 없습니다.</p>
-            )}
-          </SurfaceCard>
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted">
-                콘텐츠 언어
-              </label>
-              <AdminLocaleTabs value={activeLocale} onChange={setActiveLocale} />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium uppercase tracking-wide text-muted">제목</label>
-            <Input
-              value={localeTitle}
-              onChange={(event) => setLocaleField("title", event.target.value)}
-              placeholder="제목"
-              required={activeLocale === "ko"}
-            />
-          </div>
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted">
-                슬러그
-              </label>
-              <label className="inline-flex items-center gap-1.5 text-xs text-muted">
-                <input
-                  type="checkbox"
-                  checked={syncSlugWithTitle}
-                  onChange={(event) => {
-                    const checked = event.target.checked;
-                    setSyncSlugWithTitle(checked);
-
-                    if (checked) {
-                      setForm((prev) => ({
-                        ...prev,
-                        slug: normalizeSlug(prev.title),
-                      }));
-                    }
-                  }}
-                />
-                제목과 동일
-              </label>
-            </div>
-            <Input
-              value={form.slug}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, slug: normalizeSlug(event.target.value) }))
-              }
-              placeholder="slug"
-              required
-              disabled={syncSlugWithTitle}
-            />
-          </div>
-
-          <section className="space-y-1">
-            <label className="text-xs font-medium uppercase tracking-wide text-muted">부제목</label>
-            <Input
-              value={localeSubtitle}
-              onChange={(event) => setLocaleField("subtitle", event.target.value)}
-              placeholder="프로젝트 부제목"
-              required={activeLocale === "ko"}
-            />
-          </section>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted">역할</label>
-              <Input
-                value={form.role}
-                onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value }))}
-                placeholder="역할"
-                required
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted">기간</label>
-              <div className="grid grid-cols-2 gap-2">
+              {thumbnailMode === "url" ? (
                 <Input
-                  type="date"
-                  value={form.startDate}
+                  value={form.thumbnail}
                   onChange={(event) =>
                     setForm((prev) => ({
                       ...prev,
-                      startDate: event.target.value,
+                      thumbnail: event.target.value,
                     }))
                   }
-                  placeholder="시작일"
+                  placeholder="https://... 또는 /images/..."
+                  required
                 />
-                <Input
-                  type="date"
-                  value={form.endDate}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      endDate: event.target.value,
-                    }))
-                  }
-                  placeholder="종료일"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid items-center gap-3 sm:grid-cols-2">
-            <StatusRadioGroup
-              legend="공개 상태"
-              name="project-status"
-              value={form.status}
-              options={[
-                { value: "published", label: "공개" },
-                { value: "draft", label: "비공개" },
-              ]}
-              onChange={(value) =>
-                setForm((prev) => {
-                  const nextStatus = value as PublishStatus;
-
-                  if (nextStatus === "draft") {
-                    return { ...prev, status: nextStatus, featured: false };
-                  }
-
-                  return { ...prev, status: nextStatus };
-                })
-              }
-              className="rounded-md px-3 py-2"
-            />
-            {form.status === "published" ? (
-              <label className="inline-flex h-12 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.featured}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      featured: event.target.checked,
-                    }))
-                  }
-                />
-                메인 페이지 노출
-              </label>
-            ) : (
-              <div className="inline-flex h-12 items-center rounded-md border border-border/60 bg-background/50 px-3 text-xs text-muted">
-                비공개 상태에서는 메인 페이지 노출 설정을 할 수 없습니다.
-              </div>
-            )}
-          </div>
-
-          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">태그</p>
-            <div className="flex items-center gap-2">
-              <Input
-                className="min-w-0 flex-1"
-                value={localeTagInput}
-                onChange={(event) => setLocaleField("tagInput", event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.nativeEvent.isComposing) {
-                    return;
-                  }
-
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    addLocaleTag();
-                  }
-                }}
-                placeholder="태그를 입력하고 Enter"
-              />
-              <Button type="button" className="h-10 shrink-0 px-4" onClick={addLocaleTag}>
-                추가
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {localeTags.length > 0 ? (
-                localeTags.map((item) => (
-                  <span
-                    key={item}
-                    className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs"
-                  >
-                    {item}
-                    <button
-                      type="button"
-                      className="text-red-600/80 transition-colors hover:text-red-500 dark:text-red-300/85 dark:hover:text-red-200"
-                      aria-label={`${item} 삭제`}
-                      onClick={() => removeLocaleTag(item)}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))
               ) : (
-                <p className="text-xs text-muted">아직 추가된 태그가 없습니다.</p>
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => onSelectThumbnailFile(event.target.files?.[0] ?? null)}
+                    className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
+                  />
+                  <p className="text-xs text-muted">
+                    파일을 선택하면 즉시 미리보기와 업로드가 진행됩니다.
+                  </p>
+                </div>
               )}
-            </div>
-          </SurfaceCard>
 
-          <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted">관련 링크</p>
-            <div className="grid items-center gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto_auto]">
-              <Input
-                className="min-w-0"
-                value={form.linkLabelInput}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    linkLabelInput: event.target.value,
-                  }))
-                }
-                placeholder="라벨 (예: Demo)"
-              />
-              <Input
-                className="min-w-0"
-                value={form.linkUrlInput}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    linkUrlInput: event.target.value,
-                  }))
-                }
-                onKeyDown={(event) => {
-                  if (event.nativeEvent.isComposing) {
-                    return;
-                  }
-
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    addLink();
-                  }
-                }}
-                placeholder="https://..."
-              />
-              <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.linkPublicInput}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      linkPublicInput: event.target.checked,
-                    }))
-                  }
-                />
-                공개
-              </label>
-              <Button type="button" className="h-10 shrink-0 px-4" onClick={addLink}>
-                추가
-              </Button>
-            </div>
-
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  links: reorderById(prev.links, event),
-                }))
-              }
-            >
-              <SortableContext
-                items={form.links.map((item) => item.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <ul className="space-y-2">
-                  {form.links.length > 0 ? (
-                    form.links.map((item) => (
-                      <SortableRow key={item.id} id={item.id} onRemove={() => removeLink(item.id)}>
-                        <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-medium text-foreground">
-                            {item.label}
-                          </p>
-                          <span
-                            className={cn(
-                              "rounded-full px-2 py-0.5 text-[11px] font-medium",
-                              item.isPublic
-                                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-                                : "bg-slate-500/15 text-slate-700 dark:text-slate-300",
-                            )}
-                          >
-                            {item.isPublic ? "공개" : "비공개"}
-                          </span>
-                        </div>
-                        <p className="truncate text-xs text-muted">{item.url}</p>
-                        <label className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted">
-                          <input
-                            type="checkbox"
-                            checked={item.isPublic}
-                            onChange={(event) => setLinkPublic(item.id, event.target.checked)}
-                          />
-                          공개 링크
-                        </label>
-                      </SortableRow>
-                    ))
-                  ) : (
-                    <li className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted">
-                      등록된 링크가 없습니다.
-                    </li>
-                  )}
-                </ul>
-              </SortableContext>
-            </DndContext>
-          </SurfaceCard>
-
-          <MarkdownField
-            label="프로젝트 본문"
-            value={localeContent}
-            onChange={(value) => setLocaleField("contentMarkdown", value)}
-            placeholder="프로젝트 본문"
-            required={activeLocale === "ko"}
-            minHeight={600}
-          />
-
-          {editingId ? (
-            <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted">댓글 관리</p>
-                <span className="text-xs text-muted">{projectComments.length}개</span>
-              </div>
-              {isCommentsLoading ? (
-                <p className="text-xs text-muted">댓글 목록을 불러오는 중...</p>
-              ) : projectComments.length === 0 ? (
-                <p className="text-xs text-muted">등록된 댓글이 없습니다.</p>
+              <p className="truncate text-xs text-muted">
+                현재 썸네일:{" "}
+                {isUploadingThumbnail ? "업로드 중..." : form.thumbnail || "설정되지 않음"}
+              </p>
+              {localThumbnailPreview || form.thumbnail ? (
+                <div className="relative h-40 w-full overflow-hidden rounded-md border border-border bg-surface">
+                  <Image
+                    src={localThumbnailPreview || form.thumbnail}
+                    alt="썸네일 미리보기"
+                    fill
+                    unoptimized={isBlobUrl(localThumbnailPreview || form.thumbnail)}
+                    className="object-cover"
+                  />
+                </div>
               ) : (
-                <ul className="space-y-2">
-                  {projectComments.map((comment) => (
-                    <li
-                      key={comment.id}
-                      className="rounded-md border border-border bg-surface px-3 py-2"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-foreground">
-                            {comment.authorNickname}
-                          </p>
-                          <p className="text-[11px] text-muted">
-                            {toDisplayDateTime(comment.createdAt)}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => void onDeleteProjectCommentByAdmin(comment.id)}
-                          disabled={pendingCommentDeleteId === comment.id || !canWriteAdmin}
-                        >
-                          삭제
-                        </Button>
-                      </div>
-                      <p className="mt-1.5 whitespace-pre-wrap text-sm text-foreground">
-                        {comment.content}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
+                <p className="text-xs text-muted">썸네일 미리보기가 없습니다.</p>
               )}
             </SurfaceCard>
-          ) : null}
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted">
+                  콘텐츠 언어
+                </label>
+                <AdminLocaleTabs value={activeLocale} onChange={setActiveLocale} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium uppercase tracking-wide text-muted">제목</label>
+              <Input
+                value={localeTitle}
+                onChange={(event) => setLocaleField("title", event.target.value)}
+                placeholder="제목"
+                required={activeLocale === "ko"}
+              />
+            </div>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted">
+                  슬러그
+                </label>
+                <label className="inline-flex items-center gap-1.5 text-xs text-muted">
+                  <input
+                    type="checkbox"
+                    checked={syncSlugWithTitle}
+                    onChange={(event) => {
+                      const checked = event.target.checked;
+                      setSyncSlugWithTitle(checked);
 
-          <div className="flex gap-2">
-            <Button type="submit" className="flex-1" disabled={isPending || !canMutateCurrentProject}>
-              {isPending ? "저장 중..." : editingId ? "저장" : "프로젝트 생성"}
-            </Button>
-            {editingId ? (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={() => onDelete(editingId)}
-                disabled={isPending || !canMutateCurrentProject}
-                aria-label="프로젝트 삭제"
+                      if (checked) {
+                        setForm((prev) => ({
+                          ...prev,
+                          slug: normalizeSlug(prev.title),
+                        }));
+                      }
+                    }}
+                  />
+                  제목과 동일
+                </label>
+              </div>
+              <Input
+                value={form.slug}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, slug: normalizeSlug(event.target.value) }))
+                }
+                placeholder="slug"
+                required
+                disabled={syncSlugWithTitle}
+              />
+            </div>
+
+            <section className="space-y-1">
+              <label className="text-xs font-medium uppercase tracking-wide text-muted">
+                부제목
+              </label>
+              <Input
+                value={localeSubtitle}
+                onChange={(event) => setLocaleField("subtitle", event.target.value)}
+                placeholder="프로젝트 부제목"
+                required={activeLocale === "ko"}
+              />
+            </section>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted">
+                  역할
+                </label>
+                <Input
+                  value={form.role}
+                  onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value }))}
+                  placeholder="역할"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted">
+                  기간
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    type="date"
+                    value={form.startDate}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        startDate: event.target.value,
+                      }))
+                    }
+                    placeholder="시작일"
+                  />
+                  <Input
+                    type="date"
+                    value={form.endDate}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        endDate: event.target.value,
+                      }))
+                    }
+                    placeholder="종료일"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid items-center gap-3 sm:grid-cols-2">
+              <StatusRadioGroup
+                legend="공개 상태"
+                name="project-status"
+                value={form.status}
+                options={[
+                  { value: "published", label: "공개" },
+                  { value: "draft", label: "비공개" },
+                ]}
+                onChange={(value) =>
+                  setForm((prev) => {
+                    const nextStatus = value as PublishStatus;
+
+                    if (nextStatus === "draft") {
+                      return { ...prev, status: nextStatus, featured: false };
+                    }
+
+                    return { ...prev, status: nextStatus };
+                  })
+                }
+                className="rounded-md px-3 py-2"
+              />
+              {form.status === "published" ? (
+                <label className="inline-flex h-12 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.featured}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        featured: event.target.checked,
+                      }))
+                    }
+                  />
+                  메인 페이지 노출
+                </label>
+              ) : (
+                <div className="inline-flex h-12 items-center rounded-md border border-border/60 bg-background/50 px-3 text-xs text-muted">
+                  비공개 상태에서는 메인 페이지 노출 설정을 할 수 없습니다.
+                </div>
+              )}
+            </div>
+
+            <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted">태그</p>
+                {activeLocale !== "ko" ? (
+                  <label className="inline-flex items-center gap-1.5 text-xs text-muted">
+                    <input
+                      type="checkbox"
+                      checked={copyKoTagsEnabled[activeLocale]}
+                      onChange={(event) => {
+                        const checked = event.target.checked;
+                        setCopyKoTagsEnabled((prev) => ({ ...prev, [activeLocale]: checked }));
+
+                        if (!checked) {
+                          return;
+                        }
+
+                        setTranslations((prev) => ({
+                          ...prev,
+                          [activeLocale]: {
+                            ...prev[activeLocale],
+                            tags: normalizeTagList(form.techStack),
+                          },
+                        }));
+                      }}
+                    />
+                    한국어 태그 불러오기
+                  </label>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  className="min-w-0 flex-1"
+                  value={localeTagInput}
+                  onChange={(event) => setLocaleField("tagInput", event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.nativeEvent.isComposing) {
+                      return;
+                    }
+
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      addLocaleTag();
+                    }
+                  }}
+                  placeholder="태그를 입력하고 Enter"
+                />
+                <Button type="button" className="h-10 shrink-0 px-4" onClick={addLocaleTag}>
+                  추가
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {localeTags.length > 0 ? (
+                  localeTags.map((item) => (
+                    <span
+                      key={item}
+                      className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs"
+                    >
+                      {item}
+                      <button
+                        type="button"
+                        className="text-red-600/80 transition-colors hover:text-red-500 dark:text-red-300/85 dark:hover:text-red-200"
+                        aria-label={`${item} 삭제`}
+                        onClick={() => removeLocaleTag(item)}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-xs text-muted">아직 추가된 태그가 없습니다.</p>
+                )}
+              </div>
+            </SurfaceCard>
+
+            <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">관련 링크</p>
+              <div className="grid items-center gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto_auto]">
+                <Input
+                  className="min-w-0"
+                  value={form.linkLabelInput}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      linkLabelInput: event.target.value,
+                    }))
+                  }
+                  placeholder="라벨 (예: URL)"
+                />
+                <Input
+                  className="min-w-0"
+                  value={form.linkUrlInput}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      linkUrlInput: event.target.value,
+                    }))
+                  }
+                  onKeyDown={(event) => {
+                    if (event.nativeEvent.isComposing) {
+                      return;
+                    }
+
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      addLink();
+                    }
+                  }}
+                  placeholder="https://..."
+                />
+                <label className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.linkPublicInput}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        linkPublicInput: event.target.checked,
+                      }))
+                    }
+                  />
+                  공개
+                </label>
+                <Button type="button" className="h-10 shrink-0 px-4" onClick={addLink}>
+                  추가
+                </Button>
+              </div>
+
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    links: reorderById(prev.links, event),
+                  }))
+                }
               >
-                <TrashIcon />
-                <span className="sr-only">삭제</span>
-              </Button>
+                <SortableContext
+                  items={form.links.map((item) => item.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <ul className="space-y-2">
+                    {form.links.length > 0 ? (
+                      form.links.map((item) => (
+                        <SortableRow
+                          key={item.id}
+                          id={item.id}
+                          onRemove={() => removeLink(item.id)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm font-medium text-foreground">
+                              {item.label}
+                            </p>
+                            <span
+                              className={cn(
+                                "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                                item.isPublic
+                                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                                  : "bg-slate-500/15 text-slate-700 dark:text-slate-300",
+                              )}
+                            >
+                              {item.isPublic ? "공개" : "비공개"}
+                            </span>
+                          </div>
+                          <p className="truncate text-xs text-muted">{item.url}</p>
+                          <label className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted">
+                            <input
+                              type="checkbox"
+                              checked={item.isPublic}
+                              onChange={(event) => setLinkPublic(item.id, event.target.checked)}
+                            />
+                            공개 링크
+                          </label>
+                        </SortableRow>
+                      ))
+                    ) : (
+                      <li className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted">
+                        등록된 링크가 없습니다.
+                      </li>
+                    )}
+                  </ul>
+                </SortableContext>
+              </DndContext>
+            </SurfaceCard>
+
+            <MarkdownField
+              label="프로젝트 본문"
+              value={localeContent}
+              onChange={(value) => setLocaleField("contentMarkdown", value)}
+              placeholder="프로젝트 본문"
+              required={activeLocale === "ko"}
+              minHeight={600}
+            />
+
+            {editingId ? (
+              <SurfaceCard tone="background" radius="lg" padding="sm" className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                    댓글 관리
+                  </p>
+                  <span className="text-xs text-muted">{projectComments.length}개</span>
+                </div>
+                {isCommentsLoading ? (
+                  <p className="text-xs text-muted">댓글 목록을 불러오는 중...</p>
+                ) : projectComments.length === 0 ? (
+                  <p className="text-xs text-muted">등록된 댓글이 없습니다.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {projectComments.map((comment) => (
+                      <li
+                        key={comment.id}
+                        className="rounded-md border border-border bg-surface px-3 py-2"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-foreground">
+                              {comment.authorNickname}
+                            </p>
+                            <p className="text-[11px] text-muted">
+                              {toDisplayDateTime(comment.createdAt)}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => void onDeleteProjectCommentByAdmin(comment.id)}
+                            disabled={pendingCommentDeleteId === comment.id || !canWriteAdmin}
+                          >
+                            삭제
+                          </Button>
+                        </div>
+                        <p className="mt-1.5 whitespace-pre-wrap text-sm text-foreground">
+                          {comment.content}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </SurfaceCard>
             ) : null}
-          </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={isPending || !canMutateCurrentProject}
+              >
+                {isPending ? "저장 중..." : editingId ? "저장" : "프로젝트 생성"}
+              </Button>
+              {editingId ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => onDelete(editingId)}
+                  disabled={isPending || !canMutateCurrentProject}
+                  aria-label="프로젝트 삭제"
+                >
+                  <TrashIcon />
+                  <span className="sr-only">삭제</span>
+                </Button>
+              ) : null}
+            </div>
           </fieldset>
 
           {message ? <p className="text-sm text-muted">{message}</p> : null}

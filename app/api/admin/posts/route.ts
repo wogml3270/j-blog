@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { createAdminPost, getAdminPostsPaginated } from "@/lib/blog/repository";
 import { revalidateBlogPaths } from "@/lib/cache/revalidate";
+import { normalizeContentSearchQuery } from "@/lib/utils/content-search";
 import { normalizePagination } from "@/lib/utils/pagination";
-import { normalizeAdminListFilter, normalizeStatusScope } from "@/lib/utils/search-params";
+import { normalizeAdminListSort, normalizeStatusScope } from "@/lib/utils/search-params";
 import { normalizeSlug } from "@/lib/utils/slug";
 import type { AdminPostInput, BlogTranslationMap } from "@/types/blog";
 
@@ -71,7 +72,7 @@ function parseBody(body: unknown): AdminPostInput | null {
     thumbnail:
       typeof source.thumbnail === "string" && source.thumbnail.trim()
         ? source.thumbnail.trim()
-        : "/blog/default-thumbnail.svg",
+        : "/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png",
     featured: Boolean(source.featured),
     syncSlugWithTitle: Boolean(source.syncSlugWithTitle),
     bodyMarkdown: source.bodyMarkdown,
@@ -107,9 +108,10 @@ export async function GET(request: Request) {
     url.searchParams.get("page"),
     url.searchParams.get("pageSize"),
   );
-  const filter = normalizeAdminListFilter(url.searchParams.get("filter"));
+  const searchQuery = normalizeContentSearchQuery(url.searchParams.get("q"));
+  const sort = normalizeAdminListSort(url.searchParams.get("sort"));
   const statusScope = normalizeStatusScope(url.searchParams.get("statusScope"));
-  const result = await getAdminPostsPaginated(page, pageSize, filter, statusScope);
+  const result = await getAdminPostsPaginated(page, pageSize, searchQuery, sort, statusScope);
 
   return NextResponse.json(result);
 }

@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getAdminGuardForApi } from "@/lib/auth/admin";
 import { revalidateProjectPaths } from "@/lib/cache/revalidate";
 import { createAdminProject, getAdminProjectsPaginated } from "@/lib/projects/repository";
+import { normalizeContentSearchQuery } from "@/lib/utils/content-search";
 import { normalizePagination } from "@/lib/utils/pagination";
-import { normalizeAdminListFilter, normalizeStatusScope } from "@/lib/utils/search-params";
+import { normalizeAdminListSort, normalizeStatusScope } from "@/lib/utils/search-params";
 import { normalizeSlug } from "@/lib/utils/slug";
 import type {
   AdminProjectInput,
@@ -194,9 +195,10 @@ export async function GET(request: Request) {
     url.searchParams.get("page"),
     url.searchParams.get("pageSize"),
   );
-  const filter = normalizeAdminListFilter(url.searchParams.get("filter"));
+  const searchQuery = normalizeContentSearchQuery(url.searchParams.get("q"));
+  const sort = normalizeAdminListSort(url.searchParams.get("sort"));
   const statusScope = normalizeStatusScope(url.searchParams.get("statusScope"));
-  const result = await getAdminProjectsPaginated(page, pageSize, filter, statusScope);
+  const result = await getAdminProjectsPaginated(page, pageSize, searchQuery, sort, statusScope);
 
   return NextResponse.json(result);
 }

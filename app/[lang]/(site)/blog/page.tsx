@@ -11,7 +11,7 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { matchesContentSearchQuery, normalizeContentSearchQuery } from "@/lib/utils/content-search";
 import { PUBLIC_CONTENT_PAGE_SIZE, normalizePublicPage } from "@/lib/utils/pagination";
-import { pickSingleQueryValue } from "@/lib/utils/search-params";
+import { normalizePublicSort, pickSingleQueryValue } from "@/lib/utils/search-params";
 
 type BlogListPageProps = {
   params: Promise<{ lang: string }>;
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: BlogListPageProps): Promise<M
   }
 
   const dictionary = getDictionary(lang);
-  let shareImagePath = "/blog/default-thumbnail.svg";
+  let shareImagePath = "/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png";
 
   try {
     const posts = await getAllPublishedPosts(lang);
@@ -58,14 +58,22 @@ export default async function BlogListPage({ params, searchParams }: BlogListPag
   const dictionary = getDictionary(lang);
   const posts = await getAllPublishedPosts(lang);
   const searchQuery = normalizeContentSearchQuery(pickSingleQueryValue(query.q));
+  const sort = normalizePublicSort(pickSingleQueryValue(query.sort));
   const filteredPosts = posts.filter((post) =>
     matchesContentSearchQuery([post.title, post.description, post.tags], searchQuery),
   );
+  const sortedPosts = [...filteredPosts].sort((a, b) => {
+    if (sort === "name") {
+      return a.title.localeCompare(b.title, lang);
+    }
+
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
   const requestedPage = normalizePublicPage(pickSingleQueryValue(query.page));
-  const totalPages = Math.max(1, Math.ceil(filteredPosts.length / PUBLIC_CONTENT_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sortedPosts.length / PUBLIC_CONTENT_PAGE_SIZE));
   const currentPage = Math.min(requestedPage, totalPages);
   const pageStart = (currentPage - 1) * PUBLIC_CONTENT_PAGE_SIZE;
-  const paginatedPosts = filteredPosts.slice(pageStart, pageStart + PUBLIC_CONTENT_PAGE_SIZE);
+  const paginatedPosts = sortedPosts.slice(pageStart, pageStart + PUBLIC_CONTENT_PAGE_SIZE);
 
   return (
     <ContentListLayout
@@ -76,6 +84,11 @@ export default async function BlogListPage({ params, searchParams }: BlogListPag
           placeholder={dictionary.blog.searchPlaceholder}
           submitLabel={dictionary.blog.searchButton}
           resetLabel={dictionary.blog.searchReset}
+          defaultSortValue="date"
+          sortOptions={[
+            { value: "date", label: dictionary.blog.sortDate },
+            { value: "name", label: dictionary.blog.sortName },
+          ]}
         />
       }
       listClassName="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
@@ -83,17 +96,17 @@ export default async function BlogListPage({ params, searchParams }: BlogListPag
       {paginatedPosts.map((post, index) => (
         <BlogCard key={post.slug} post={post} locale={lang} animationDelay={index * 70} />
       ))}
-      {filteredPosts.length === 0 ? (
+      {sortedPosts.length === 0 ? (
         <SurfaceCard className="col-span-full p-6 text-sm text-muted">
           {dictionary.blog.searchNoResult}
         </SurfaceCard>
       ) : null}
-      {filteredPosts.length > 0 ? (
+      {sortedPosts.length > 0 ? (
         <div className="col-span-full pt-2">
           <ContentPagination
             page={currentPage}
             totalPages={totalPages}
-            total={filteredPosts.length}
+            total={sortedPosts.length}
             previousLabel={dictionary.blog.paginationPrevious}
             nextLabel={dictionary.blog.paginationNext}
             summaryLabel={dictionary.blog.paginationSummary}

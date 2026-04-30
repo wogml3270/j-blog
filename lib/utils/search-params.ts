@@ -1,4 +1,4 @@
-import type { AdminListFilter, ContactListFilter } from "@/types/admin";
+import type { AdminListSort, ContactListFilter } from "@/types/admin";
 import type { PublishStatus } from "@/types/db";
 
 export function pickSingleQueryValue(value: string | string[] | undefined): string | null {
@@ -13,21 +13,28 @@ export function pickSingleQueryValue(value: string | string[] | undefined): stri
   return null;
 }
 
-const ADMIN_LIST_FILTER_SET = new Set<AdminListFilter>([
-  "all",
-  "main",
-  "general",
-  "published",
-  "draft",
-]);
+const ADMIN_LIST_SORT_SET = new Set<AdminListSort>(["name", "created", "updated"]);
 
-// 관리자 리스트 필터 문자열을 허용된 값으로 정규화한다.
-export function normalizeAdminListFilter(raw: string | null | undefined): AdminListFilter {
+// 관리자 리스트 정렬 문자열을 허용된 값으로 정규화한다.
+export function normalizeAdminListSort(raw: string | null | undefined): AdminListSort {
   if (!raw) {
-    return "all";
+    return "updated";
   }
 
-  return ADMIN_LIST_FILTER_SET.has(raw as AdminListFilter) ? (raw as AdminListFilter) : "all";
+  return ADMIN_LIST_SORT_SET.has(raw as AdminListSort) ? (raw as AdminListSort) : "updated";
+}
+
+const PUBLIC_SORT_SET = new Set(["name", "date"] as const);
+
+export type PublicListSort = "name" | "date";
+
+// 공개 리스트 정렬 문자열을 URL 쿼리 기준으로 안전하게 정규화한다.
+export function normalizePublicSort(raw: string | null | undefined): PublicListSort {
+  if (!raw) {
+    return "date";
+  }
+
+  return PUBLIC_SORT_SET.has(raw as PublicListSort) ? (raw as PublicListSort) : "date";
 }
 
 // 관리자 목록의 상태 스코프(statusScope) 쿼리를 안전하게 정규화한다.

@@ -16,7 +16,7 @@ export function ManagerShell({
   return (
     <section className={cn("mx-auto w-full space-y-4", motion && "ui-strong-motion", className)}>
       <SurfaceCard className="px-4 py-3.5" tone="surface">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
             <p className="text-sm text-muted">{summary}</p>

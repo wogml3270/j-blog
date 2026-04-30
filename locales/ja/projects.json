@@ -6,6 +6,8 @@
   "searchPlaceholder": "タイトル・内容・タグで検索",
   "searchButton": "検索",
   "searchReset": "リセット",
+  "sortDate": "新着順",
+  "sortName": "名前順",
   "paginationPrevious": "前のページ",
   "paginationNext": "次のページ",
   "paginationSummary": "検索結果",

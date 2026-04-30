@@ -6,6 +6,8 @@
   "searchPlaceholder": "제목, 설명, 태그로 검색",
   "searchButton": "검색",
   "searchReset": "초기화",
+  "sortDate": "날짜순",
+  "sortName": "이름순",
   "paginationPrevious": "이전 페이지",
   "paginationNext": "다음 페이지",
   "paginationSummary": "검색 결과",

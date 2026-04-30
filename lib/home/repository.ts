@@ -58,7 +58,7 @@ type RepoResult<T> = {
 const HOME_SLIDE_SELECT_FIELDS =
   "id,source_type,source_id,order_index,is_active,override_cta_label,created_at,updated_at";
 
-const FALLBACK_SLIDE_IMAGE = "/blog/default-thumbnail.svg";
+const FALLBACK_SLIDE_IMAGE = "/blog/Gemini_Generated_Image_eqdpqseqdpqseqdp.png";
 const MAX_HERO_DESCRIPTION_LENGTH = 170;
 
 function toHeroDescription(value: string | null | undefined): string {

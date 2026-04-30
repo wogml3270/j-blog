@@ -45,7 +45,7 @@ export type AdminMember = {
 };
 
 export type AdminEntityScope = "blog" | "projects" | "contact";
-export type AdminListFilter = "all" | "main" | "general" | "published" | "draft";
+export type AdminListSort = "name" | "created" | "updated";
 export type ContactListFilter = "all" | "new" | "replied";
 export type AdminUploadScope = "about" | "blog" | "projects" | "home" | "misc";
 
