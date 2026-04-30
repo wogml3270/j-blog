@@ -94,8 +94,8 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const comments = await getApprovedCommentsByProjectSlug(normalizedSlug);
 
   return (
-    <article className="space-y-8">
-      <div className="space-y-3">
+    <article className="min-w-0 space-y-8">
+      <div className="min-w-0 space-y-3">
         <Link
           href={withLocalePath(lang, "/projects")}
           className="inline-flex text-sm text-muted underline"
@@ -106,11 +106,17 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           {dictionary.projects.createdAt}:{" "}
           {project.createdAt ? formatDate(project.createdAt, lang) : "-"}
         </p>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{project.title}</h1>
-        {project.homeSummary ? <p className="text-base text-muted">{project.homeSummary}</p> : null}
+        <h1 className="text-[clamp(1.28rem,5.3vw,1.88rem)] font-semibold tracking-tight text-foreground">
+          {project.title}
+        </h1>
+        {project.homeSummary ? (
+          <p className="text-[clamp(0.86rem,3.2vw,0.98rem)] leading-relaxed text-muted">
+            {project.homeSummary}
+          </p>
+        ) : null}
       </div>
 
-      <section className="grid gap-5 lg:grid-cols-12 lg:items-stretch">
+      <section className="min-w-0 grid gap-5 lg:grid-cols-12 lg:items-stretch">
         <div className="overflow-hidden rounded-xl border border-border lg:col-span-7">
           <Image
             src={project.thumbnail}
@@ -135,8 +141,8 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         </div>
       </section>
 
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_220px] xl:gap-9">
-        <section className="space-y-3">
+      <div className="min-w-0 grid gap-8 xl:grid-cols-[minmax(0,1fr)_220px] xl:gap-9">
+        <section className="min-w-0 space-y-3">
           <SectionTitle title={dictionary.projects.review} />
           <div className="rounded-xl border border-border bg-surface p-5">
             <MarkdownContent markdown={project.summary} />

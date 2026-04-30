@@ -397,7 +397,7 @@ export function Header({ locale, dictionary }: HeaderProps) {
       <div
         aria-hidden={!isMobileMenuOpen}
         className={cn(
-          "fixed inset-0 z-90 bg-foreground/30 backdrop-blur-sm transition-opacity duration-300 lg:hidden",
+          "fixed inset-x-0 bottom-0 top-16 z-90 bg-foreground/30 backdrop-blur-sm transition-opacity duration-300 lg:hidden",
           isMobileMenuOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
         )}
         onClick={() => setIsMobileMenuOpen(false)}

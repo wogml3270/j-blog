@@ -68,6 +68,7 @@ function toDisplayDate(value: string): string {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Seoul",
   }).format(date);
 }
 

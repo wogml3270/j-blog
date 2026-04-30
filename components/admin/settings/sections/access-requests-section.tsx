@@ -22,14 +22,14 @@ function toDisplayDate(value: string | null): string {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Seoul",
   }).format(date);
 }
 
-function toDefaultExpiryValue(): string {
+function toDefaultExpiryIso(): string {
   const now = new Date();
   now.setDate(now.getDate() + 14);
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  return now.toISOString().slice(0, 16);
+  return now.toISOString();
 }
 
 type AccessRequestsSectionProps = {
@@ -51,7 +51,7 @@ export function AccessRequestsSection({ initialRequests }: AccessRequestsSection
           role: "test_admin" as const,
           expiresAt: request.testAdminExpiresAt
             ? request.testAdminExpiresAt.slice(0, 16)
-            : toDefaultExpiryValue(),
+            : "",
         },
       ]),
     ),
@@ -70,7 +70,7 @@ export function AccessRequestsSection({ initialRequests }: AccessRequestsSection
       ...prev,
       [id]: {
         role: next.role ?? prev[id]?.role ?? "test_admin",
-        expiresAt: next.expiresAt ?? prev[id]?.expiresAt ?? toDefaultExpiryValue(),
+        expiresAt: next.expiresAt ?? prev[id]?.expiresAt ?? "",
       },
     }));
   };
@@ -84,8 +84,13 @@ export function AccessRequestsSection({ initialRequests }: AccessRequestsSection
 
     try {
       const role = decisionById[request.id]?.role ?? "test_admin";
-      const expiresAt =
-        role === "test_admin" ? (decisionById[request.id]?.expiresAt ?? toDefaultExpiryValue()) : "";
+      const expiresAt = role === "test_admin" ? (decisionById[request.id]?.expiresAt ?? "") : "";
+      const resolvedExpiryIso =
+        role === "test_admin"
+          ? expiresAt.trim()
+            ? new Date(expiresAt).toISOString()
+            : toDefaultExpiryIso()
+          : null;
       const response = await fetch(`/api/admin/settings/access-requests/${request.id}`, {
         method: "PATCH",
         headers: {
@@ -94,7 +99,7 @@ export function AccessRequestsSection({ initialRequests }: AccessRequestsSection
         body: JSON.stringify({
           status,
           role,
-          testAdminExpiresAt: role === "test_admin" ? new Date(expiresAt).toISOString() : null,
+          testAdminExpiresAt: resolvedExpiryIso,
         }),
       });
 
@@ -139,7 +144,7 @@ export function AccessRequestsSection({ initialRequests }: AccessRequestsSection
           visibleRequests.map((request) => {
             const decision = decisionById[request.id] ?? {
               role: "test_admin" as const,
-              expiresAt: toDefaultExpiryValue(),
+              expiresAt: "",
             };
             const disabled = pendingId === request.id || request.status !== "pending";
 

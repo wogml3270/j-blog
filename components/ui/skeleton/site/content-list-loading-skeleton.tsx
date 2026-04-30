@@ -5,19 +5,17 @@ import { SurfaceCard } from "@/components/ui/surface-card";
 export function ContentListLoadingSkeleton() {
   return (
     <div className="space-y-8">
-      <div className="space-y-2">
-        <Skeleton width={220} height={34} rounded="0.55rem" />
+      <div className="space-y-2 flex flex-col gap-2">
+        <Skeleton width={120} height={34} rounded="0.55rem" />
         <Skeleton width="56%" height={15} rounded="0.45rem" />
       </div>
 
       <SurfaceCard tone="surface" dashed padding="md">
-        <div className="flex flex-col gap-3">
-          <Skeleton className="w-full" height={40} rounded="0.6rem" />
-          <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
-            <Skeleton className="w-full sm:w-[6.5rem]" height={40} rounded="0.6rem" />
-            <Skeleton className="w-full sm:w-[5.5rem]" height={40} rounded="0.6rem" />
-            <Skeleton className="w-full sm:w-[8.5rem]" height={40} rounded="0.6rem" />
-          </div>
+        <div className="flex gap-3">
+          <Skeleton width="70%" height={40} rounded="0.6rem" />
+          <Skeleton width="10%" height={40} rounded="0.6rem" />
+          <Skeleton width="10%" height={40} rounded="0.6rem" />
+          <Skeleton width="10%" height={40} rounded="0.6rem" />
         </div>
       </SurfaceCard>
 

@@ -60,14 +60,14 @@ function buildInitialExpiryState(member: AdminMember): ExpiryControlState {
   if (member.role !== "test_admin") {
     return {
       mode: "none",
-      customLocalValue: toDateTimeLocalValue(toFutureIso(14)),
+      customLocalValue: "",
     };
   }
 
   if (!member.expiresAt) {
     return {
       mode: "none",
-      customLocalValue: toDateTimeLocalValue(toFutureIso(14)),
+      customLocalValue: "",
     };
   }
 
@@ -122,8 +122,7 @@ export function AdminMembersSection({ initialMembers }: AdminMembersSectionProps
         ...prev,
         [member.id]: {
           mode: "none",
-          customLocalValue:
-            prev[member.id]?.customLocalValue || toDateTimeLocalValue(toFutureIso(14)),
+          customLocalValue: prev[member.id]?.customLocalValue || "",
         },
       }));
       return;

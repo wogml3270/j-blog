@@ -22,14 +22,14 @@ export function ProjectMeta({
   relatedLinksLabel,
 }: ProjectMetaProps) {
   return (
-    <dl className="grid gap-5 rounded-xl border border-border bg-surface p-5 sm:grid-cols-2">
+    <dl className="min-w-0 grid gap-5 rounded-xl border border-border bg-surface p-5 sm:grid-cols-2">
       <div className="space-y-1">
         <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{roleLabel}</dt>
-        <dd className="text-sm text-foreground">{role}</dd>
+        <dd className="break-words text-sm text-foreground">{role}</dd>
       </div>
       <div className="space-y-1">
         <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{periodLabel}</dt>
-        <dd className="text-sm text-foreground">{period}</dd>
+        <dd className="break-words text-sm text-foreground">{period}</dd>
       </div>
       <div className="space-y-2 sm:col-span-2">
         <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -45,7 +45,7 @@ export function ProjectMeta({
         <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
           {relatedLinksLabel}
         </dt>
-        <dd className="flex flex-wrap gap-2 text-sm">
+        <dd className="flex min-w-0 flex-wrap gap-2 text-sm">
           {links.length > 0 ? (
             links.map((item) => (
               <a
@@ -53,7 +53,8 @@ export function ProjectMeta({
                 href={item.url}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground underline"
+                className="max-w-full truncate rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground underline"
+                title={item.label}
               >
                 {item.label}
               </a>

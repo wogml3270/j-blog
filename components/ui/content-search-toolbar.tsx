@@ -75,7 +75,9 @@ export function ContentSearchToolbar({
       <form
         className={cn(
           "grid gap-3",
-          sortOptions ? "sm:grid-cols-[1fr_auto_auto_auto]" : "sm:grid-cols-[1fr_auto_auto]",
+          sortOptions
+            ? "sm:grid-cols-[minmax(9.75rem,11rem)_minmax(0,1fr)_auto_auto] sm:items-center"
+            : "sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center",
         )}
         onSubmit={(e) => {
           e.preventDefault();
@@ -83,36 +85,13 @@ export function ContentSearchToolbar({
           updateQuery(String(formData.get("q") ?? ""), currentSort);
         }}
       >
-        <Input
-          name="q"
-          value={inputValue}
-          onChange={(e) => {
-            setInputValue(e.target.value);
-          }}
-          placeholder={placeholder}
-          aria-label={placeholder}
-        />
-        <Button type="submit" variant="outline" disabled={isPending} className="gap-1.5">
-          <SearchIcon className="h-3.5 w-3.5" />
-          {submitLabel}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={isPending || (!currentQuery.trim() && !inputValue.trim())}
-          onClick={() => {
-            setInputValue("");
-            updateQuery("", currentSort);
-          }}
-        >
-          {resetLabel}
-        </Button>
         {sortOptions ? (
-          <label className="inline-flex items-center gap-2 text-sm text-muted">
+          // 모바일/데스크탑 모두 필터 셀렉터를 첫 순서로 고정한다.
+          <label className="order-1 inline-flex w-full items-center gap-2 text-sm text-muted">
             <select
               value={currentSort}
               onChange={(event) => updateQuery(inputValue, event.target.value)}
-              className="h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground"
+              className="h-10 w-full min-w-0 rounded-md border border-border bg-background px-3 text-sm text-foreground"
               aria-label="정렬"
             >
               {sortOptions.map((option) => (
@@ -123,6 +102,48 @@ export function ContentSearchToolbar({
             </select>
           </label>
         ) : null}
+
+        <div className={cn(sortOptions ? "order-2" : "order-1")}>
+          <Input
+            name="q"
+            value={inputValue}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+            }}
+            placeholder={placeholder}
+            aria-label={placeholder}
+          />
+        </div>
+
+        <div
+          className={cn(
+            "order-3 grid grid-cols-2 gap-2",
+            sortOptions ? "sm:col-start-3 sm:col-end-5 sm:grid-cols-2" : "sm:col-start-2 sm:col-end-4 sm:grid-cols-2",
+          )}
+        >
+          {/* 모바일에서는 버튼 2개를 한 줄에 배치하고, 데스크탑에서는 입력 오른쪽 고정 영역으로 유지한다. */}
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={isPending}
+            className="h-10 w-full min-w-0 gap-1.5"
+          >
+            <SearchIcon className="h-3.5 w-3.5" />
+            {submitLabel}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={isPending || (!currentQuery.trim() && !inputValue.trim())}
+            className="h-10 w-full min-w-0"
+            onClick={() => {
+              setInputValue("");
+              updateQuery("", currentSort);
+            }}
+          >
+            {resetLabel}
+          </Button>
+        </div>
       </form>
     </SurfaceCard>
   );

@@ -11,7 +11,7 @@ function dashboardCardSkeleton(index: number) {
       tone="surface"
       radius="xl"
       padding="md"
-      className="space-y-2"
+      className="space-y-2 flex flex-col gap-1"
     >
       <Skeleton width={titleWidths[index] ?? "32%"} height={12} rounded="0.35rem" />
       <Skeleton width="26%" height={30} rounded="0.45rem" />

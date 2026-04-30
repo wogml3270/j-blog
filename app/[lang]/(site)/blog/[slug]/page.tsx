@@ -85,7 +85,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   }
 
   return (
-    <article className="space-y-8">
+    <article className="min-w-0 space-y-8">
       <Link
         href={withLocalePath(lang, "/blog")}
         className="inline-flex text-sm text-muted underline"
@@ -93,15 +93,19 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
         {dictionary.blog.backToList}
       </Link>
 
-      <header className="space-y-4">
+      <header className="min-w-0 space-y-4">
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
           <time dateTime={post.date}>{formatDate(post.date, lang)}</time>
         </div>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{post.title}</h1>
-        <p className="text-base text-muted">{post.description}</p>
+        <h1 className="text-[clamp(1.28rem,5.3vw,1.88rem)] font-semibold tracking-tight text-foreground">
+          {post.title}
+        </h1>
+        <p className="text-[clamp(0.86rem,3.2vw,0.98rem)] leading-relaxed text-muted">
+          {post.description}
+        </p>
       </header>
 
-      <div className="grid gap-8 xl:gap-9 xl:grid-cols-[minmax(0,1fr)_220px]">
+      <div className="min-w-0 grid gap-8 xl:grid-cols-[minmax(0,1fr)_220px] xl:gap-9">
         <MarkdownContent markdown={post.bodyMarkdown ?? ""} />
         <div className="hidden xl:sticky xl:top-24 xl:block xl:self-start">
           <TableOfContents items={post.toc} title={dictionary.blog.tableOfContents} />
