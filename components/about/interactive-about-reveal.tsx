@@ -8,9 +8,33 @@ import { ABOUT_TECH_CATEGORY_ORDER } from "@/lib/about/tech-categories";
 import { useDevice } from "@/lib/hooks/use-device";
 import { useHydrated } from "@/lib/hooks/use-hydrated";
 import { cn } from "@/lib/utils/cn";
-import { toCachedMediaUrl } from "@/lib/utils/media-cache-url";
 import type { AboutTechCategory } from "@/types/about";
 import type { InteractiveAboutRevealProps } from "@/types/ui";
+
+// 기술스택 로고 URL은 공개 CDN을 그대로 사용하고, http만 https로 승격한다.
+function resolveTechLogoUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  if (trimmed.startsWith("/")) {
+    return trimmed;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+
+    if (parsed.protocol === "http:") {
+      parsed.protocol = "https:";
+    }
+
+    return parsed.toString();
+  } catch {
+    return trimmed;
+  }
+}
 
 export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutRevealProps) {
   const { isMobile, isDesktop } = useDevice();
@@ -159,13 +183,12 @@ export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutReve
                           >
                             <div className="flex items-center gap-2.5">
                               <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/90">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={toCachedMediaUrl(item.logoUrl)}
+                                <Image
+                                  src={resolveTechLogoUrl(item.logoUrl)}
                                   alt={`${item.name} logo`}
+                                  width={20}
+                                  height={20}
                                   className="h-5 w-5 object-contain"
-                                  loading="lazy"
-                                  decoding="async"
                                 />
                               </span>
                               <p className="truncate text-sm font-semibold text-foreground">
@@ -195,13 +218,12 @@ export function InteractiveAboutReveal({ profile, labels }: InteractiveAboutReve
                   >
                     <div className="flex items-center gap-2.5">
                       <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/90">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={toCachedMediaUrl(item.logoUrl)}
+                        <Image
+                          src={resolveTechLogoUrl(item.logoUrl)}
                           alt={`${item.name} logo`}
+                          width={20}
+                          height={20}
                           className="h-5 w-5 object-contain"
-                          loading="lazy"
-                          decoding="async"
                         />
                       </span>
                       <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>

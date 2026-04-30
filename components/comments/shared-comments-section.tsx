@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { AccountIcon } from "@/components/ui/icons/account-icon";
 import { NoteIcon } from "@/components/ui/icons/note-icon";
@@ -368,10 +369,11 @@ export function SharedCommentsSection<TComment extends CommentBase>({
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background px-2.5 py-2">
             <div className="flex min-w-0 items-center gap-2">
               {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={avatarUrl}
                   alt={nickname || "user"}
+                  width={28}
+                  height={28}
                   className="h-7 w-7 rounded-full object-cover"
                 />
               ) : (
@@ -424,12 +426,12 @@ export function SharedCommentsSection<TComment extends CommentBase>({
             >
               <div className="mb-1.5 flex items-center gap-2">
                 {comment.authorAvatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={comment.authorAvatarUrl}
                     alt={comment.authorNickname}
+                    width={28}
+                    height={28}
                     className="h-7 w-7 rounded-full border border-border object-cover"
-                    loading="lazy"
                   />
                 ) : (
                   <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-[11px] font-semibold text-foreground">
